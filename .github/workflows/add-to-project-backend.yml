@@ -1,0 +1,47 @@
+
+name: Auto Add to Project (backend)
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  add_to_project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get ProjectV2 number dynamically
+        id: get_project
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PERSONAL_TOKEN }}
+          script: |
+            const org = "KOSATM";
+            const target = "backend".toLowerCase();
+
+            const query = `
+              query($org: String!) {
+                organization(login: $org) {
+                  projectsV2(first: 50) {
+                    nodes {
+                      title
+                      number
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query, { org });
+            const projects = result.organization.projectsV2.nodes;
+
+            const project = projects.find(p => p.title.toLowerCase().includes(target));
+            if (!project) throw new Error("Project not found: " + target);
+
+            core.setOutput("project_number", project.number);
+            core.info("Detected Project Number: " + project.number);
+
+      - name: Add PR to project
+        uses: actions/add-to-project@v0.4.0
+        with:
+          project-url: https://github.com/orgs/KOSATM/projects/${{ steps.get_project.outputs.project_number }}
+          github-token: ${{ secrets.PERSONAL_TOKEN }}

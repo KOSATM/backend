@@ -1,0 +1,13 @@
+backend:
+  - "src/main/java/**/*"
+
+resource:
+  - "src/main/resources/**/*"
+
+test:
+  - "src/test/**/*"
+
+build:
+  - "build.gradle"
+  - "settings.gradle"
+  - "gradle/**/*"
