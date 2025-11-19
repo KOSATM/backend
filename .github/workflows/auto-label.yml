@@ -1,4 +1,4 @@
-name: Auto Create & Apply Labels
+name: Auto Create & Apply Labels (Backend)
 
 on:
   pull_request:
@@ -14,54 +14,53 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const pr = context.payload.pull_request;
-            const [menu, type] = pr.head.ref.split('/');
+            const parts = pr.head.ref.split('/');
+            const menu = parts[0];
+            const type = parts[1];
 
-            // 메뉴 라벨
+            // Backend 메뉴 라벨 + 색상 (색상코드 # 없이 6자리만)
             const menuLabels = {
-              planner: "4373FF",
+              planner:    "4373FF",
               travelgram: "09B28B",
-              mypage: "8353E6",
-              supporter: "E69A53",
-              common: "444444"
+              mypage:     "8353E6",
+              supporter:  "E69A53",
+              auth:       "FF5577",
+              ai:         "33C1FF",
+              common:     "444444"
             };
 
-            // 타입 라벨
-            const typeLabels = {
-              feat: "2EB67D",      // feature
-              fix: "D64545",
-              refactor: "A371F7",
-              style: "6F42C1",
-              docs: "0366D6",
-              test: "FF8800",
-              chore: "999999"
+            // 작업 타입 라벨
+            const typeMap = {
+              feat:     { name: "feature",  color: "2EB67D" },
+              fix:      { name: "fix",      color: "D64545" },
+              refactor: { name: "refactor", color: "A371F7" },
+              style:    { name: "style",    color: "6F42C1" },
+              docs:     { name: "docs",     color: "0366D6" },
+              test:     { name: "test",     color: "FF8800" },
+              chore:    { name: "chore",    color: "999999" }
             };
 
+            // 필요한 라벨 목록
             const needed = [];
 
-            if (menuLabels[menu]) needed.push({ name: menu, color: menuLabels[menu] });
-            if (typeLabels[type]) {
-              const typeName = ({
-                feat: "feature",
-                fix: "fix",
-                refactor: "refactor",
-                style: "style",
-                docs: "docs",
-                test: "test",
-                chore: "chore"
-              })[type];
-
-              needed.push({ name: typeName, color: typeLabels[type] });
+            if (menuLabels[menu]) {
+              needed.push({ name: menu, color: menuLabels[menu] });
             }
 
-            // 기존 라벨 목록 가져오기
+            if (typeMap[type]) {
+              needed.push(typeMap[type]);
+            }
+
+            if (needed.length === 0) return;
+
+            // 현재 레포의 모든 라벨 조회
             const existing = await github.paginate(
               github.rest.issues.listLabelsForRepo,
               { owner: context.repo.owner, repo: context.repo.repo }
             );
-
             const existingNames = existing.map(l => l.name);
 
-            // 1) 필요한 라벨 자동 생성
+            // 1) 존재하지 않는 라벨 자동 생성
             for (const lb of needed) {
               if (!existingNames.includes(lb.name)) {
                 await github.rest.issues.createLabel({
@@ -73,14 +72,10 @@ jobs:
               }
             }
 
-            // 2) PR에 라벨 적용
-            const labelsToApply = needed.map(lb => lb.name);
-
-            if (labelsToApply.length > 0) {
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number,
-                labels: labelsToApply
-              });
-            }
+            // 2) PR에 라벨 부착
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: needed.map(l => l.name)
+            });
