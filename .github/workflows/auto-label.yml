@@ -1,0 +1,86 @@
+name: Auto Create & Apply Labels
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create missing labels then apply
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const [menu, type] = pr.head.ref.split('/');
+
+            // 메뉴 라벨
+            const menuLabels = {
+              planner: "4373FF",
+              travelgram: "09B28B",
+              mypage: "8353E6",
+              supporter: "E69A53",
+              common: "444444"
+            };
+
+            // 타입 라벨
+            const typeLabels = {
+              feat: "2EB67D",      // feature
+              fix: "D64545",
+              refactor: "A371F7",
+              style: "6F42C1",
+              docs: "0366D6",
+              test: "FF8800",
+              chore: "999999"
+            };
+
+            const needed = [];
+
+            if (menuLabels[menu]) needed.push({ name: menu, color: menuLabels[menu] });
+            if (typeLabels[type]) {
+              const typeName = ({
+                feat: "feature",
+                fix: "fix",
+                refactor: "refactor",
+                style: "style",
+                docs: "docs",
+                test: "test",
+                chore: "chore"
+              })[type];
+
+              needed.push({ name: typeName, color: typeLabels[type] });
+            }
+
+            // 기존 라벨 목록 가져오기
+            const existing = await github.paginate(
+              github.rest.issues.listLabelsForRepo,
+              { owner: context.repo.owner, repo: context.repo.repo }
+            );
+
+            const existingNames = existing.map(l => l.name);
+
+            // 1) 필요한 라벨 자동 생성
+            for (const lb of needed) {
+              if (!existingNames.includes(lb.name)) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: lb.name,
+                  color: lb.color
+                });
+              }
+            }
+
+            // 2) PR에 라벨 적용
+            const labelsToApply = needed.map(lb => lb.name);
+
+            if (labelsToApply.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: labelsToApply
+              });
+            }

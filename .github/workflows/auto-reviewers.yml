@@ -1,0 +1,72 @@
+name: Reviewer Rotation
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  auto-reviewer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign reviewers by team
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+
+            const branch = pr.head.ref;
+            const menu = branch.split('/')[0];
+            const author = pr.user.login;
+
+            // 팀 구성 (여기만 수정하면 됨)
+            const supporterTeam = ["miouOu", "drop0utboy", "so0126"];
+            const plannerTeam   = ["dlgudwn55", "sherwinhong", "SeungHun-OH"];
+
+            const teamMap = {
+              travelgram: supporterTeam,
+              mypage: supporterTeam,
+              supporter: supporterTeam,
+              planner: plannerTeam,
+              common:  [...supporterTeam, ...plannerTeam]
+            };
+
+            // 1. teamMap에서 팀 가져오기
+            const pool = teamMap[menu];
+
+            if (!pool || pool.length === 0) {
+              console.log("No eligible reviewers for this menu:", menu);
+              return;
+            }
+
+            // 2. 1차 필터링 (PR 작성자 제거)
+            let candidates = pool.filter(r => r !== author);
+
+            // 혹시라도 전부 author 하나뿐이면 종료
+            if (candidates.length === 0) {
+              console.log("All potential reviewers were the PR author. Skipping reviewer assignment.");
+              return;
+            }
+
+            // 3. 랜덤 셔플
+            const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+
+            // 4. 2명 선택 (1명만 남으면 1명만)
+            let reviewers = shuffled.slice(0, 2);
+
+            // 5. Github API에 보내기 전에 author 제거하는 2차 방탄 처리
+            reviewers = reviewers.filter(r => r !== author);
+
+            if (reviewers.length === 0) {
+              console.log("No reviewers left after final filtering.");
+              return;
+            }
+
+            console.log("Final reviewers:", reviewers);
+
+            await github.rest.pulls.requestReviewers({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              reviewers
+            });
