@@ -31,7 +31,7 @@ jobs:
 
             // 작업 타입 라벨
             const typeMap = {
-              feat:     { name: "feature",  color: "2EB67D" },
+              feat:     { name: "feat",  color: "2EB67D" },
               fix:      { name: "fix",      color: "D64545" },
               refactor: { name: "refactor", color: "A371F7" },
               style:    { name: "style",    color: "6F42C1" },
