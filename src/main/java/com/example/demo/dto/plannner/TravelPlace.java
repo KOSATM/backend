@@ -10,8 +10,8 @@ public class TravelPlace {
     private Long id;
     private Long dayId;
     private String title;
-    private OffsetDateTime startedAt; 
-    private OffsetDateTime endedAt; 
+    private OffsetDateTime startAt; 
+    private OffsetDateTime endAt; 
     private String placeName;
     private String address;
     private double lat;

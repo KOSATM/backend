@@ -11,5 +11,5 @@ public class CurrentActivity {
     private Long travelPlaceId;
     private BigDecimal actualCost;
     private String memo;
-    private OffsetDateTime endedAt;
+    private OffsetDateTime endedAt; // 사용자가 조기종료 눌렀을시 사용
 }
