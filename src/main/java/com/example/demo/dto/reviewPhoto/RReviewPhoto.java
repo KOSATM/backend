@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class ReviewPhoto {
+public class RReviewPhoto {
     private Long id;
     private String fileUrl;
     private double lat;

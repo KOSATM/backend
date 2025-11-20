@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class ReviewPost {
+public class RReviewPost {
     private Long id;
     private String content;
     private Boolean isPosted;
