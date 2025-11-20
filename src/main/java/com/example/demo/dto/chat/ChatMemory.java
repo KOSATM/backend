@@ -10,7 +10,7 @@ public class ChatMemory {
     private Long agentId;
     private Integer orderIndex;
     private String content;
-    private Integer tokenUsage;
+    private Long tokenUsage;
     private OffsetDateTime createdAt;
     private String role;
 }
