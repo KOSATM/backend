@@ -2,21 +2,21 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.CurrentActivityMapper">
+<mapper namespace="com.example.demo.mapper.place.CurrentActivityMapper">
 
-  <select id="selectCurrentActivityById" resultType="com.example.demo.dto.place.CurrentActivityDto">
-    SELECT id, travelspot_id, actual_cost, review, ended_at
+  <select id="selectCurrentActivityById" resultType="com.example.demo.dto.place.CurrentActivity">
+    SELECT id, travel_place_id, actual_cost, memo, ended_at
     FROM current_activity WHERE id = #{id}
   </select>
 
-  <insert id="insertCurrentActivity" parameterType="com.example.demo.dto.place.CurrentActivityDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO current_activity (travelspot_id, actual_cost, review, ended_at)
-    VALUES (#{travelspotId}, #{actualCost}, #{review}, #{endedAt})
+  <insert id="insertCurrentActivity" parameterType="com.example.demo.dto.place.CurrentActivity" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO current_activity (travel_place_id, actual_cost, memo, ended_at)
+    VALUES (#{travelPlaceId}, #{actualCost}, #{memo}, #{endedAt})
   </insert>
 
-  <update id="updateCurrentActivity" parameterType="com.example.demo.dto.place.CurrentActivityDto">
+  <update id="updateCurrentActivity" parameterType="com.example.demo.dto.place.CurrentActivity">
     UPDATE current_activity
-    SET travelspot_id = #{travelspotId}, actual_cost = #{actualCost}, review = #{review}, ended_at = #{endedAt}
+    SET travel_place_id = #{travelPlaceId}, actual_cost = #{actualCost}, memo = #{memo}, ended_at = #{endedAt}
     WHERE id = #{id}
   </update>
 

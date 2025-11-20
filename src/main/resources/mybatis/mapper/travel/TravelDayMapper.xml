@@ -2,21 +2,21 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.TravelDayMapper">
+<mapper namespace="com.example.demo.mapper.travel.TravelDayMapper">
 
-  <select id="selectTravelDayById" resultType="com.example.demo.dto.travel.TravelDayDto">
-    SELECT id, trip_plan_id, day_index, title, date
+  <select id="selectTravelDayById" resultType="com.example.demo.dto.travel.TravelDay">
+    SELECT id, travel_plan_id, day_index, title, date
     FROM travel_day WHERE id = #{id}
   </select>
 
-  <insert id="insertTravelDay" parameterType="com.example.demo.dto.travel.TravelDayDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO travel_day (trip_plan_id, day_index, title, date)
-    VALUES (#{tripPlanId}, #{dayIndex}, #{title}, #{date})
+  <insert id="insertTravelDay" parameterType="com.example.demo.dto.travel.TravelDay" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO travel_day (travel_plan_id, day_index, title, date)
+    VALUES (#{travelPlanId}, #{dayIndex}, #{title}, #{date})
   </insert>
 
-  <update id="updateTravelDay" parameterType="com.example.demo.dto.travel.TravelDayDto">
+  <update id="updateTravelDay" parameterType="com.example.demo.dto.travel.TravelDay">
     UPDATE travel_day
-    SET trip_plan_id = #{tripPlanId}, day_index = #{dayIndex}, title = #{title}, date = #{date}
+    SET travel_plan_id = #{travelPlanId}, day_index = #{dayIndex}, title = #{title}, date = #{date}
     WHERE id = #{id}
   </update>
 

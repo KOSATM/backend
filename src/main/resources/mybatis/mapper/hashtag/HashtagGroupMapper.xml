@@ -2,21 +2,21 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.HashtagGroupMapper">
+<mapper namespace="com.example.demo.mapper.hashtag.HashtagGroupMapper">
 
-  <select id="selectHashtagGroupById" resultType="com.example.demo.dto.hashtag.HashtagGroupDto">
-    SELECT id, created_at, post_record_id
+  <select id="selectHashtagGroupById" resultType="com.example.demo.dto.hashtag.HashtagGroup">
+    SELECT id, created_at, review_post_id
     FROM hashtag_group WHERE id = #{id}
   </select>
 
-  <insert id="insertHashtagGroup" parameterType="com.example.demo.dto.hashtag.HashtagGroupDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO hashtag_group (created_at, post_record_id)
-    VALUES (#{createdAt}, #{postRecordId})
+  <insert id="insertHashtagGroup" parameterType="com.example.demo.dto.hashtag.HashtagGroup" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO hashtag_group (created_at, review_post_id)
+    VALUES (#{createdAt}, #{reviewPostId})
   </insert>
 
-  <update id="updateHashtagGroup" parameterType="com.example.demo.dto.hashtag.HashtagGroupDto">
+  <update id="updateHashtagGroup" parameterType="com.example.demo.dto.hashtag.HashtagGroup">
     UPDATE hashtag_group
-    SET created_at = #{createdAt}, post_record_id = #{postRecordId}
+    SET created_at = #{createdAt}, review_post_id = #{reviewPostId}
     WHERE id = #{id}
   </update>
 

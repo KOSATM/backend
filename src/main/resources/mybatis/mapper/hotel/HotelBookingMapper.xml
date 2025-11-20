@@ -2,16 +2,16 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.HotelBookingMapper">
+<mapper namespace="com.example.demo.mapper.hotel.HotelBookingMapper">
 
-  <select id="selectHotelBookingById" resultType="com.example.demo.dto.hotel.HotelBookingDto">
+  <select id="selectHotelBookingById" resultType="com.example.demo.dto.hotel.HotelBooking">
     SELECT id, user_id, external_booking_id, hotel_id, room_type_id, rate_plan_id, checkin_date, checkout_date,
            nights, adults_count, children_count, currency, total_price, tax_amount, fee_amount, status, payment_status,
            guest_name, guest_email, guest_phone, provider_booking_meta, booked_at, cancelled_at, created_at, updated_at
     FROM hotel_booking WHERE id = #{id}
   </select>
 
-  <insert id="insertHotelBooking" parameterType="com.example.demo.dto.hotel.HotelBookingDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertHotelBooking" parameterType="com.example.demo.dto.hotel.HotelBooking" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO hotel_booking (user_id, external_booking_id, hotel_id, room_type_id, rate_plan_id, checkin_date, checkout_date,
            nights, adults_count, children_count, currency, total_price, tax_amount, fee_amount, status, payment_status,
            guest_name, guest_email, guest_phone, provider_booking_meta, booked_at, cancelled_at, created_at, updated_at)
@@ -20,7 +20,7 @@
            #{guestName}, #{guestEmail}, #{guestPhone}, #{providerBookingMeta}, #{bookedAt}, #{cancelledAt}, #{createdAt}, #{updatedAt})
   </insert>
 
-  <update id="updateHotelBooking" parameterType="com.example.demo.dto.hotel.HotelBookingDto">
+  <update id="updateHotelBooking" parameterType="com.example.demo.dto.hotel.HotelBooking">
     UPDATE hotel_booking
     SET user_id = #{userId}, external_booking_id = #{externalBookingId}, hotel_id = #{hotelId}, room_type_id = #{roomTypeId},
         rate_plan_id = #{ratePlanId}, checkin_date = #{checkinDate}, checkout_date = #{checkoutDate}, nights = #{nights},

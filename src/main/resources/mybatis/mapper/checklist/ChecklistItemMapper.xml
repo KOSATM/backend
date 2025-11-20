@@ -2,19 +2,19 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.ChecklistItemMapper">
+<mapper namespace="com.example.demo.mapper.checklist.ChecklistItemMapper">
 
-  <select id="selectChecklistItemById" resultType="com.example.demo.dto.checklist.ChecklistItemDto">
+  <select id="selectChecklistItemById" resultType="com.example.demo.dto.checklist.ChecklistItem">
     SELECT id, checklist_id, content, category, is_checked, created_at
     FROM checklist_item WHERE id = #{id}
   </select>
 
-  <insert id="insertChecklistItem" parameterType="com.example.demo.dto.checklist.ChecklistItemDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertChecklistItem" parameterType="com.example.demo.dto.checklist.ChecklistItem" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO checklist_item (checklist_id, content, category, is_checked, created_at)
     VALUES (#{checklistId}, #{content}, #{category}, #{isChecked}, #{createdAt})
   </insert>
 
-  <update id="updateChecklistItem" parameterType="com.example.demo.dto.checklist.ChecklistItemDto">
+  <update id="updateChecklistItem" parameterType="com.example.demo.dto.checklist.ChecklistItem">
     UPDATE checklist_item
     SET checklist_id = #{checklistId}, content = #{content}, category = #{category}, is_checked = #{isChecked}, created_at = #{createdAt}
     WHERE id = #{id}

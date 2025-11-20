@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class reviewPhotoGroup {
+public class ReviewPhotoGroup {
     private Long id;
     private OffsetDateTime createdAt;
     private Long reviewPostId;

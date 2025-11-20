@@ -2,19 +2,19 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.PlaceMapper">
+<mapper namespace="com.example.demo.mapper.place.PlaceMapper">
 
-  <select id="selectPlaceById" resultType="com.example.demo.dto.place.PlaceDto">
+  <select id="selectPlaceById" resultType="com.example.demo.dto.place.Place">
     SELECT id, name, description, lat, lng, address, place_type, image_url, thumbnail_url
     FROM place WHERE id = #{id}
   </select>
 
-  <insert id="insertPlace" parameterType="com.example.demo.dto.place.PlaceDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertPlace" parameterType="com.example.demo.dto.place.Place" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO place (name, description, lat, lng, address, place_type, image_url, thumbnail_url)
     VALUES (#{name}, #{description}, #{lat}, #{lng}, #{address}, #{placeType}, #{imageUrl}, #{thumbnailUrl})
   </insert>
 
-  <update id="updatePlace" parameterType="com.example.demo.dto.place.PlaceDto">
+  <update id="updatePlace" parameterType="com.example.demo.dto.place.Place">
     UPDATE place
     SET name = #{name}, description = #{description}, lat = #{lat}, lng = #{lng}, address = #{address},
         place_type = #{placeType}, image_url = #{imageUrl}, thumbnail_url = #{thumbnailUrl}

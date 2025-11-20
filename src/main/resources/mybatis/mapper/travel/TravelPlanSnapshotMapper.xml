@@ -2,19 +2,19 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.TravelPlanSnapshotMapper">
+<mapper namespace="com.example.demo.mapper.travel.TravelPlanSnapshotMapper">
 
-  <select id="selectTravelPlanSnapshotById" resultType="com.example.demo.dto.travel.TravelPlanSnapshotDto">
+  <select id="selectTravelPlanSnapshotById" resultType="com.example.demo.dto.travel.TravelPlanSnapshot">
     SELECT id, user_id, version_no, snapshot_json, created_at
     FROM travel_plan_snapshot WHERE id = #{id}
   </select>
 
-  <insert id="insertTravelPlanSnapshot" parameterType="com.example.demo.dto.travel.TravelPlanSnapshotDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertTravelPlanSnapshot" parameterType="com.example.demo.dto.travel.TravelPlanSnapshot" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO travel_plan_snapshot (user_id, version_no, snapshot_json, created_at)
     VALUES (#{userId}, #{versionNo}, #{snapshotJson}, #{createdAt})
   </insert>
 
-  <update id="updateTravelPlanSnapshot" parameterType="com.example.demo.dto.travel.TravelPlanSnapshotDto">
+  <update id="updateTravelPlanSnapshot" parameterType="com.example.demo.dto.travel.TravelPlanSnapshot">
     UPDATE travel_plan_snapshot
     SET user_id = #{userId}, version_no = #{versionNo}, snapshot_json = #{snapshotJson}, created_at = #{createdAt}
     WHERE id = #{id}

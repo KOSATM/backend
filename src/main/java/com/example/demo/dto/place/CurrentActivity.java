@@ -1,4 +1,4 @@
-package com.example.demo.dto.plannner;
+package com.example.demo.dto.place;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
