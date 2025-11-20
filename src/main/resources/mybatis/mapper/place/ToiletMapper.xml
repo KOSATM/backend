@@ -6,11 +6,11 @@
 
   <select id="selectToiletById" resultType="com.example.demo.dto.place.Toilet">
     SELECT id, name, latitude, longitude, address
-    FROM toilet WHERE id = #{id}
+    FROM toilets WHERE id = #{id}
   </select>
 
   <insert id="insertToilet" parameterType="com.example.demo.dto.place.Toilet" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO toilet (name, latitude, longitude, address)
+    INSERT INTO toilets (name, latitude, longitude, address)
     VALUES (#{name}, #{latitude}, #{longitude}, #{address})
   </insert>
 
@@ -21,7 +21,7 @@
   </update>
 
   <delete id="deleteToiletById" parameterType="long">
-    DELETE FROM toilet WHERE id = #{id}
+    DELETE FROM toilets WHERE id = #{id}
   </delete>
 
 </mapper>

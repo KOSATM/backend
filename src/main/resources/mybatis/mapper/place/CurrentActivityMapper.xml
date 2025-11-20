@@ -6,22 +6,22 @@
 
   <select id="selectCurrentActivityById" resultType="com.example.demo.dto.place.CurrentActivity">
     SELECT id, travel_place_id, actual_cost, memo, ended_at
-    FROM current_activity WHERE id = #{id}
+    FROM current_activities WHERE id = #{id}
   </select>
 
   <insert id="insertCurrentActivity" parameterType="com.example.demo.dto.place.CurrentActivity" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO current_activity (travel_place_id, actual_cost, memo, ended_at)
+    INSERT INTO current_activities (travel_place_id, actual_cost, memo, ended_at)
     VALUES (#{travelPlaceId}, #{actualCost}, #{memo}, #{endedAt})
   </insert>
 
   <update id="updateCurrentActivity" parameterType="com.example.demo.dto.place.CurrentActivity">
-    UPDATE current_activity
+    UPDATE current_activities
     SET travel_place_id = #{travelPlaceId}, actual_cost = #{actualCost}, memo = #{memo}, ended_at = #{endedAt}
     WHERE id = #{id}
   </update>
 
   <delete id="deleteCurrentActivityById" parameterType="long">
-    DELETE FROM current_activity WHERE id = #{id}
+    DELETE FROM current_activities WHERE id = #{id}
   </delete>
 
 </mapper>

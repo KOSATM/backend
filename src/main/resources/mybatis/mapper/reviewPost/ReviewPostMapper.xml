@@ -5,24 +5,24 @@
 <mapper namespace="com.example.demo.mapper.reviewPost.ReviewPostMapper">
 
   <select id="selectReviewPostById" resultType="com.example.demo.dto.reviewPost.ReviewPost">
-    SELECT id, caption, is_posted, post_url, created_at, travel_plan_id, style_id
-    FROM post_record WHERE id = #{id}
+    SELECT id, content, is_posted, review_post_url, created_at, travel_plan_id, style_id
+    FROM review_posts WHERE id = #{id}
   </select>
 
   <insert id="insertReviewPost" parameterType="com.example.demo.dto.reviewPost.ReviewPost" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO post_record (caption, is_posted, post_url, created_at, travel_plan_id, style_id)
-    VALUES (#{caption}, #{isPosted}, #{postUrl}, #{createdAt}, #{travelPlanId}, #{styleId})
+    INSERT INTO review_posts (content, is_posted, review_post_url, created_at, travel_plan_id, style_id)
+    VALUES (#{content}, #{isPosted}, #{postUrl}, #{createdAt}, #{travelPlanId}, #{styleId})
   </insert>
 
   <update id="updateReviewPost" parameterType="com.example.demo.dto.reviewPost.ReviewPost">
-    UPDATE post_record
-    SET caption = #{caption}, is_posted = #{isPosted}, post_url = #{postUrl}, created_at = #{createdAt},
+    UPDATE review_posts
+    SET content = #{content}, is_posted = #{isPosted}, review_post_url = #{postUrl}, created_at = #{createdAt},
         travel_plan_id = #{travelPlanId}, style_id = #{styleId}
     WHERE id = #{id}
   </update>
 
   <delete id="deleteReviewPostById" parameterType="long">
-    DELETE FROM post_record WHERE id = #{id}
+    DELETE FROM review_posts WHERE id = #{id}
   </delete>
 
 </mapper>

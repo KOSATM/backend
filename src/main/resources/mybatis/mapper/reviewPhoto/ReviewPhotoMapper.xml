@@ -6,23 +6,23 @@
 
   <select id="selectReviewPhotoById" resultType="com.example.demo.dto.reviewPhoto.ReviewPhoto">
     SELECT id, file_url, lat, lng, taken_at, order_index, created_at, group_id
-    FROM review_photo WHERE id = #{id}
+    FROM review_photos WHERE id = #{id}
   </select>
 
   <insert id="insertReviewPhoto" parameterType="com.example.demo.dto.reviewPhoto.ReviewPhoto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO review_photo (file_url, lat, lng, taken_at, order_index, created_at, group_id)
+    INSERT INTO review_photos (file_url, lat, lng, taken_at, order_index, created_at, group_id)
     VALUES (#{fileUrl}, #{lat}, #{lng}, #{takenAt}, #{orderIndex}, #{createdAt}, #{groupId})
   </insert>
 
   <update id="updateReviewPhoto" parameterType="com.example.demo.dto.reviewPhoto.ReviewPhoto">
-    UPDATE review_photo
+    UPDATE review_photos
     SET file_url = #{fileUrl}, lat = #{lat}, lng = #{lng}, taken_at = #{takenAt},
         order_index = #{orderIndex}, created_at = #{createdAt}, group_id = #{groupId}
     WHERE id = #{id}
   </update>
 
   <delete id="deleteReviewPhotoById" parameterType="long">
-    DELETE FROM review_photo WHERE id = #{id}
+    DELETE FROM review_photos WHERE id = #{id}
   </delete>
 
 </mapper>

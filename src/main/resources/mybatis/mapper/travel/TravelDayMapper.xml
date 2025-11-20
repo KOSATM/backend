@@ -6,22 +6,22 @@
 
   <select id="selectTravelDayById" resultType="com.example.demo.dto.travel.TravelDay">
     SELECT id, travel_plan_id, day_index, title, plan_date
-    FROM travel_day WHERE id = #{id}
+    FROM travel_days WHERE id = #{id}
   </select>
 
   <insert id="insertTravelDay" parameterType="com.example.demo.dto.travel.TravelDay" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO travel_day (travel_plan_id, day_index, title, plan_date)
+    INSERT INTO travel_days (travel_plan_id, day_index, title, plan_date)
     VALUES (#{travelPlanId}, #{dayIndex}, #{title}, #{planDate})
   </insert>
 
   <update id="updateTravelDay" parameterType="com.example.demo.dto.travel.TravelDay">
-    UPDATE travel_day
+    UPDATE travel_days
     SET travel_plan_id = #{travelPlanId}, day_index = #{dayIndex}, title = #{title}, plan_date = #{planDate}
     WHERE id = #{id}
   </update>
 
   <delete id="deleteTravelDayById" parameterType="long">
-    DELETE FROM travel_day WHERE id = #{id}
+    DELETE FROM travel_days WHERE id = #{id}
   </delete>
 
 </mapper>

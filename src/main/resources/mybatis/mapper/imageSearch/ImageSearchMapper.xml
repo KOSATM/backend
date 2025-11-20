@@ -6,11 +6,11 @@
 
   <select id="selectImageSearchById" resultType="com.example.demo.dto.imageSearch.ImageSearch">
     SELECT id, user_id, created_at, action_type
-    FROM image_search WHERE id = #{id}
+    FROM image_searchs WHERE id = #{id}
   </select>
 
   <insert id="insertImageSearch" parameterType="com.example.demo.dto.imageSearch.ImageSearch" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO image_search (user_id, created_at, action_type)
+    INSERT INTO image_searchs (user_id, created_at, action_type)
     VALUES (#{userId}, #{createdAt}, #{actionType})
   </insert>
 
@@ -21,7 +21,7 @@
   </update>
 
   <delete id="deleteImageSearchById" parameterType="long">
-    DELETE FROM image_search WHERE id = #{id}
+    DELETE FROM image_searchs WHERE id = #{id}
   </delete>
 
 </mapper>

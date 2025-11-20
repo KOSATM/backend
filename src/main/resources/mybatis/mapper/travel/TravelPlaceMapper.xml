@@ -6,23 +6,23 @@
 
   <select id="selectTravelPlaceById" resultType="com.example.demo.dto.travel.TravelPlace">
     SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expectedc_ost
-    FROM travel_place WHERE id = #{id}
+    FROM travel_places WHERE id = #{id}
   </select>
 
   <insert id="insertTravelPlace" parameterType="com.example.demo.dto.travel.TravelPlace" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO travel_place (day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost)
+    INSERT INTO travel_places (day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost)
     VALUES (#{dayId}, #{title}, #{startAt}, #{endAt}, #{placeName}, #{address}, #{lat}, #{lng}, #{expectedCost})
   </insert>
 
   <update id="updateTravelPlace" parameterType="com.example.demo.dto.travel.TravelPlace">
-    UPDATE travel_place
+    UPDATE travel_places
     SET day_id = #{dayId}, title = #{title}, start_at = #{startAt}, end_at = #{endAt},
         place_name = #{placeName}, address = #{address}, lat = #{lat}, lng = #{lng}, expected_cost = #{expectedCost}
     WHERE id = #{id}
   </update>
 
   <delete id="deleteTravelPlaceById" parameterType="long">
-    DELETE FROM travel_place WHERE id = #{id}
+    DELETE FROM travel_places WHERE id = #{id}
   </delete>
 
 </mapper>

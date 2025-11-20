@@ -6,11 +6,11 @@
 
   <select id="selectPlaceById" resultType="com.example.demo.dto.place.Place">
     SELECT id, name, description, lat, lng, address, place_type, image_url, thumbnail_url
-    FROM place WHERE id = #{id}
+    FROM places WHERE id = #{id}
   </select>
 
   <insert id="insertPlace" parameterType="com.example.demo.dto.place.Place" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO place (name, description, lat, lng, address, place_type, image_url, thumbnail_url)
+    INSERT INTO places (name, description, lat, lng, address, place_type, image_url, thumbnail_url)
     VALUES (#{name}, #{description}, #{lat}, #{lng}, #{address}, #{placeType}, #{imageUrl}, #{thumbnailUrl})
   </insert>
 
@@ -22,7 +22,7 @@
   </update>
 
   <delete id="deletePlaceById" parameterType="long">
-    DELETE FROM place WHERE id = #{id}
+    DELETE FROM places WHERE id = #{id}
   </delete>
 
 </mapper>

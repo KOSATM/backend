@@ -5,19 +5,19 @@
 <mapper namespace="com.example.demo.mapper.SnsTokenMapper">
   <select id="selectSnsTokenById" resultType="com.example.demo.dto.user.SnsTokenDto">
     SELECT id, access_token, refresh_token, expires_at, account_type, ig_business_id, created_at, user_id
-    FROM sns_token WHERE id = #{id}
+    FROM sns_tokens WHERE id = #{id}
   </select>
   <insert id="insertSnsToken" parameterType="com.example.demo.dto.user.SnsTokenDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO sns_token (access_token, refresh_token, expires_at, account_type, ig_business_id, created_at, user_id)
+    INSERT INTO sns_tokens (access_token, refresh_token, expires_at, account_type, ig_business_id, created_at, user_id)
     VALUES (#{accessToken}, #{refreshToken}, #{expiresAt}, #{accountType}, #{igBusinessId}, #{createdAt}, #{userId})
   </insert>
   <update id="updateSnsToken" parameterType="com.example.demo.dto.user.SnsTokenDto">
-    UPDATE sns_token
+    UPDATE sns_tokens
     SET access_token = #{accessToken}, refresh_token = #{refreshToken}, expires_at = #{expiresAt},
         account_type = #{accountType}, ig_business_id = #{igBusinessId}, created_at = #{createdAt}, user_id = #{userId}
     WHERE id = #{id}
   </update>
   <delete id="deleteSnsTokenById" parameterType="long">
-    DELETE FROM sns_token WHERE id = #{id}
+    DELETE FROM sns_tokens WHERE id = #{id}
   </delete>
 </mapper>

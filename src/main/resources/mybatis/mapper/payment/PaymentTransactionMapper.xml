@@ -7,11 +7,11 @@
   <select id="selectPaymentTransactionById" resultType="com.example.demo.dto.payment.PaymentTransaction">
     SELECT id, hotel_booking_id, payment_method, provider_payment_id, amount, currency, status,
            requested_at, completed_at, cancelled_at, raw_response, created_at, updated_at
-    FROM payment_transaction WHERE id = #{id}
+    FROM payment_transactions WHERE id = #{id}
   </select>
 
   <insert id="insertPaymentTransaction" parameterType="com.example.demo.dto.payment.PaymentTransaction" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO payment_transaction (hotel_booking_id, payment_method, provider_payment_id, amount, currency, status,
+    INSERT INTO payment_transactions (hotel_booking_id, payment_method, provider_payment_id, amount, currency, status,
            requested_at, completed_at, cancelled_at, raw_response, created_at, updated_at)
     VALUES (#{hotelBookingId}, #{paymentMethod}, #{providerPaymentId}, #{amount}, #{currency}, #{status},
            #{requestedAt}, #{completedAt}, #{cancelledAt}, #{rawResponse}, #{createdAt}, #{updatedAt})
@@ -27,7 +27,7 @@
   </update>
 
   <delete id="deletePaymentTransactionById" parameterType="long">
-    DELETE FROM payment_transaction WHERE id = #{id}
+    DELETE FROM payment_transactions WHERE id = #{id}
   </delete>
 
 </mapper>

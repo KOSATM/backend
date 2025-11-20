@@ -5,18 +5,18 @@
 <mapper namespace="com.example.demo.mapper.UserIdentityMapper">
   <select id="selectUserIdentityById" resultType="com.example.demo.dto.user.UserIdentityDto">
     SELECT id, user_id, provider, created_at
-    FROM user_identity WHERE id = #{id}
+    FROM user_identities WHERE id = #{id}
   </select>
   <insert id="insertUserIdentity" parameterType="com.example.demo.dto.user.UserIdentityDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO user_identity (user_id, provider, created_at)
+    INSERT INTO user_identities (user_id, provider, created_at)
     VALUES (#{userId}, #{provider}, #{createdAt})
   </insert>
   <update id="updateUserIdentity" parameterType="com.example.demo.dto.user.UserIdentityDto">
-    UPDATE user_identity
+    UPDATE user_identities
     SET user_id = #{userId}, provider = #{provider}, created_at = #{createdAt}
     WHERE id = #{id}
   </update>
   <delete id="deleteUserIdentityById" parameterType="long">
-    DELETE FROM user_identity WHERE id = #{id}
+    DELETE FROM user_identities WHERE id = #{id}
   </delete>
 </mapper>

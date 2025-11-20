@@ -8,11 +8,11 @@
     SELECT id, user_id, external_booking_id, hotel_id, room_type_id, rate_plan_id, checkin_date, checkout_date,
            nights, adults_count, children_count, currency, total_price, tax_amount, fee_amount, status, payment_status,
            guest_name, guest_email, guest_phone, provider_booking_meta, booked_at, cancelled_at, created_at, updated_at
-    FROM hotel_booking WHERE id = #{id}
+    FROM hotel_bookings WHERE id = #{id}
   </select>
 
   <insert id="insertHotelBooking" parameterType="com.example.demo.dto.hotel.HotelBooking" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO hotel_booking (user_id, external_booking_id, hotel_id, room_type_id, rate_plan_id, checkin_date, checkout_date,
+    INSERT INTO hotel_bookings (user_id, external_booking_id, hotel_id, room_type_id, rate_plan_id, checkin_date, checkout_date,
            nights, adults_count, children_count, currency, total_price, tax_amount, fee_amount, status, payment_status,
            guest_name, guest_email, guest_phone, provider_booking_meta, booked_at, cancelled_at, created_at, updated_at)
     VALUES (#{userId}, #{externalBookingId}, #{hotelId}, #{roomTypeId}, #{ratePlanId}, #{checkinDate}, #{checkoutDate},
@@ -32,7 +32,7 @@
   </update>
 
   <delete id="deleteHotelBookingById" parameterType="long">
-    DELETE FROM hotel_booking WHERE id = #{id}
+    DELETE FROM hotel_bookings WHERE id = #{id}
   </delete>
 
 </mapper>

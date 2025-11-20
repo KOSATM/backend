@@ -6,11 +6,11 @@
 
   <select id="selectImageSearchResultById" resultType="com.example.demo.dto.imageSearch.ImageSearchResultDto">
     SELECT id, image_search_history_id, place_id, is_selected, rank
-    FROM image_search_result WHERE id = #{id}
+    FROM image_search_results WHERE id = #{id}
   </select>
 
   <insert id="insertImageSearchResult" parameterType="com.example.demo.dto.imageSearch.ImageSearchResultDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO image_search_result (history_id, place_id, is_selected, rank)
+    INSERT INTO image_search_results (history_id, place_id, is_selected, rank)
     VALUES (#{historyId}, #{placeId}, #{isSelected}, #{rank})
   </insert>
 
@@ -21,7 +21,7 @@
   </update>
 
   <delete id="deleteImagePlaceSearchResultById" parameterType="long">
-    DELETE FROM image_search_result WHERE id = #{id}
+    DELETE FROM image_search_results WHERE id = #{id}
   </delete>
 
 </mapper>

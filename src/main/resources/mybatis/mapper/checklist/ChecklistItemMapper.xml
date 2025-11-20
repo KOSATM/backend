@@ -6,11 +6,11 @@
 
   <select id="selectChecklistItemById" resultType="com.example.demo.dto.checklist.ChecklistItem">
     SELECT id, checklist_id, content, category, is_checked, created_at
-    FROM checklist_item WHERE id = #{id}
+    FROM checklist_items WHERE id = #{id}
   </select>
 
   <insert id="insertChecklistItem" parameterType="com.example.demo.dto.checklist.ChecklistItem" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO checklist_item (checklist_id, content, category, is_checked, created_at)
+    INSERT INTO checklist_items (checklist_id, content, category, is_checked, created_at)
     VALUES (#{checklistId}, #{content}, #{category}, #{isChecked}, #{createdAt})
   </insert>
 
@@ -21,7 +21,7 @@
   </update>
 
   <delete id="deleteChecklistItemById" parameterType="long">
-    DELETE FROM checklist_item WHERE id = #{id}
+    DELETE FROM checklist_items WHERE id = #{id}
   </delete>
 
 </mapper>
