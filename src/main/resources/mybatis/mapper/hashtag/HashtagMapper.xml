@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.HashtagMapper">
+
+  <select id="selectHashtagById" resultType="com.example.demo.dto.hashtag.HashtagDto">
+    SELECT id, name, is_selected, created_at, group_id
+    FROM hashtag WHERE id = #{id}
+  </select>
+
+  <insert id="insertHashtag" parameterType="com.example.demo.dto.hashtag.HashtagDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO hashtag (name, is_selected, created_at, group_id)
+    VALUES (#{name}, #{isSelected}, #{createdAt}, #{groupId})
+  </insert>
+
+  <update id="updateHashtag" parameterType="com.example.demo.dto.hashtag.HashtagDto">
+    UPDATE hashtag
+    SET name = #{name}, is_selected = #{isSelected}, created_at = #{createdAt}, group_id = #{groupId}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteHashtagById" parameterType="long">
+    DELETE FROM hashtag WHERE id = #{id}
+  </delete>
+
+</mapper>

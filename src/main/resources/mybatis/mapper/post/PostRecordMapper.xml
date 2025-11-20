@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.PostRecordMapper">
+
+  <select id="selectPostRecordById" resultType="com.example.demo.dto.post.PostRecordDto">
+    SELECT id, caption, is_posted, post_url, created_at, travel_plan_id, style_id
+    FROM post_record WHERE id = #{id}
+  </select>
+
+  <insert id="insertPostRecord" parameterType="com.example.demo.dto.post.PostRecordDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO post_record (caption, is_posted, post_url, created_at, travel_plan_id, style_id)
+    VALUES (#{caption}, #{isPosted}, #{postUrl}, #{createdAt}, #{travelPlanId}, #{styleId})
+  </insert>
+
+  <update id="updatePostRecord" parameterType="com.example.demo.dto.post.PostRecordDto">
+    UPDATE post_record
+    SET caption = #{caption}, is_posted = #{isPosted}, post_url = #{postUrl}, created_at = #{createdAt},
+        travel_plan_id = #{travelPlanId}, style_id = #{styleId}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deletePostRecordById" parameterType="long">
+    DELETE FROM post_record WHERE id = #{id}
+  </delete>
+
+</mapper>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.ImagePlaceSearchMapper">
+
+  <select id="selectImagePlaceSearchById" resultType="com.example.demo.dto.image.ImagePlaceSearchDto">
+    SELECT id, user_id, searched_at, action_type
+    FROM image_place_search WHERE id = #{id}
+  </select>
+
+  <insert id="insertImagePlaceSearch" parameterType="com.example.demo.dto.image.ImagePlaceSearchDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO image_place_search (user_id, searched_at, action_type)
+    VALUES (#{userId}, #{searchedAt}, #{actionType})
+  </insert>
+
+  <update id="updateImagePlaceSearch" parameterType="com.example.demo.dto.image.ImagePlaceSearchDto">
+    UPDATE image_place_search
+    SET user_id = #{userId}, searched_at = #{searchedAt}, action_type = #{actionType}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteImagePlaceSearchById" parameterType="long">
+    DELETE FROM image_place_search WHERE id = #{id}
+  </delete>
+
+</mapper>

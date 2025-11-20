@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.PaymentTransactionMapper">
+
+  <select id="selectPaymentTransactionById" resultType="com.example.demo.dto.payment.PaymentTransactionDto">
+    SELECT id, hotel_booking_id, payment_method, provider_payment_id, amount, currency, status,
+           requested_at, completed_at, cancelled_at, raw_response, created_at, updated_at
+    FROM payment_transaction WHERE id = #{id}
+  </select>
+
+  <insert id="insertPaymentTransaction" parameterType="com.example.demo.dto.payment.PaymentTransactionDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO payment_transaction (hotel_booking_id, payment_method, provider_payment_id, amount, currency, status,
+           requested_at, completed_at, cancelled_at, raw_response, created_at, updated_at)
+    VALUES (#{hotelBookingId}, #{paymentMethod}, #{providerPaymentId}, #{amount}, #{currency}, #{status},
+           #{requestedAt}, #{completedAt}, #{cancelledAt}, #{rawResponse}, #{createdAt}, #{updatedAt})
+  </insert>
+
+  <update id="updatePaymentTransaction" parameterType="com.example.demo.dto.payment.PaymentTransactionDto">
+    UPDATE payment_transaction
+    SET hotel_booking_id = #{hotelBookingId}, payment_method = #{paymentMethod}, provider_payment_id = #{providerPaymentId},
+        amount = #{amount}, currency = #{currency}, status = #{status}, requested_at = #{requestedAt},
+        completed_at = #{completedAt}, cancelled_at = #{cancelledAt}, raw_response = #{rawResponse},
+        created_at = #{createdAt}, updated_at = #{updatedAt}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deletePaymentTransactionById" parameterType="long">
+    DELETE FROM payment_transaction WHERE id = #{id}
+  </delete>
+
+</mapper>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.ChecklistItemMapper">
+
+  <select id="selectChecklistItemById" resultType="com.example.demo.dto.checklist.ChecklistItemDto">
+    SELECT id, checklist_id, content, category, is_checked, created_at
+    FROM checklist_item WHERE id = #{id}
+  </select>
+
+  <insert id="insertChecklistItem" parameterType="com.example.demo.dto.checklist.ChecklistItemDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO checklist_item (checklist_id, content, category, is_checked, created_at)
+    VALUES (#{checklistId}, #{content}, #{category}, #{isChecked}, #{createdAt})
+  </insert>
+
+  <update id="updateChecklistItem" parameterType="com.example.demo.dto.checklist.ChecklistItemDto">
+    UPDATE checklist_item
+    SET checklist_id = #{checklistId}, content = #{content}, category = #{category}, is_checked = #{isChecked}, created_at = #{createdAt}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteChecklistItemById" parameterType="long">
+    DELETE FROM checklist_item WHERE id = #{id}
+  </delete>
+
+</mapper>
