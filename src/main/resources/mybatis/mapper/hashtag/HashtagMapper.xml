@@ -4,17 +4,17 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.mapper.hashtag.HashtagMapper">
 
-  <select id="selectHashtagById" resultType="com.example.demo.dto.hashtag.HashtagDto">
+  <select id="selectHashtagById" resultType="com.example.demo.dto.hashtag.Hashtag">
     SELECT id, name, is_selected, created_at, group_id
     FROM hashtags WHERE id = #{id}
   </select>
 
-  <insert id="insertHashtag" parameterType="com.example.demo.dto.hashtag.HashtagDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertHashtag" parameterType="com.example.demo.dto.hashtag.Hashtag" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO hashtags (name, is_selected, created_at, group_id)
     VALUES (#{name}, #{isSelected}, #{createdAt}, #{groupId})
   </insert>
 
-  <update id="updateHashtag" parameterType="com.example.demo.dto.hashtag.HashtagDto">
+  <update id="updateHashtag" parameterType="com.example.demo.dto.hashtag.Hashtag">
     UPDATE hashtag
     SET name = #{name}, is_selected = #{isSelected}, created_at = #{createdAt}, group_id = #{groupId}
     WHERE id = #{id}
