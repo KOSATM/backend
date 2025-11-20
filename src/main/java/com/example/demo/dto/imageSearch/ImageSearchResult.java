@@ -1,11 +1,11 @@
-package com.example.demo.dto.image;
+package com.example.demo.dto.imageSearch;
 
 import lombok.Data;
 
 @Data
-public class ImagePlaceSearchResultDto {
+public class ImageSearchResult {
     private Long id;
-    private Long imageSearchHistoryId;
+    private Long historyId;
     private Long placeId;
     private Boolean isSelected;
     private Long rank;

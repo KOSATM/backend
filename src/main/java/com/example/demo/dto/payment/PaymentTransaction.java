@@ -9,7 +9,7 @@ public class PaymentTransaction {
     private Long id;
     private Long hotelBookingId;
     private String paymentMethod;
-    private String providerPaymentId;
+    private String providerPaymentId; // 이거 Id로 할거면 Long으로 바꾸고 name으로 할거면 String..
     private BigDecimal amount;
     private String currency;
     private String status;

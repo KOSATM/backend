@@ -8,10 +8,10 @@ import lombok.Data;
 public class ChatMemoryVector {
     private Long id;
     private Long userId;
-    private String agentId;
-    private Integer turnIndex;
+    private Long agentId;
+    private Integer orderIndex;
     private String content;
-    private Integer tokenCount;
+    private Integer tokenUsage;
     private OffsetDateTime createdAt;
     private String role;
     private List<Double> embedding;

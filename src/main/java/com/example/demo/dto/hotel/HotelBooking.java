@@ -1,7 +1,6 @@
 package com.example.demo.dto.hotel;
 
 import java.time.OffsetDateTime;
-import java.time.LocalDate;
 import java.math.BigDecimal;
 import lombok.Data;
 
@@ -9,12 +8,12 @@ import lombok.Data;
 public class HotelBooking {
     private Long id;
     private Long userId;
-    private String externalBookingId;
+    private String externalBookingId; // 이거 Id로 할거면 Long으로 바꾸고 name으로 할거면 String..
     private Long hotelId;
     private Long roomTypeId;
     private Long ratePlanId;
-    private LocalDate checkinDate;
-    private LocalDate checkoutDate;
+    private OffsetDateTime checkinDate;
+    private OffsetDateTime checkoutDate;
     private Integer nights;
     private Integer adultsCount;
     private Integer childrenCount;

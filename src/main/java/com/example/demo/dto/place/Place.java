@@ -7,8 +7,8 @@ public class Place {
     private Long id;
     private String name;
     private String description;
-    private java.math.BigDecimal lat;
-    private java.math.BigDecimal lng;
+    private double lat;
+    private double lng;
     private String address;
     private String placeType;
     private String imageUrl;

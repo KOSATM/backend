@@ -1,6 +1,6 @@
 package com.example.demo.dto.checklist;
 
-import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
@@ -10,5 +10,5 @@ public class ChecklistItem {
     private String content;
     private String category;
     private Boolean isChecked;
-    private LocalDate createdAt;
+    private OffsetDateTime createdAt;
 }

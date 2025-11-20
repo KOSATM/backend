@@ -6,7 +6,7 @@ import lombok.Data;
 public class Toilet {
     private Long id;
     private String name;
-    private java.math.BigDecimal latitude;
-    private java.math.BigDecimal longitude;
+    private double lat;
+    private double lng;
     private String address;
 }

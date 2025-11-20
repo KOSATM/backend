@@ -1,19 +1,20 @@
 package com.example.demo.dto.plannner;
 
-import java.time.OffsetDateTime;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 @Data
-public class TravelSpot {
+public class TravelPlace {
     private Long id;
     private Long dayId;
     private String title;
-    private OffsetDateTime startAtUtc;
-    private OffsetDateTime endAtUtc;
+    private OffsetDateTime startedAt; 
+    private OffsetDateTime endedAt; 
     private String placeName;
     private String address;
-    private BigDecimal lat;
-    private BigDecimal lng;
-    private Long cost;
+    private double lat;
+    private double lng;
+    private BigDecimal expectedCost;
 }

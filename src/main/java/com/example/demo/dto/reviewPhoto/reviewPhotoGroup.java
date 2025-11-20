@@ -1,11 +1,11 @@
-package com.example.demo.dto.photo;
+package com.example.demo.dto.reviewPhoto;
 
 import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class PhotoGroup {
+public class reviewPhotoGroup {
     private Long id;
     private OffsetDateTime createdAt;
-    private Long postRecordId;
+    private Long reviewPostId;
 }

@@ -1,14 +1,14 @@
-package com.example.demo.dto.post;
+package com.example.demo.dto.reviewPost;
 
 import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class PostRecord {
+public class reviewPost {
     private Long id;
-    private String caption;
+    private String content;
     private Boolean isPosted;
-    private String postUrl;
+    private String reviewPostUrl;
     private OffsetDateTime createdAt;
     private Long travelPlanId;
     private Long styleId;

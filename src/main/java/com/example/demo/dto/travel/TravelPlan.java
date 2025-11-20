@@ -1,5 +1,7 @@
 package com.example.demo.dto.travel;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import lombok.Data;
 
@@ -7,8 +9,9 @@ import lombok.Data;
 public class TravelPlan {
     private Long id;
     private Long userId;
-    private OffsetDateTime startDate;
-    private OffsetDateTime endDate;
+    private BigDecimal budget;
+    private LocalDate startDate; // 여행일자는 여행지 달력에 맞춰서 봐야함
+    private LocalDate endDate;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private Boolean isEnded;

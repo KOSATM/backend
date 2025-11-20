@@ -1,12 +1,12 @@
-package com.example.demo.dto.checklist;
+package com.example.demo.dto.imageSearch;
 
 import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class Checklist {
+public class ImageSearch {
     private Long id;
     private Long userId;
-    private Long dayIndex;
     private OffsetDateTime createdAt;
+    private String actionType;
 }
