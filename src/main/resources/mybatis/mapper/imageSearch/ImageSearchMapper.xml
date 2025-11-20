@@ -15,7 +15,7 @@
   </insert>
 
   <update id="updateImageSearch" parameterType="com.example.demo.dto.imageSearch.ImageSearch">
-    UPDATE image_search
+    UPDATE image_searchs
     SET user_id = #{userId}, created_at = #{createdAt}, action_type = #{actionType}
     WHERE id = #{id}
   </update>

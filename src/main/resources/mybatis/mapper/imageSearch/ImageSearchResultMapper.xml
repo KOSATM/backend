@@ -5,7 +5,7 @@
 <mapper namespace="com.example.demo.mapper.imageSearch.ImageSearchResultMapper">
 
   <select id="selectImageSearchResultById" resultType="com.example.demo.dto.imageSearch.ImageSearchResultDto">
-    SELECT id, image_search_history_id, place_id, is_selected, rank
+    SELECT id, history_id, place_id, is_selected, rank
     FROM image_search_results WHERE id = #{id}
   </select>
 
@@ -15,7 +15,7 @@
   </insert>
 
   <update id="updateImageSearchResult" parameterType="com.example.demo.dto.imageSearch.ImageSearchResultDto">
-    UPDATE image_search_result
+    UPDATE image_search_results
     SET history_id = #{historyId}, place_id = #{placeId}, is_selected = #{isSelected}, rank = #{rank}
     WHERE id = #{id}
   </update>

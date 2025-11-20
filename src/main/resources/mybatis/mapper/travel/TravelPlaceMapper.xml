@@ -5,7 +5,7 @@
 <mapper namespace="com.example.demo.mapper.travel.TravelPlaceMapper">
 
   <select id="selectTravelPlaceById" resultType="com.example.demo.dto.travel.TravelPlace">
-    SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expectedc_ost
+    SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost
     FROM travel_places WHERE id = #{id}
   </select>
 

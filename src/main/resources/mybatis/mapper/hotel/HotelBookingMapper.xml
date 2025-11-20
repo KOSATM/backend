@@ -21,7 +21,7 @@
   </insert>
 
   <update id="updateHotelBooking" parameterType="com.example.demo.dto.hotel.HotelBooking">
-    UPDATE hotel_booking
+    UPDATE hotel_bookings
     SET user_id = #{userId}, external_booking_id = #{externalBookingId}, hotel_id = #{hotelId}, room_type_id = #{roomTypeId},
         rate_plan_id = #{ratePlanId}, checkin_date = #{checkinDate}, checkout_date = #{checkoutDate}, nights = #{nights},
         adults_count = #{adultsCount}, children_count = #{childrenCount}, currency = #{currency}, total_price = #{totalPrice},

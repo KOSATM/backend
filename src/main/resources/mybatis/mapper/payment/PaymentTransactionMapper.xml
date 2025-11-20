@@ -18,7 +18,7 @@
   </insert>
 
   <update id="updatePaymentTransaction" parameterType="com.example.demo.dto.payment.PaymentTransaction">
-    UPDATE payment_transaction
+    UPDATE payment_transactions
     SET hotel_booking_id = #{hotelBookingId}, payment_method = #{paymentMethod}, provider_payment_id = #{providerPaymentId},
         amount = #{amount}, currency = #{currency}, status = #{status}, requested_at = #{requestedAt},
         completed_at = #{completedAt}, cancelled_at = #{cancelledAt}, raw_response = #{rawResponse},

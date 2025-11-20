@@ -15,7 +15,7 @@
   </insert>
 
   <update id="updateHashtag" parameterType="com.example.demo.dto.hashtag.Hashtag">
-    UPDATE hashtag
+    UPDATE hashtags
     SET name = #{name}, is_selected = #{isSelected}, created_at = #{createdAt}, group_id = #{groupId}
     WHERE id = #{id}
   </update>

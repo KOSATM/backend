@@ -15,7 +15,7 @@
   </insert>
 
   <update id="updatePlace" parameterType="com.example.demo.dto.place.Place">
-    UPDATE place
+    UPDATE places
     SET name = #{name}, description = #{description}, lat = #{lat}, lng = #{lng}, address = #{address},
         place_type = #{placeType}, image_url = #{imageUrl}, thumbnail_url = #{thumbnailUrl}
     WHERE id = #{id}

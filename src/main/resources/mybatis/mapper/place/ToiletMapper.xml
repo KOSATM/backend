@@ -5,18 +5,18 @@
 <mapper namespace="com.example.demo.mapper.place.ToiletMapper">
 
   <select id="selectToiletById" resultType="com.example.demo.dto.place.Toilet">
-    SELECT id, name, latitude, longitude, address
+    SELECT id, name, lat, lng, address
     FROM toilets WHERE id = #{id}
   </select>
 
   <insert id="insertToilet" parameterType="com.example.demo.dto.place.Toilet" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO toilets (name, latitude, longitude, address)
-    VALUES (#{name}, #{latitude}, #{longitude}, #{address})
+    INSERT INTO toilets (name, lat, lng, address)
+    VALUES (#{name}, #{lat}, #{lng}, #{address})
   </insert>
 
   <update id="updateToilet" parameterType="com.example.demo.dto.place.Toilet">
     UPDATE toilet
-    SET name = #{name}, latitude = #{latitude}, longitude = #{longitude}, address = #{address}
+    SET name = #{name}, lat = #{lat}, lng = #{lng}, address = #{address}
     WHERE id = #{id}
   </update>
 
