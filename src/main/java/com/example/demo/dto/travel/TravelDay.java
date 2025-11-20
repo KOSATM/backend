@@ -3,7 +3,7 @@ package com.example.demo.dto.travel;
 import lombok.Data;
 
 @Data
-public class TravelDayDto {
+public class TravelDay {
     private Long id;
     private Long tripPlanId;
     private Integer dayIndex;

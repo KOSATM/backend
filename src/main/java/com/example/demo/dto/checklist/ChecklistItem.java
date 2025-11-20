@@ -4,9 +4,11 @@ import java.time.LocalDate;
 import lombok.Data;
 
 @Data
-public class ChecklistDto {
+public class ChecklistItem {
     private Long id;
-    private Long userId;
-    private Long dayIndex;
+    private Long checklistId;
+    private String content;
+    private String category;
+    private Boolean isChecked;
     private LocalDate createdAt;
 }

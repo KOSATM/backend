@@ -1,12 +1,11 @@
-package com.example.demo.dto.user;
+package com.example.demo.dto.photo;
 
 import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class UserIdentityDto {
+public class PhotoGroup {
     private Long id;
-    private Long userId;
-    private String provider;
     private OffsetDateTime createdAt;
+    private Long postRecordId;
 }

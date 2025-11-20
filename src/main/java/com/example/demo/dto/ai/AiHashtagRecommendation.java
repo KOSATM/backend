@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
-public class AiStyleRecommendationDto {
+public class AiHashtagRecommendation {
     private Long id;
     private String name;
     private BigDecimal confidence;

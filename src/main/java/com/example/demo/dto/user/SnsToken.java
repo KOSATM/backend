@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class SnsTokenDto {
+public class SnsToken {
     private Long id;
     private String accessToken;
     private String refreshToken;

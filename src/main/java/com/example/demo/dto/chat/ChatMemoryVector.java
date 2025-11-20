@@ -5,7 +5,7 @@ import java.util.List;
 import lombok.Data;
 
 @Data
-public class ChatMemoryVectorDto {
+public class ChatMemoryVector {
     private Long id;
     private Long userId;
     private String agentId;

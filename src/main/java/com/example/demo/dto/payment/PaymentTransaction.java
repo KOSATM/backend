@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
-public class PaymentTransactionDto {
+public class PaymentTransaction {
     private Long id;
     private Long hotelBookingId;
     private String paymentMethod;

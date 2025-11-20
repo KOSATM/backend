@@ -4,8 +4,10 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class HashtagGroupDto {
+public class Hashtag {
     private Long id;
+    private String name;
+    private Boolean isSelected;
     private OffsetDateTime createdAt;
-    private Long postRecordId;
+    private Long groupId;
 }

@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
-public class PhotoDto {
+public class Photo {
     private Long id;
     private String fileUrl;
     private BigDecimal lat;
