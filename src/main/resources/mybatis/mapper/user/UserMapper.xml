@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.demo.mapper.UserMapper">
+
+
+  <select id="selectUserById" resultType="com.example.demo.dto.user.UserDto">
+    SELECT id, is_active, last_login_at, name, email, profile_image_url, created_at, updated_at
+    FROM users WHERE id = #{id}
+  </select>
+
+  <insert id="insertUser" parameterType="com.example.demo.dto.user.UserDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO users (is_active, last_login_at, name, email, profile_image_url, created_at, updated_at)
+    VALUES (#{isActive}, #{lastLoginAt}, #{name}, #{email}, #{profileImageUrl}, #{createdAt}, #{updatedAt})
+  </insert>
+
+  <update id="updateUser" parameterType="com.example.demo.dto.user.UserDto">
+    UPDATE users
+    SET is_active = #{isActive},
+        last_login_at = #{lastLoginAt},
+        name = #{name},
+        email = #{email},
+        profile_image_url = #{profileImageUrl},
+        created_at = #{createdAt},
+        updated_at = #{updatedAt}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteUserById" parameterType="long">
+    DELETE FROM users WHERE id = #{id}
+  </delete>
+
+</mapper>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.TravelPlanMapper">
+  <select id="selectTravelPlanById" resultType="com.example.demo.dto.travel.TravelPlanDto">
+    SELECT id, user_id, start_date, end_date, created_at, updated_at, is_ended
+    FROM travel_plan WHERE id = #{id}
+  </select>
+  <insert id="insertTravelPlan" parameterType="com.example.demo.dto.travel.TravelPlanDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO travel_plan (user_id, start_date, end_date, created_at, updated_at, is_ended)
+    VALUES (#{userId}, #{startDate}, #{endDate}, #{createdAt}, #{updatedAt}, #{isEnded})
+  </insert>
+  <update id="updateTravelPlan" parameterType="com.example.demo.dto.travel.TravelPlanDto">
+    UPDATE travel_plan
+    SET user_id = #{userId}, start_date = #{startDate}, end_date = #{endDate},
+        created_at = #{createdAt}, updated_at = #{updatedAt}, is_ended = #{isEnded}
+    WHERE id = #{id}
+  </update>
+  <delete id="deleteTravelPlanById" parameterType="long">
+    DELETE FROM travel_plan WHERE id = #{id}
+  </delete>
+</mapper>
