@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class TravelPlanDto {
+public class TravelPlan {
     private Long id;
     private Long userId;
     private OffsetDateTime startDate;

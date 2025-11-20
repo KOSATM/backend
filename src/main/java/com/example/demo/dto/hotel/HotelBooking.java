@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
-public class HotelBookingDto {
+public class HotelBooking {
     private Long id;
     private Long userId;
     private String externalBookingId;

@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class PostRecordDto {
+public class PostRecord {
     private Long id;
     private String caption;
     private Boolean isPosted;

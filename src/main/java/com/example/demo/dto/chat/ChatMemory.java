@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class ChatMemoryDto {
+public class ChatMemory {
     private Long id;
     private Long userId;
     private String agentId;

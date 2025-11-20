@@ -3,7 +3,7 @@ package com.example.demo.dto.place;
 import lombok.Data;
 
 @Data
-public class ToiletDto {
+public class Toilet {
     private Long id;
     private String name;
     private java.math.BigDecimal latitude;

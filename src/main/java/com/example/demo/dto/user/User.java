@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class UserDto {
+public class User {
     private Long id;
     private Boolean isActive;
     private OffsetDateTime lastLoginAt;

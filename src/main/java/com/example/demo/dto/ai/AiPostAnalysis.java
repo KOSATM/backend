@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class AiPostAnalysisDto {
+public class AiPostAnalysis {
     private Long id;
     private String promptText;
     private String inputJson;

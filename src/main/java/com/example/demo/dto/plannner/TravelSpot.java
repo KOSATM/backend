@@ -1,11 +1,11 @@
-package com.example.demo.dto.travel;
+package com.example.demo.dto.plannner;
 
 import java.time.OffsetDateTime;
 import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
-public class TravelSpotDto {
+public class TravelSpot {
     private Long id;
     private Long dayId;
     private String title;

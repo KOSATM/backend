@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class TravelPlanSnapshotDto {
+public class TravelPlanSnapshot {
     private Long id;
     private Long userId;
     private Integer versionNo;
