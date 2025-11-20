@@ -6,17 +6,17 @@
 <mapper namespace="com.example.demo.mapper.UserMapper">
 
 
-  <select id="selectUserById" resultType="com.example.demo.dto.user.UserDto">
+  <select id="selectUserById" resultType="com.example.demo.dto.user.User">
     SELECT id, is_active, last_login_at, name, email, profile_image_url, created_at, updated_at
     FROM users WHERE id = #{id}
   </select>
 
-  <insert id="insertUser" parameterType="com.example.demo.dto.user.UserDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertUser" parameterType="com.example.demo.dto.user.User" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO users (is_active, last_login_at, name, email, profile_image_url, created_at, updated_at)
     VALUES (#{isActive}, #{lastLoginAt}, #{name}, #{email}, #{profileImageUrl}, #{createdAt}, #{updatedAt})
   </insert>
 
-  <update id="updateUser" parameterType="com.example.demo.dto.user.UserDto">
+  <update id="updateUser" parameterType="com.example.demo.dto.user.User">
     UPDATE users
     SET is_active = #{isActive},
         last_login_at = #{lastLoginAt},

@@ -3,15 +3,15 @@
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.mapper.UserIdentityMapper">
-  <select id="selectUserIdentityById" resultType="com.example.demo.dto.user.UserIdentityDto">
+  <select id="selectUserIdentityById" resultType="com.example.demo.dto.user.UserIdentity">
     SELECT id, user_id, provider, created_at
     FROM user_identities WHERE id = #{id}
   </select>
-  <insert id="insertUserIdentity" parameterType="com.example.demo.dto.user.UserIdentityDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertUserIdentity" parameterType="com.example.demo.dto.user.UserIdentity" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO user_identities (user_id, provider, created_at)
     VALUES (#{userId}, #{provider}, #{createdAt})
   </insert>
-  <update id="updateUserIdentity" parameterType="com.example.demo.dto.user.UserIdentityDto">
+  <update id="updateUserIdentity" parameterType="com.example.demo.dto.user.UserIdentity">
     UPDATE user_identities
     SET user_id = #{userId}, provider = #{provider}, created_at = #{createdAt}
     WHERE id = #{id}
