@@ -15,7 +15,7 @@
   </insert>
 
   <update id="updateToilet" parameterType="com.example.demo.dto.place.Toilet">
-    UPDATE toilet
+    UPDATE toilets
     SET name = #{name}, lat = #{lat}, lng = #{lng}, address = #{address}
     WHERE id = #{id}
   </update>

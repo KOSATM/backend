@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.checklist.ChecklistItem">
+<mapper namespace="com.example.demo.mapper.checklist.ChecklistItemMapper">
 
-  <select id="selectChecklistItemById" resultType="com.example.demo.dto.checklist.ChecklistItemMapper">
+  <select id="selectChecklistItemById" resultType="com.example.demo.dto.checklist.ChecklistItem">
     SELECT id, checklist_id, content, category, is_checked, created_at
     FROM checklist_items WHERE id = #{id}
   </select>
@@ -15,7 +15,7 @@
   </insert>
 
   <update id="updateChecklistItem" parameterType="com.example.demo.dto.checklist.ChecklistItem">
-    UPDATE checklist_item
+    UPDATE checklist_items
     SET checklist_id = #{checklistId}, content = #{content}, category = #{category}, is_checked = #{isChecked}, created_at = #{createdAt}
     WHERE id = #{id}
   </update>
