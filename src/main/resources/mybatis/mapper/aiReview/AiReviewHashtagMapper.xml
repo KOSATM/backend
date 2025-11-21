@@ -2,19 +2,19 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.dao.ai.AiReviewHashtagDao">
+<mapper namespace="com.example.demo.dao.aiReview.AiReviewHashtagDao">
 
-  <select id="selectAiReviewHashtagById" resultType="com.example.demo.dto.ai.AiReviewHashtag">
+  <select id="selectAiReviewHashtagById" resultType="com.example.demo.dto.aiReview.AiReviewHashtag">
     SELECT id, name, created_at, review_analysis_id
     FROM ai_review_hashtags WHERE id = #{id}
   </select>
 
-  <insert id="insertAiReviewHashtag" parameterType="com.example.demo.dto.ai.AiReviewHashtag" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertAiReviewHashtag" parameterType="com.example.demo.dto.aiReview.AiReviewHashtag" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO ai_review_hashtags (name, created_at, review_analysis_id)
     VALUES (#{name}, now(), #{reviewAnalysisId})
   </insert>
 
-  <update id="updateAiReviewHashtag" parameterType="com.example.demo.dto.ai.AiReviewHashtag">
+  <update id="updateAiReviewHashtag" parameterType="com.example.demo.dto.aiReview.AiReviewHashtag">
     UPDATE ai_review_hashtags
     SET name = #{name}, created_at = #{createdAt}, review_analysis_id = #{reviewAnalysisId}
     WHERE id = #{id}
