@@ -1,4 +1,4 @@
-package com.example.demo.dto.hashtag;
+package com.example.demo.dto.reviewHashtag;
 
 import java.time.OffsetDateTime;
 import lombok.Data;
