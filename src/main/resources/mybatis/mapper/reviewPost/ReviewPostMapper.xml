@@ -5,19 +5,19 @@
 <mapper namespace="com.example.demo.dao.reviewPost.ReviewPostDao">
 
   <select id="selectReviewPostById" resultType="com.example.demo.dto.reviewPost.ReviewPost">
-    SELECT id, content, is_posted, review_post_url, created_at, travel_plan_id, style_id
+    SELECT id, content, is_posted, review_post_url, created_at, travel_plan_id, review_review_style_id
     FROM review_posts WHERE id = #{id}
   </select>
 
   <insert id="insertReviewPost" parameterType="com.example.demo.dto.reviewPost.ReviewPost" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO review_posts (content, is_posted, review_post_url, created_at, travel_plan_id, style_id)
-    VALUES (#{content}, #{isPosted}, #{postUrl}, #{createdAt}, #{travelPlanId}, #{styleId})
+    INSERT INTO review_posts (content, is_posted, review_post_url, created_at, travel_plan_id, review_style_id)
+    VALUES (#{content}, #{isPosted}, #{postUrl}, #{createdAt}, #{travelPlanId}, #{reviewStyleId})
   </insert>
 
   <update id="updateReviewPost" parameterType="com.example.demo.dto.reviewPost.ReviewPost">
     UPDATE review_posts
     SET content = #{content}, is_posted = #{isPosted}, review_post_url = #{postUrl}, created_at = #{createdAt},
-        travel_plan_id = #{travelPlanId}, style_id = #{styleId}
+        travel_plan_id = #{travelPlanId}, review_style_id = #{reviewStyleId}
     WHERE id = #{id}
   </update>
 
