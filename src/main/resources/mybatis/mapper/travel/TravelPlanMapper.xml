@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.travel.TravelPlanMapper">
+<mapper namespace="com.example.demo.planner.mapper.TravelPlanMapper">
   <select id="selectTravelPlanById" resultType="com.example.demo.dto.travel.TravelPlan">
     SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended
     FROM travel_plans WHERE id = #{id}
