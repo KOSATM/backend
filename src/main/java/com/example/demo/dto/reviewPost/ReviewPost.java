@@ -11,5 +11,5 @@ public class ReviewPost {
     private String reviewPostUrl;
     private OffsetDateTime createdAt;
     private Long travelPlanId;
-    private Long styleId;
+    private Long reviewStyleId;
 }

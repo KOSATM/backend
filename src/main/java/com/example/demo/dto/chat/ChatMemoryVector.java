@@ -8,7 +8,7 @@ import lombok.Data;
 public class ChatMemoryVector {
     private Long id;
     private Long userId;
-    private Long agentId;
+    private String agentName;
     private Integer orderIndex;
     private String content;
     private Long tokenUsage;

@@ -1,11 +1,12 @@
-package com.example.demo.dto.hashtag;
+package com.example.demo.dto.ai;
 
 import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class HashtagGroup {
+public class AiReviewStyle {
     private Long id;
+    private String name;
     private OffsetDateTime createdAt;
-    private Long postRecordId;
+    private Long reviewAnalysisId;
 }
