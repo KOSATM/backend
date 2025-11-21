@@ -2,21 +2,21 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.imageSearch.ImageSearchResultMapper">
+<mapper namespace="com.example.demo.dao.imageSearch.ImageSearchResultMapper">
 
   <select id="selectImageSearchResultById" resultType="com.example.demo.dto.imageSearch.ImageSearchResult">
-    SELECT id, history_id, place_id, is_selected, rank
+    SELECT id, image_search_place_id, place_id, is_selected, rank
     FROM image_search_results WHERE id = #{id}
   </select>
 
   <insert id="insertImageSearchResult" parameterType="com.example.demo.dto.imageSearch.ImageSearchResult" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO image_search_results (history_id, place_id, is_selected, rank)
-    VALUES (#{historyId}, #{placeId}, #{isSelected}, #{rank})
+    INSERT INTO image_search_results (image_search_place_id, place_id, is_selected, rank)
+    VALUES (#{imageSearchPlaceId}, #{placeId}, #{isSelected}, #{rank})
   </insert>
 
   <update id="updateImageSearchResult" parameterType="com.example.demo.dto.imageSearch.ImageSearchResult">
     UPDATE image_search_results
-    SET history_id = #{historyId}, place_id = #{placeId}, is_selected = #{isSelected}, rank = #{rank}
+    SET image_search_place_id = #{imageSearchPlaceId}, place_id = #{placeId}, is_selected = #{isSelected}, rank = #{rank}
     WHERE id = #{id}
   </update>
 
