@@ -7,5 +7,5 @@ import lombok.Data;
 public class ReviewHashtagGroup {
     private Long id;
     private OffsetDateTime createdAt;
-    private Long postRecordId;
+    private Long reviewPostId;
 }
