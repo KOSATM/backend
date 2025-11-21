@@ -4,24 +4,24 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.dao.imageSearch.ImageSearchPlaceDao">
 
-  <select id="selectImageSearchById" resultType="com.example.demo.dto.imageSearch.ImageSearch">
+  <select id="selectImageSearchPlaceById" resultType="com.example.demo.dto.imageSearch.ImageSearch">
     SELECT id, user_id, created_at, action_type
-    FROM image_searchs WHERE id = #{id}
+    FROM image_search_places WHERE id = #{id}
   </select>
 
-  <insert id="insertImageSearch" parameterType="com.example.demo.dto.imageSearch.ImageSearch" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO image_searchs (user_id, created_at, action_type)
+  <insert id="insertImageSearchPlace" parameterType="com.example.demo.dto.imageSearch.ImageSearch" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO image_search_places (user_id, created_at, action_type)
     VALUES (#{userId}, #{createdAt}, #{actionType})
   </insert>
 
-  <update id="updateImageSearch" parameterType="com.example.demo.dto.imageSearch.ImageSearch">
-    UPDATE image_searchs
+  <update id="updateImageSearchPlace" parameterType="com.example.demo.dto.imageSearch.ImageSearch">
+    UPDATE image_search_places
     SET user_id = #{userId}, created_at = #{createdAt}, action_type = #{actionType}
     WHERE id = #{id}
   </update>
 
-  <delete id="deleteImageSearchById" parameterType="long">
-    DELETE FROM image_searchs WHERE id = #{id}
+  <delete id="deleteImageSearchPlaceById" parameterType="long">
+    DELETE FROM image_search_places WHERE id = #{id}
   </delete>
 
 </mapper>
