@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.dao.ai.AiReviewStyleDao">
+
+  <select id="selectAiReviewStyleById" resultType="com.example.demo.dto.ai.AiReviewStyle">
+    SELECT id, name, created_at, review_analysis_id
+    FROM ai_review_styles WHERE id = #{id}
+  </select>
+
+  <insert id="insertAiReviewStyle" parameterType="com.example.demo.dto.ai.AiReviewStyle" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO ai_review_styles (name, created_at, review_analysis_id)
+    VALUES (#{name}, #{createdAt}, #{reviewAnalysisId})
+  </insert>
+
+  <update id="updateAiReviewStyle" parameterType="com.example.demo.dto.ai.AiReviewStyle">
+    UPDATE ai_review_styles
+    SET name = #{name}, created_at = #{createdAt}, review_analysis_id = #{reviewAnalysisId}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteAiReviewStyleById" parameterType="long">
+    DELETE FROM ai_review_styles WHERE id = #{id}
+  </delete>
+
+</mapper>
