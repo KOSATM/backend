@@ -11,7 +11,7 @@
 
   <insert id="insertReviewPhotoGroup" parameterType="com.example.demo.dto.reviewPhoto.ReviewPhotoGroup" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO review_photo_groups (created_at, review_post_id)
-    VALUES (#{createdAt}, #{reviewPostId})
+    VALUES (now(), #{reviewPostId})
   </insert>
 
   <update id="updateReviewPhotoGroup" parameterType="com.example.demo.dto.reviewPhoto.ReviewPhotoGroup">

@@ -11,7 +11,7 @@
 
   <insert id="insertReviewPost" parameterType="com.example.demo.dto.reviewPost.ReviewPost" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO review_posts (content, is_posted, review_post_url, created_at, travel_plan_id, review_style_id)
-    VALUES (#{content}, #{isPosted}, #{postUrl}, #{createdAt}, #{travelPlanId}, #{reviewStyleId})
+    VALUES (#{content}, #{isPosted}, #{postUrl}, now(), #{travelPlanId}, #{reviewStyleId})
   </insert>
 
   <update id="updateReviewPost" parameterType="com.example.demo.dto.reviewPost.ReviewPost">

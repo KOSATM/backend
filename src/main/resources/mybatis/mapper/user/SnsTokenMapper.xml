@@ -9,7 +9,7 @@
   </select>
   <insert id="insertSnsToken" parameterType="com.example.demo.dto.user.SnsToken" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO sns_tokens (user_access_token, page_access_token, expires_at, account_type, ig_business_account, creator_account, publish_account, created_at, user_id)
-    VALUES (#{userAccessToken}, #{pageAcessToken}, #{expiresAt}, #{accountType}, #{igBusinessId}, #{createdAt}, #{userId})
+    VALUES (#{userAccessToken}, #{pageAcessToken}, #{expiresAt}, #{accountType}, #{igBusinessId}, now(), #{userId})
   </insert>
   <update id="updateSnsToken" parameterType="com.example.demo.dto.user.SnsToken">
     UPDATE sns_tokens

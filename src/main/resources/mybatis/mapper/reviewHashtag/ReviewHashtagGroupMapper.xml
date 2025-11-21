@@ -11,7 +11,7 @@
 
   <insert id="insertHashtagGroup" parameterType="com.example.demo.dto.hashtag.HashtagGroup" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO review_hastag_groups (created_at, review_post_id)
-    VALUES (#{createdAt}, #{reviewPostId})
+    VALUES (now(), #{reviewPostId})
   </insert>
 
   <update id="updateHashtagGroup" parameterType="com.example.demo.dto.hashtag.HashtagGroup">

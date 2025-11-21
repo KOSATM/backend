@@ -11,7 +11,7 @@
 
   <insert id="insertImageSearchPlace" parameterType="com.example.demo.dto.imageSearch.ImageSearch" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO image_search_places (user_id, created_at, action_type)
-    VALUES (#{userId}, #{createdAt}, #{actionType})
+    VALUES (#{userId}, now(), #{actionType})
   </insert>
 
   <update id="updateImageSearchPlace" parameterType="com.example.demo.dto.imageSearch.ImageSearch">

@@ -11,7 +11,7 @@
 
   <insert id="insertTravelPlanSnapshot" parameterType="com.example.demo.dto.travel.TravelPlanSnapshot" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO travel_plan_snapshots (user_id, version_no, snapshot_json, created_at)
-    VALUES (#{userId}, #{versionNo}, #{snapshotJson}, #{createdAt})
+    VALUES (#{userId}, #{versionNo}, #{snapshotJson}, now())
   </insert>
 
   <update id="updateTravelPlanSnapshot" parameterType="com.example.demo.dto.travel.TravelPlanSnapshot">

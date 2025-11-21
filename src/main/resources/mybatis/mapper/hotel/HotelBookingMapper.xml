@@ -15,10 +15,10 @@
   <insert id="insertHotelBooking" parameterType="com.example.demo.dto.hotel.HotelBooking" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO hotel_bookings (user_id, external_booking_id, hotel_id, room_type_id, rate_plan_id, checkin_date, checkout_date,
            nights, adults_count, children_count, currency, total_price, tax_amount, fee_amount, status, payment_status,
-           guest_name, guest_email, guest_phone, provider_booking_meta, booked_at, cancelled_at, created_at, updated_at)
+           guest_name, guest_email, guest_phone, provider_booking_meta, booked_at, cancelled_at, created_at)
     VALUES (#{userId}, #{externalBookingId}, #{hotelId}, #{roomTypeId}, #{ratePlanId}, #{checkinDate}, #{checkoutDate},
            #{nights}, #{adultsCount}, #{childrenCount}, #{currency}, #{totalPrice}, #{taxAmount}, #{feeAmount}, #{status}, #{paymentStatus},
-           #{guestName}, #{guestEmail}, #{guestPhone}, #{providerBookingMeta}, #{bookedAt}, #{cancelledAt}, #{createdAt}, #{updatedAt})
+           #{guestName}, #{guestEmail}, #{guestPhone}, #{providerBookingMeta}, #{bookedAt}, #{cancelledAt}, now())
   </insert>
 
   <update id="updateHotelBooking" parameterType="com.example.demo.dto.hotel.HotelBooking">
@@ -28,7 +28,7 @@
         adults_count = #{adultsCount}, children_count = #{childrenCount}, currency = #{currency}, total_price = #{totalPrice},
         tax_amount = #{taxAmount}, fee_amount = #{feeAmount}, status = #{status}, payment_status = #{paymentStatus},
         guest_name = #{guestName}, guest_email = #{guestEmail}, guest_phone = #{guestPhone}, provider_booking_meta = #{providerBookingMeta},
-        booked_at = #{bookedAt}, cancelled_at = #{cancelledAt}, created_at = #{createdAt}, updated_at = #{updatedAt}
+        booked_at = #{bookedAt}, cancelled_at = #{cancelledAt}, updated_at = now()
     WHERE id = #{id}
   </update>
 

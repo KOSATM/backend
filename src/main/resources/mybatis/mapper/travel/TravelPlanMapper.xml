@@ -8,13 +8,13 @@
     FROM travel_plans WHERE id = #{id}
   </select>
   <insert id="insertTravelPlan" parameterType="com.example.demo.dto.travel.TravelPlan" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO travel_plans (user_id, budget, start_date, end_date, created_at, updated_at, is_ended)
-    VALUES (#{userId}, #{budget}, #{startDate}, #{endDate}, #{createdAt}, #{updatedAt}, #{isEnded})
+    INSERT INTO travel_plans (user_id, budget, start_date, end_date, created_at, is_ended)
+    VALUES (#{userId}, #{budget}, #{startDate}, #{endDate}, now(), #{isEnded})
   </insert>
   <update id="updateTravelPlan" parameterType="com.example.demo.dto.travel.TravelPlan">
     UPDATE travel_plans
     SET user_id = #{userId}, budget = #{budget}, start_date = #{startDate}, end_date = #{endDate},
-        created_at = #{createdAt}, updated_at = #{updatedAt}, is_ended = #{isEnded}
+        updated_at = now(), is_ended = #{isEnded}
     WHERE id = #{id}
   </update>
   <delete id="deleteTravelPlanById" parameterType="long">

@@ -11,7 +11,7 @@
 
   <insert id="insertReviewPhoto" parameterType="com.example.demo.dto.reviewPhoto.ReviewPhoto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO review_photos (file_url, lat, lng, taken_at, order_index, created_at, group_id)
-    VALUES (#{fileUrl}, #{lat}, #{lng}, #{takenAt}, #{orderIndex}, #{createdAt}, #{groupId})
+    VALUES (#{fileUrl}, #{lat}, #{lng}, #{takenAt}, #{orderIndex}, now(), #{groupId})
   </insert>
 
   <update id="updateReviewPhoto" parameterType="com.example.demo.dto.reviewPhoto.ReviewPhoto">
