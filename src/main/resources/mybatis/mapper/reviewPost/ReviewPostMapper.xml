@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.reviewPost.ReviewPostMapper">
+<mapper namespace="com.example.demo.dao.reviewPost.ReviewPostDao">
 
   <select id="selectReviewPostById" resultType="com.example.demo.dto.reviewPost.ReviewPost">
     SELECT id, content, is_posted, review_post_url, created_at, travel_plan_id, style_id
