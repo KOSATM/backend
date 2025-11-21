@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 public class SnsToken {
     private Long id;
+    private String userId;
     private String userAccessToken;
     private String pageAccessToken;
     private OffsetDateTime expiresAt;
@@ -14,5 +15,4 @@ public class SnsToken {
     private String creatorAccount;
     private String publishAccount;
     private OffsetDateTime createdAt;
-    private String userId;
 }

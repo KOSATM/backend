@@ -11,5 +11,6 @@ public class ReviewPhoto {
     private double lng;
     private OffsetDateTime takenAt; // TZ 명시 필요, 서버에서 강제 변환 로직이용, KST로 변경해서 사용
     private Integer orderIndex;
+    private OffsetDateTime createdAt;
     private Long groupId;
 }
