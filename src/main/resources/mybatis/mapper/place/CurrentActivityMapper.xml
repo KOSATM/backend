@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.place.CurrentActivityMapper">
+<mapper namespace="com.example.demo.dao.place.CurrentActivityDao">
 
   <select id="selectCurrentActivityById" resultType="com.example.demo.dto.place.CurrentActivity">
     SELECT id, travel_place_id, actual_cost, memo, ended_at

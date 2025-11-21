@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.travel.TravelPlaceMapper">
+<mapper namespace="com.example.demo.dao.travel.TravelPlaceDao">
 
   <select id="selectTravelPlaceById" resultType="com.example.demo.dto.travel.TravelPlace">
     SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost

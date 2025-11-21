@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.reviewPhoto.ReviewPhotoMapper">
+<mapper namespace="com.example.demo.dao.reviewPhoto.ReviewPhotoDao">
 
   <select id="selectReviewPhotoById" resultType="com.example.demo.dto.reviewPhoto.ReviewPhoto">
     SELECT id, file_url, lat, lng, taken_at, order_index, created_at, group_id

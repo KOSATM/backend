@@ -2,27 +2,27 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.chat.ChatMemoryVectorMapper">
+<mapper namespace="com.example.demo.dao.chat.ChatMemoryVectorDao">
 
   <select id="selectChatMemoryVectorById" resultType="com.example.demo.dto.chat.ChatMemoryVector">
-    SELECT id, user_id, agent_id, order_index, content, token_usage, created_at, role, embedding
-    FROM chat_memory_vector WHERE id = #{id}
+    SELECT id, user_id, agent_name, order_index, content, token_usage, created_at, role, embedding
+    FROM chat_memory_vectors WHERE id = #{id}
   </select>
 
   <insert id="insertChatMemoryVector" parameterType="com.example.demo.dto.chat.ChatMemoryVector" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO chat_memory_vector (user_id, agent_id, order_index, content, token_usage, created_at, role, embedding)
-    VALUES (#{userId}, #{agentId}, #{orderIndex}, #{content}, #{tokenUsage}, #{createdAt}, #{role}, #{embedding})
+    INSERT INTO chat_memory_vectors (user_id, agent_name, order_index, content, token_usage, created_at, role, embedding)
+    VALUES (#{userId}, #{agentName}, #{orderIndex}, #{content}, #{tokenUsage}, #{createdAt}, #{role}, #{embedding})
   </insert>
 
   <update id="updateChatMemoryVector" parameterType="com.example.demo.dto.chat.ChatMemoryVector">
-    UPDATE chat_memory_vector
-    SET user_id = #{userId}, agent_id = #{agentId}, order_index = #{orderIndex}, content = #{content},
+    UPDATE chat_memory_vectors
+    SET user_id = #{userId}, agent_name = #{agentName}, order_index = #{orderIndex}, content = #{content},
         token_usage = #{tokenUsage}, created_at = #{createdAt}, role = #{role}, embedding = #{embedding}
     WHERE id = #{id}
   </update>
 
   <delete id="deleteChatMemoryVectorById" parameterType="long">
-    DELETE FROM chat_memory_vector WHERE id = #{id}
+    DELETE FROM chat_memory_vectors WHERE id = #{id}
   </delete>
 
 </mapper>

@@ -2,26 +2,26 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.hashtag.HashtagGroupMapper">
+<mapper namespace="com.example.demo.dao.reviewHashtag.ReviewHashtagGroupDao">
 
   <select id="selectHashtagGroupById" resultType="com.example.demo.dto.hashtag.HashtagGroup">
     SELECT id, created_at, review_post_id
-    FROM hashtag_groups WHERE id = #{id}
+    FROM review_hastag_groups WHERE id = #{id}
   </select>
 
   <insert id="insertHashtagGroup" parameterType="com.example.demo.dto.hashtag.HashtagGroup" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO hashtag_groups (created_at, review_post_id)
+    INSERT INTO review_hastag_groups (created_at, review_post_id)
     VALUES (#{createdAt}, #{reviewPostId})
   </insert>
 
   <update id="updateHashtagGroup" parameterType="com.example.demo.dto.hashtag.HashtagGroup">
-    UPDATE hashtag_groups
+    UPDATE review_hastag_groups
     SET created_at = #{createdAt}, review_post_id = #{reviewPostId}
     WHERE id = #{id}
   </update>
 
   <delete id="deleteHashtagGroupById" parameterType="long">
-    DELETE FROM hashtag_groups WHERE id = #{id}
+    DELETE FROM review_hastag_groups WHERE id = #{id}
   </delete>
 
 </mapper>

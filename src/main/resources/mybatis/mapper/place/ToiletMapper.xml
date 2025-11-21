@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.place.ToiletMapper">
+<mapper namespace="com.example.demo.dao.place.ToiletDao">
 
   <select id="selectToiletById" resultType="com.example.demo.dto.place.Toilet">
     SELECT id, name, lat, lng, address

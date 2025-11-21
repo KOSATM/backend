@@ -2,7 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.mapper.payment.PaymentTransactionMapper">
+  <!-- ID BIGINT, LONG 타입 아닌 것도 있음, API 긁어오는 양식 따른것임, 예외!  -->
+<mapper namespace="com.example.demo.dao.payment.PaymentTransactionDao">
 
   <select id="selectPaymentTransactionById" resultType="com.example.demo.dto.payment.PaymentTransaction">
     SELECT id, hotel_booking_id, payment_method, provider_payment_id, amount, currency, status,
