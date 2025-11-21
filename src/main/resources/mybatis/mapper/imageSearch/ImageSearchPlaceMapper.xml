@@ -4,17 +4,17 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.dao.imageSearch.ImageSearchPlaceDao">
 
-  <select id="selectImageSearchPlaceById" resultType="com.example.demo.dto.imageSearch.ImageSearch">
+  <select id="selectImageSearchPlaceById" resultType="com.example.demo.dto.imageSearch.ImageSearchPlace">
     SELECT id, user_id, created_at, action_type
     FROM image_search_places WHERE id = #{id}
   </select>
 
-  <insert id="insertImageSearchPlace" parameterType="com.example.demo.dto.imageSearch.ImageSearch" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertImageSearchPlace" parameterType="com.example.demo.dto.imageSearch.ImageSearchPlace" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO image_search_places (user_id, created_at, action_type)
     VALUES (#{userId}, now(), #{actionType})
   </insert>
 
-  <update id="updateImageSearchPlace" parameterType="com.example.demo.dto.imageSearch.ImageSearch">
+  <update id="updateImageSearchPlace" parameterType="com.example.demo.dto.imageSearch.ImageSearchPlace">
     UPDATE image_search_places
     SET user_id = #{userId}, created_at = #{createdAt}, action_type = #{actionType}
     WHERE id = #{id}

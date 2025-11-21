@@ -4,24 +4,24 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.dao.reviewHashtag.ReviewHashtagDao">
 
-  <select id="selectHashtagById" resultType="com.example.demo.dto.hashtag.Hashtag">
+  <select id="selectHashtagById" resultType="com.example.demo.dto.reviewHashtag.ReviewHashtag">
     SELECT id, name, is_selected, created_at, group_id
-    FROM review_hastags WHERE id = #{id}
+    FROM review_hashtags WHERE id = #{id}
   </select>
 
-  <insert id="insertHashtag" parameterType="com.example.demo.dto.hashtag.Hashtag" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO review_hastags (name, is_selected, created_at, group_id)
+  <insert id="insertHashtag" parameterType="com.example.demo.dto.reviewHashtag.ReviewHashtag" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO review_hashtags (name, is_selected, created_at, group_id)
     VALUES (#{name}, #{isSelected}, now(), #{groupId})
   </insert>
 
-  <update id="updateHashtag" parameterType="com.example.demo.dto.hashtag.Hashtag">
-    UPDATE review_hastags
+  <update id="updateHashtag" parameterType="com.example.demo.dto.reviewHashtag.ReviewHashtag">
+    UPDATE review_hashtags
     SET name = #{name}, is_selected = #{isSelected}, created_at = #{createdAt}, group_id = #{groupId}
     WHERE id = #{id}
   </update>
 
   <delete id="deleteHashtagById" parameterType="long">
-    DELETE FROM review_hastags WHERE id = #{id}
+    DELETE FROM review_hashtags WHERE id = #{id}
   </delete>
 
 </mapper>
