@@ -4,17 +4,17 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.mapper.SnsTokenMapper">
   <select id="selectSnsTokenById" resultType="com.example.demo.dto.user.SnsToken">
-    SELECT id, user_access_token, page_user_access_token, expires_at, account_type, ig_business_account, created_at, user_id
+    SELECT id, user_access_token, page_access_token, expires_at, account_type, ig_business_account, creator_account, publish_account, created_at, user_id
     FROM sns_tokens WHERE id = #{id}
   </select>
   <insert id="insertSnsToken" parameterType="com.example.demo.dto.user.SnsToken" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO sns_tokens (user_access_token, page_user_access_token, expires_at, account_type, ig_business_account, created_at, user_id)
-    VALUES (#{accessToken}, #{refreshToken}, #{expiresAt}, #{accountType}, #{igBusinessId}, #{createdAt}, #{userId})
+    INSERT INTO sns_tokens (user_access_token, page_access_token, expires_at, account_type, ig_business_account, creator_account, publish_account, created_at, user_id)
+    VALUES (#{userAccessToken}, #{pageAcessToken}, #{expiresAt}, #{accountType}, #{igBusinessId}, #{createdAt}, #{userId})
   </insert>
   <update id="updateSnsToken" parameterType="com.example.demo.dto.user.SnsToken">
     UPDATE sns_tokens
-    SET user_access_token = #{accessToken}, page_user_access_token = #{refreshToken}, expires_at = #{expiresAt},
-        account_type = #{accountType}, ig_business_account = #{igBusinessId}, created_at = #{createdAt}, user_id = #{userId}
+    SET user_access_token = #{userAccessToken}, page_access_token = #{pageAcessToken}, expires_at = #{expiresAt},
+        account_type = #{accountType}, ig_business_account = #{igBusinessId},creator_account =#{creatorAccount}, publish_account=#{publishAccount}, created_at = #{createdAt}, user_id = #{userId}
     WHERE id = #{id}
   </update>
   <delete id="deleteSnsTokenById" parameterType="long">
