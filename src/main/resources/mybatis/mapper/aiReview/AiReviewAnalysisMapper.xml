@@ -11,7 +11,7 @@
 
   <insert id="insertAiReviewAnalysis" parameterType="com.example.demo.dto.ai.AiReviewAnalysis" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO ai_review_analysis (prompt_text, input_json, output_json, created_at, user_id, review_post_id)
-    VALUES (#{promptText}, #{inputJson}, #{outputJson}, #{createdAt}, #{userId}, #{reviewPostId})
+    VALUES (#{promptText}, #{inputJson}, #{outputJson}, now(), #{userId}, #{reviewPostId})
   </insert>
 
   <update id="updateAiReviewAnalysis" parameterType="com.example.demo.dto.ai.AiReviewAnalysis">

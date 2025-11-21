@@ -11,7 +11,7 @@
 
   <insert id="insertChatMemoryVector" parameterType="com.example.demo.dto.chat.ChatMemoryVector" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO chat_memory_vectors (user_id, agent_name, order_index, content, token_usage, created_at, role, embedding)
-    VALUES (#{userId}, #{agentName}, #{orderIndex}, #{content}, #{tokenUsage}, #{createdAt}, #{role}, #{embedding})
+    VALUES (#{userId}, #{agentName}, #{orderIndex}, #{content}, #{tokenUsage}, now(), #{role}, #{embedding})
   </insert>
 
   <update id="updateChatMemoryVector" parameterType="com.example.demo.dto.chat.ChatMemoryVector">

@@ -11,7 +11,7 @@
 
   <insert id="insertChatMemory" parameterType="com.example.demo.dto.chat.ChatMemory" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO chat_memories (user_id, agent_name, order_index, content, token_usage, created_at, role)
-    VALUES (#{userId}, #{agentName}, #{orderIndex}, #{content}, #{tokenUsage}, #{createdAt}, #{role})
+    VALUES (#{userId}, #{agentName}, #{orderIndex}, #{content}, #{tokenUsage}, now(), #{role})
   </insert>
 
   <update id="updateChatMemory" parameterType="com.example.demo.dto.chat.ChatMemory">

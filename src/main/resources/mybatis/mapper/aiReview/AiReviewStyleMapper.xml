@@ -11,7 +11,7 @@
 
   <insert id="insertAiReviewStyle" parameterType="com.example.demo.dto.ai.AiReviewStyle" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO ai_review_styles (name, created_at, review_analysis_id)
-    VALUES (#{name}, #{createdAt}, #{reviewAnalysisId})
+    VALUES (#{name}, now(), #{reviewAnalysisId})
   </insert>
 
   <update id="updateAiReviewStyle" parameterType="com.example.demo.dto.ai.AiReviewStyle">

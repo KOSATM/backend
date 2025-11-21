@@ -12,8 +12,8 @@
   </select>
 
   <insert id="insertUser" parameterType="com.example.demo.dto.user.User" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO users (is_active, last_login_at, name, email, profile_image_url, created_at, updated_at)
-    VALUES (#{isActive}, #{lastLoginAt}, #{name}, #{email}, #{profileImageUrl}, #{createdAt}, #{updatedAt})
+    INSERT INTO users (is_active, last_login_at, name, email, profile_image_url, created_at)
+    VALUES (#{isActive}, #{lastLoginAt}, #{name}, #{email}, #{profileImageUrl}, now())
   </insert>
 
   <update id="updateUser" parameterType="com.example.demo.dto.user.User">
@@ -23,8 +23,7 @@
         name = #{name},
         email = #{email},
         profile_image_url = #{profileImageUrl},
-        created_at = #{createdAt},
-        updated_at = #{updatedAt}
+        updated_at = now()
     WHERE id = #{id}
   </update>
 

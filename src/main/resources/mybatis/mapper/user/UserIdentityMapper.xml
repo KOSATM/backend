@@ -9,7 +9,7 @@
   </select>
   <insert id="insertUserIdentity" parameterType="com.example.demo.dto.user.UserIdentity" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO user_identities (user_id, provider, created_at)
-    VALUES (#{userId}, #{provider}, #{createdAt})
+    VALUES (#{userId}, #{provider}, now())
   </insert>
   <update id="updateUserIdentity" parameterType="com.example.demo.dto.user.UserIdentity">
     UPDATE user_identities

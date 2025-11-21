@@ -11,7 +11,7 @@
 
   <insert id="insertChecklist" parameterType="com.example.demo.dto.checklist.Checklist" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO checklists (user_id, day_index, created_at)
-    VALUES (#{userId}, #{dayIndex}, #{createdAt})
+    VALUES (#{userId}, #{dayIndex}, now())
   </insert>
 
   <update id="updateChecklist" parameterType="com.example.demo.dto.checklist.Checklist">

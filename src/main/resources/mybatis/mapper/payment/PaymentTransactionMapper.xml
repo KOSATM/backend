@@ -13,9 +13,9 @@
 
   <insert id="insertPaymentTransaction" parameterType="com.example.demo.dto.payment.PaymentTransaction" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO payment_transactions (hotel_booking_id, payment_method, provider_payment_id, amount, currency, status,
-           requested_at, completed_at, cancelled_at, raw_response, created_at, updated_at)
+           requested_at, completed_at, cancelled_at, raw_response, created_at)
     VALUES (#{hotelBookingId}, #{paymentMethod}, #{providerPaymentId}, #{amount}, #{currency}, #{status},
-           #{requestedAt}, #{completedAt}, #{cancelledAt}, #{rawResponse}, #{createdAt}, #{updatedAt})
+           #{requestedAt}, #{completedAt}, #{cancelledAt}, #{rawResponse}, now())
   </insert>
 
   <update id="updatePaymentTransaction" parameterType="com.example.demo.dto.payment.PaymentTransaction">
@@ -23,7 +23,7 @@
     SET hotel_booking_id = #{hotelBookingId}, payment_method = #{paymentMethod}, provider_payment_id = #{providerPaymentId},
         amount = #{amount}, currency = #{currency}, status = #{status}, requested_at = #{requestedAt},
         completed_at = #{completedAt}, cancelled_at = #{cancelledAt}, raw_response = #{rawResponse},
-        created_at = #{createdAt}, updated_at = #{updatedAt}
+        updated_at = now()
     WHERE id = #{id}
   </update>
 

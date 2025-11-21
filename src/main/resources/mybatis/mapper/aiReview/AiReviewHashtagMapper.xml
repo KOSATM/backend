@@ -11,7 +11,7 @@
 
   <insert id="insertAiReviewHashtag" parameterType="com.example.demo.dto.ai.AiReviewHashtag" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO ai_review_hashtags (name, created_at, review_analysis_id)
-    VALUES (#{name}, #{createdAt}, #{reviewAnalysisId})
+    VALUES (#{name}, now(), #{reviewAnalysisId})
   </insert>
 
   <update id="updateAiReviewHashtag" parameterType="com.example.demo.dto.ai.AiReviewHashtag">
