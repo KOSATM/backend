@@ -1,7 +1,7 @@
 package com.example.demo.planner.service;
 
 import com.example.demo.dto.travel.TravelPlan;
-import com.example.demo.planner.mapper.TravelPlanMapper;
+import com.example.demo.planner.dao.TravelPlanDao;
 
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PlannerService {
 
-    private final TravelPlanMapper plannerDao;
+    private final TravelPlanDao plannerDao;
 
     public void createTravelPlan(TravelPlan travelPlan) {
         plannerDao.insertTravelPlan(travelPlan);
