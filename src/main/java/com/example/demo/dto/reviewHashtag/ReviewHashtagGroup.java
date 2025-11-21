@@ -1,4 +1,4 @@
-package com.example.demo.dto.hashtag;
+package com.example.demo.dto.reviewHashtag;
 
 import java.time.OffsetDateTime;
 import lombok.Data;
@@ -7,5 +7,5 @@ import lombok.Data;
 public class ReviewHashtagGroup {
     private Long id;
     private OffsetDateTime createdAt;
-    private Long postRecordId;
+    private Long reviewPostId;
 }

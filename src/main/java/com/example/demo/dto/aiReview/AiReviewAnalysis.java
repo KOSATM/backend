@@ -1,4 +1,4 @@
-package com.example.demo.dto.ai;
+package com.example.demo.dto.aiReview;
 
 import java.time.OffsetDateTime;
 import lombok.Data;

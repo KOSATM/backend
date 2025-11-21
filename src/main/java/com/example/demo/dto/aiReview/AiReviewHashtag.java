@@ -1,10 +1,10 @@
-package com.example.demo.dto.ai;
+package com.example.demo.dto.aiReview;
 
 import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class AiReviewStyle {
+public class AiReviewHashtag {
     private Long id;
     private String name;
     private OffsetDateTime createdAt;
