@@ -1,7 +1,8 @@
-package com.example.demo.planner.controller.hotel;
+package com.example.demo.planner.controller;
 
-import com.example.demo.planner.dto.hotel.HotelBooking;
-import com.example.demo.planner.service.hotel.HotelBookingService;
+import com.example.demo.planner.dto.HotelBooking;
+import com.example.demo.planner.service.HotelBookingService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

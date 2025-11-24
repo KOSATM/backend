@@ -1,7 +1,8 @@
-package com.example.demo.planner.dao.hotel;
+package com.example.demo.planner.dao;
 
-import com.example.demo.planner.dto.hotel.HotelBooking;
 import org.apache.ibatis.annotations.Mapper;
+
+import com.example.demo.planner.dto.HotelBooking;
 
 @Mapper
 public interface HotelBookingDao {
