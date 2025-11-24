@@ -1,22 +1,51 @@
 package com.example.demo.planner.agent;
 
+import java.util.List;
+
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class PlannerAgent {
   private ChatClient chatClient;
+  private String searchEndpoint;
+  private String apiKey;
+  private String engineId;
+  private WebClient webClient;
+  private ObjectMapper objectMapper = new ObjectMapper();
 
-  public PlannerAgent(ChatClient.Builder chatClientBuilder) {
+  public PlannerAgent(
+      ChatClient.Builder chatClientBuilder,
+      @Value("${google.search.endpoint}") String endpoint,      
+      @Value("${google.search.apiKey}") String apiKey,      
+      @Value("${google.search.engineId}") String engineId,
+      WebClient.Builder webClientBuilder
+    ) {
     chatClient = chatClientBuilder.build();
+    this.searchEndpoint = endpoint;
+    this.apiKey = apiKey;
+    this.engineId = engineId;
+    this.webClient = webClientBuilder
+        .baseUrl(searchEndpoint)
+        .defaultHeader("Accept", "application/json")
+        .build();
   }
 
   public String generatePlan(String question) {
     String response = chatClient.prompt()
       .system("""
-        사용자의 여행 계획 요청을 JSON 형식으로 변환하세요.
-        
-        오늘 날짜는 2025년 11월 24일입니다. 이를 기준으로 사용자의 여행 계획을 분석하세요.
+        당신은 사용자의 요구에 맞게 여행 계획을 세우는 여행 플래너입니다.
+        googleSearch 도구 호출 결과를 바탕으로 응답을 생성하세요.
         
         ## 중요한 지시사항:
         1. 사용자의 질문에서 "일" 또는 "박" 단위의 기간 정보를 반드시 추출하세요
@@ -44,7 +73,7 @@ public class PlannerAgent {
         - "서울 1박" → 2일간 (startDate ~ endDate, 총 2일)
         - 기간이 없으면 1일로 설정
         
-        ## 응답 형식 (JSON만 반환):
+        ## 최종 응답 형식 (JSON만 반환):
         {
           "userId": 1,
           "budget": <예산 금액 또는 기본값 5000000.00>,
@@ -105,41 +134,64 @@ public class PlannerAgent {
           ]
         }
         
-        입력: "내일부터 서울 1박"
-        분석:
-        - startDate 계산: 내일 → 2025-11-25 (오늘 2025-11-24 + 1일)
-        - 기간: 1박 → 2일
-        - endDate: 2025-11-26
-        응답:
-        {
-          "userId": 1,
-          "budget": 5000000.00,
-          "startDate": "2025-11-25",
-          "endDate": "2025-11-26",
-          "days": [...]
-        }
         
-        입력: "한 달 후에 제주도 3일 여행"
-        분석:
-        - startDate 계산: 한 달 후 → 2025-12-24 (2025-11-24 + 1개월)
-        - 기간: 3일 → 3일
-        - endDate: 2025-12-26
-        응답:
-        {
-          "userId": 1,
-          "budget": 5000000.00,
-          "startDate": "2025-12-24",
-          "endDate": "2025-12-26",
-          "days": [...]
-        }
         
-        지금부터 사용자의 요청에 위의 규칙을 적용하여 JSON만 반환하세요.
+        지금부터 사용자의 요청에 위의 규칙을 적용하여 JSON으로 반환하세요.
+        단, 도구 호출 메시지는 JSON 형식 예외입니다.
+        최종 답변만 JSON으로 반환하세요.
         각 일정에는 반드시 실제 위치의 위도/경도와 예상 비용을 포함하세요.
         startDate는 사용자의 여행 계획 시간 정보에 따라 정확히 계산하세요.
           """)
       .user(question)
+      .tools(new InternetSearch())
       .call()
       .content();
     return response;
   }
+
+  // ##### 도구 #####
+  class InternetSearch {
+    // @Tool(description = "테스트용 도구")
+    // public String foo(@ToolParam String input) {
+    //   return "도구 실행됨" + input;
+    // }
+
+    @Tool(description = "자료를 찾기 위해 인터넷 검색을 합니다.")
+    public String googleSearch(@ToolParam String query) {
+      log.info("인터넷 검색 도구 호출됨");
+      try {
+        String responseBody = webClient.get()
+            .uri(uriBuilder -> uriBuilder
+                .queryParam("key", apiKey)
+                .queryParam("cx", engineId)
+                .queryParam("q", query)
+                .build())
+            .retrieve()
+            .bodyToMono(String.class)
+            .block();
+        //log.info("응답본문: {}", responseBody);
+
+        JsonNode root = objectMapper.readTree(responseBody);
+        JsonNode items = root.path("items");
+
+        if (!items.isArray() || items.isEmpty()) {
+          return "검색 결과가 없습니다.";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(3, items.size()); i++) {
+          JsonNode item = items.get(i);
+          String title = item.path("title").asText();
+          String link = item.path("link").asText();
+          String snippet = item.path("snippet").asText();
+          sb.append(String.format("[%d] %s\n%s\n%s\n\n", i + 1, title, link, snippet));
+        }
+        return sb.toString().trim();
+
+      } catch (Exception e) {
+        return "인터넷 검색 중 오류 발생: " + e.getMessage();
+      }
+    }
+  }
+  
 }
