@@ -1,34 +1,33 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-  <!-- ID BIGINT, LONG 타입 아닌 것도 있음, API 긁어오는 양식 따른것임, 예외!  -->
-<mapper namespace="com.example.demo.dao.hotel.HotelBookingDao">
+<mapper namespace="com.example.demo.planner.dao.hotel.HotelBookingDao">
 
-  <select id="selectHotelBookingById" resultType="com.example.demo.dto.hotel.HotelBooking">
+  <select id="selectHotelBookingById" resultType="com.example.demo.planner.dto.hotel.HotelBooking">
     SELECT id, user_id, external_booking_id, hotel_id, room_type_id, rate_plan_id, checkin_date, checkout_date,
            nights, adults_count, children_count, currency, total_price, tax_amount, fee_amount, status, payment_status,
            guest_name, guest_email, guest_phone, provider_booking_meta, booked_at, cancelled_at, created_at, updated_at
     FROM hotel_bookings WHERE id = #{id}
   </select>
 
-  <insert id="insertHotelBooking" parameterType="com.example.demo.dto.hotel.HotelBooking" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertHotelBooking" parameterType="com.example.demo.planner.dto.hotel.HotelBooking" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO hotel_bookings (user_id, external_booking_id, hotel_id, room_type_id, rate_plan_id, checkin_date, checkout_date,
            nights, adults_count, children_count, currency, total_price, tax_amount, fee_amount, status, payment_status,
-           guest_name, guest_email, guest_phone, provider_booking_meta, booked_at, cancelled_at, created_at)
-    VALUES (#{userId}, #{externalBookingId}, #{hotelId}, #{roomTypeId}, #{ratePlanId}, #{checkinDate}, #{checkoutDate},
+           guest_name, guest_email, guest_phone, provider_booking_meta, booked_at, cancelled_at, created_at, updated_at)
+    VALUES (#{userId}, #{externalBookingId}, #{hotelId}, #{roomTypeId}, #{ratePlanId}, #{checkinDate,jdbcType=TIMESTAMP_WITH_TIMEZONE}, #{checkoutDate,jdbcType=TIMESTAMP_WITH_TIMEZONE},
            #{nights}, #{adultsCount}, #{childrenCount}, #{currency}, #{totalPrice}, #{taxAmount}, #{feeAmount}, #{status}, #{paymentStatus},
-           #{guestName}, #{guestEmail}, #{guestPhone}, #{providerBookingMeta}, #{bookedAt}, #{cancelledAt}, now())
+           #{guestName}, #{guestEmail}, #{guestPhone}, #{providerBookingMeta,jdbcType=OTHER,typeHandler=org.apache.ibatis.type.StringTypeHandler}::jsonb, #{bookedAt,jdbcType=TIMESTAMP_WITH_TIMEZONE}, #{cancelledAt,jdbcType=TIMESTAMP_WITH_TIMEZONE}, now(), now())
   </insert>
 
-  <update id="updateHotelBooking" parameterType="com.example.demo.dto.hotel.HotelBooking">
+  <update id="updateHotelBooking" parameterType="com.example.demo.planner.dto.hotel.HotelBooking">
     UPDATE hotel_bookings
     SET user_id = #{userId}, external_booking_id = #{externalBookingId}, hotel_id = #{hotelId}, room_type_id = #{roomTypeId},
-        rate_plan_id = #{ratePlanId}, checkin_date = #{checkinDate}, checkout_date = #{checkoutDate}, nights = #{nights},
+        rate_plan_id = #{ratePlanId}, checkin_date = #{checkinDate,jdbcType=TIMESTAMP_WITH_TIMEZONE}, checkout_date = #{checkoutDate,jdbcType=TIMESTAMP_WITH_TIMEZONE}, nights = #{nights},
         adults_count = #{adultsCount}, children_count = #{childrenCount}, currency = #{currency}, total_price = #{totalPrice},
         tax_amount = #{taxAmount}, fee_amount = #{feeAmount}, status = #{status}, payment_status = #{paymentStatus},
-        guest_name = #{guestName}, guest_email = #{guestEmail}, guest_phone = #{guestPhone}, provider_booking_meta = #{providerBookingMeta},
-        booked_at = #{bookedAt}, cancelled_at = #{cancelledAt}, updated_at = now()
+        guest_name = #{guestName}, guest_email = #{guestEmail}, guest_phone = #{guestPhone}, provider_booking_meta = #{providerBookingMeta,jdbcType=OTHER,typeHandler=org.apache.ibatis.type.StringTypeHandler}::jsonb,
+        booked_at = #{bookedAt,jdbcType=TIMESTAMP_WITH_TIMEZONE}, cancelled_at = #{cancelledAt,jdbcType=TIMESTAMP_WITH_TIMEZONE}, updated_at = now()
     WHERE id = #{id}
   </update>
 
