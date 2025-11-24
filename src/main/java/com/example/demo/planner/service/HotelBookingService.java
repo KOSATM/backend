@@ -1,7 +1,8 @@
-package com.example.demo.planner.service.hotel;
+package com.example.demo.planner.service;
 
-import com.example.demo.planner.dao.hotel.HotelBookingDao;
-import com.example.demo.planner.dto.hotel.HotelBooking;
+import com.example.demo.planner.dao.HotelBookingDao;
+import com.example.demo.planner.dto.HotelBooking;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

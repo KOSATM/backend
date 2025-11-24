@@ -1,4 +1,4 @@
-package com.example.demo.dto.imageSearch;
+package com.example.demo.supporter.dto;
 
 import lombok.Data;
 

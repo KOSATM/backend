@@ -2,19 +2,19 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.dao.place.ToiletDao">
+<mapper namespace="com.example.demo.supporter.dao.ToiletDao">
 
-  <select id="selectToiletById" resultType="com.example.demo.dto.place.Toilet">
+  <select id="selectToiletById" resultType="com.example.demo.supporter.dto.Toilet">
     SELECT id, name, lat, lng, address
     FROM toilets WHERE id = #{id}
   </select>
 
-  <insert id="insertToilet" parameterType="com.example.demo.dto.place.Toilet" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertToilet" parameterType="com.example.demo.supporter.dto.Toilet" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO toilets (name, lat, lng, address)
     VALUES (#{name}, #{lat}, #{lng}, #{address})
   </insert>
 
-  <update id="updateToilet" parameterType="com.example.demo.dto.place.Toilet">
+  <update id="updateToilet" parameterType="com.example.demo.supporter.dto.Toilet">
     UPDATE toilets
     SET name = #{name}, lat = #{lat}, lng = #{lng}, address = #{address}
     WHERE id = #{id}

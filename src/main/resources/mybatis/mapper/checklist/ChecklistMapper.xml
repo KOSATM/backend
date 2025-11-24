@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.dao.checklist.ChecklistDao">
+<mapper namespace="com.example.demo.supporter.dao.ChecklistDao">
 
   <select id="selectChecklistById" resultType="com.example.demo.dto.checklist.Checklist">
     SELECT id, user_id, day_index, created_at
