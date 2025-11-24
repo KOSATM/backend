@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.demo.travelgram.review.dao.ReviewPostDao">
+
+    <!-- review_posts -->
+    <insert id="insertReviewPost" parameterType="com.example.demo.travelgram.review.dto.ReviewPost" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO review_posts (content, is_posted, review_post_url, created_at, travel_plan_id, review_style_id)
+        VALUES (#{content}, #{isPosted}, #{reviewPostUrl}, NOW(), #{travelPlanId}, #{reviewStyleId});
+    </insert>
+
+    <select id="findReviewPostById" resultType="com.example.demo.travelgram.review.dto.ReviewPost">
+        SELECT * FROM review_posts WHERE id = #{id};
+    </select>
+
+    <select id="findReviewPostsByPlanId" resultType="com.example.demo.travelgram.review.dto.ReviewPost">
+        SELECT * FROM review_posts WHERE travel_plan_id = #{travelPlanId};
+    </select>
+
+    <!-- review_photo_groups -->
+    <insert id="insertPhotoGroup" parameterType="com.example.demo.travelgram.review.dto.ReviewPhotoGroup" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO review_photo_groups (created_at, review_post_id)
+        VALUES (NOW(), #{reviewPostId});
+    </insert>
+
+    <select id="findGroupsByPostId" resultType="com.example.demo.travelgram.review.dto.ReviewPhotoGroup">
+        SELECT * FROM review_photo_groups WHERE review_post_id = #{reviewPostId};
+    </select>
+
+    <!-- review_photos -->
+    <insert id="insertPhoto" parameterType="com.example.demo.travelgram.review.dto.ReviewPhoto" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO review_photos (file_url, lat, lng, taken_at, order_index, created_at, group_id)
+        VALUES (#{fileUrl}, #{lat}, #{lng}, #{takenAt}, #{orderIndex}, NOW(), #{groupId});
+    </insert>
+
+    <select id="findPhotosByGroup" resultType="com.example.demo.travelgram.review.dto.ReviewPhoto">
+        SELECT * FROM review_photos WHERE group_id = #{groupId};
+    </select>
+
+    <!-- review_hashtag_groups -->
+    <insert id="insertHashtagGroup" parameterType="com.example.demo.travelgram.review.dto.ReviewHashtagGroup" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO review_hashtag_groups (created_at, review_post_id)
+        VALUES (NOW(), #{reviewPostId});
+    </insert>
+
+    <select id="findHashtagGroupsByPostId" resultType="com.example.demo.travelgram.review.dto.ReviewHashtagGroup">
+        SELECT * FROM review_hashtag_groups WHERE review_post_id = #{reviewPostId};
+    </select>
+
+    <!-- review_hashtags -->
+    <insert id="insertHashtag" parameterType="com.example.demo.travelgram.review.dto.ReviewHashtag" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO review_hashtags (name, is_selected, created_at, group_id)
+        VALUES (#{name}, #{isSelected}, NOW(), #{groupId});
+    </insert>
+
+    <select id="findHashtagsByGroup" resultType="com.example.demo.travelgram.review.dto.ReviewHashtag">
+        SELECT * FROM review_hashtags WHERE group_id = #{groupId};
+    </select>
+
+</mapper>
