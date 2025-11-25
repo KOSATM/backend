@@ -4,23 +4,25 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.travelgram.review.dao.ReviewPhotoDao">
 
-  
-  <insert id="insert" parameterType="ReviewPhoto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertReviewPhotoGroup" parameterType="ReviewPhotoGroup" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO review_photo_groups (created_at, review_post_id)
+    VALUES (NOW(),2 )
+  </insert>
+
+  <insert id="insertReviewPhoto" parameterType="ReviewPhoto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO review_photos
     (
       group_id,
       file_url,
-      original_name,
-        stored_name,
-        order_index
+        order_index,
+        created_at
         )
         VALUES
         (
           #{groupId},
           #{fileUrl},
-        #{originalName},
-        #{storedName},
-        #{orderIndex}
+        #{orderIndex},
+        now()
         );
       </insert>
       
