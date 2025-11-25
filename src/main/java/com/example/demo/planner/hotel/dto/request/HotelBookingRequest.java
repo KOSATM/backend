@@ -1,13 +1,11 @@
-package com.example.demo.planner.hotel.dto.entity;
+package com.example.demo.planner.hotel.dto.request;
 
 import java.time.OffsetDateTime;
 import java.math.BigDecimal;
-import lombok.Getter;
-import lombok.AllArgsConstructor;
+import lombok.Data;
 
-@Getter
-@AllArgsConstructor
-public class HotelBooking {
+@Data
+public class HotelBookingRequest {
     private Long id;
     private Long userId;
     private String externalBookingId;
@@ -31,6 +29,4 @@ public class HotelBooking {
     private String providerBookingMeta;
     private OffsetDateTime bookedAt;
     private OffsetDateTime cancelledAt;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
 }

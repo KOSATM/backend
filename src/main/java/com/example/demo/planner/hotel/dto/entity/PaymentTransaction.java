@@ -1,10 +1,13 @@
 package com.example.demo.planner.hotel.dto.entity;
 
-import java.time.OffsetDateTime;
 import java.math.BigDecimal;
-import lombok.Data;
+import java.time.OffsetDateTime;
 
-@Data
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
 public class PaymentTransaction {
     private Long id;
     private Long hotelBookingId;

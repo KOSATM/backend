@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.planner.hotel.dto.entity.HotelBooking;
+import com.example.demo.planner.hotel.dto.request.HotelBookingRequest;
 import com.example.demo.planner.hotel.service.HotelBookingService;
 
 @RestController
@@ -27,7 +28,17 @@ public class HotelBookingController {
     
     // 호텔 예약 저장
     @PostMapping
-    public ResponseEntity<Map<String, Object>> createHotelBooking(@RequestBody() HotelBooking hotelBooking) {
+    public ResponseEntity<Map<String, Object>> createHotelBooking(@RequestBody HotelBookingRequest request) {
+        HotelBooking hotelBooking = new HotelBooking(
+            null, request.getUserId(), request.getExternalBookingId(), request.getHotelId(),
+            request.getRoomTypeId(), request.getRatePlanId(), request.getCheckinDate(), 
+            request.getCheckoutDate(), request.getNights(), request.getAdultsCount(),
+            request.getChildrenCount(), request.getCurrency(), request.getTotalPrice(),
+            request.getTaxAmount(), request.getFeeAmount(), request.getStatus(),
+            request.getPaymentStatus(), request.getGuestName(), request.getGuestEmail(),
+            request.getGuestPhone(), request.getProviderBookingMeta(), request.getBookedAt(),
+            request.getCancelledAt(), null, null
+        );
         Long bookingId = hotelBookingService.saveHotelBooking(hotelBooking);
         
         Map<String, Object> response = new HashMap<>();
@@ -57,8 +68,17 @@ public class HotelBookingController {
     
     // 호텔 예약 업데이트
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> updateHotelBooking(@PathVariable("id") Long id, @RequestBody HotelBooking hotelBooking) {
-        hotelBooking.setId(id);
+    public ResponseEntity<Map<String, Object>> updateHotelBooking(@PathVariable("id") Long id, @RequestBody HotelBookingRequest request) {
+        HotelBooking hotelBooking = new HotelBooking(
+            id, request.getUserId(), request.getExternalBookingId(), request.getHotelId(),
+            request.getRoomTypeId(), request.getRatePlanId(), request.getCheckinDate(), 
+            request.getCheckoutDate(), request.getNights(), request.getAdultsCount(),
+            request.getChildrenCount(), request.getCurrency(), request.getTotalPrice(),
+            request.getTaxAmount(), request.getFeeAmount(), request.getStatus(),
+            request.getPaymentStatus(), request.getGuestName(), request.getGuestEmail(),
+            request.getGuestPhone(), request.getProviderBookingMeta(), request.getBookedAt(),
+            request.getCancelledAt(), null, null
+        );
         hotelBookingService.updateHotelBooking(hotelBooking);
         
         Map<String, Object> response = new HashMap<>();
