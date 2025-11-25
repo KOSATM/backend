@@ -30,6 +30,7 @@ public class ReviewPhotoService {
         // 2) 확장자 추출
         String originalName = file.getOriginalFilename();
 
+        String folder = "reviewPhotos/";
         // 3) UUID 파일명 생성
         if (originalName == null || !originalName.contains(".")) {
             originalName = "unknown_" + UUID.randomUUID();
@@ -39,7 +40,7 @@ public class ReviewPhotoService {
         if (idx > -1) {
             ext = originalName.substring(idx);
         }
-        String storedName = UUID.randomUUID().toString() + ext;
+        String storedName = folder + UUID.randomUUID().toString() + ext;
         // 4) S3 업로드
         String s3Url = s3Service.uploadFile(file, storedName); // S3 업로드
 
