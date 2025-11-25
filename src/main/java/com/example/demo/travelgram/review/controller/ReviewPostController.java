@@ -4,12 +4,7 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.example.demo.travelgram.review.dto.*;
-import com.example.demo.travelgram.review.dto.entity.ReviewHashtag;
-import com.example.demo.travelgram.review.dto.entity.ReviewHashtagGroup;
-import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
-import com.example.demo.travelgram.review.dto.entity.ReviewPhotoGroup;
-import com.example.demo.travelgram.review.dto.entity.ReviewPost;
+import com.example.demo.travelgram.review.dto.entity.*;
 import com.example.demo.travelgram.review.service.ReviewPostService;
 
 import lombok.RequiredArgsConstructor;
