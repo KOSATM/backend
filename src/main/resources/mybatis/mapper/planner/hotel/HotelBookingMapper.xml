@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.planner.hotel.dao.HotelBookingDao">
+
+  <select id="selectHotelBookingById" resultType="com.example.demo.planner.hotel.dto.entity.HotelBooking">
+    SELECT id, user_id, external_booking_id, hotel_id, room_type_id, rate_plan_id, checkin_date, checkout_date,
+           nights, adults_count, children_count, currency, total_price, tax_amount, fee_amount, status, payment_status,
+           guest_name, guest_email, guest_phone, provider_booking_meta, booked_at, cancelled_at, created_at, updated_at
+    FROM hotel_bookings WHERE id = #{id}
+  </select>
+
+  <insert id="insertHotelBooking" parameterType="com.example.demo.planner.hotel.dto.entity.HotelBooking" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO hotel_bookings (user_id, external_booking_id, hotel_id, room_type_id, rate_plan_id, checkin_date, checkout_date,
+           nights, adults_count, children_count, currency, total_price, tax_amount, fee_amount, status, payment_status,
+           guest_name, guest_email, guest_phone, provider_booking_meta, booked_at, cancelled_at, created_at, updated_at)
+    VALUES (#{userId}, #{externalBookingId}, #{hotelId}, #{roomTypeId}, #{ratePlanId}, #{checkinDate,jdbcType=TIMESTAMP_WITH_TIMEZONE}, #{checkoutDate,jdbcType=TIMESTAMP_WITH_TIMEZONE},
+           #{nights}, #{adultsCount}, #{childrenCount}, #{currency}, #{totalPrice}, #{taxAmount}, #{feeAmount}, #{status}, #{paymentStatus},
+           #{guestName}, #{guestEmail}, #{guestPhone}, #{providerBookingMeta,jdbcType=OTHER}::jsonb, #{bookedAt,jdbcType=TIMESTAMP_WITH_TIMEZONE}, #{cancelledAt,jdbcType=TIMESTAMP_WITH_TIMEZONE}, now(), now())
+  </insert>
+
+  <update id="updateHotelBooking" parameterType="com.example.demo.planner.hotel.dto.entity.HotelBooking">
+    UPDATE hotel_bookings
+    SET user_id = #{userId}, external_booking_id = #{externalBookingId}, hotel_id = #{hotelId}, room_type_id = #{roomTypeId},
+        rate_plan_id = #{ratePlanId}, checkin_date = #{checkinDate,jdbcType=TIMESTAMP_WITH_TIMEZONE}, checkout_date = #{checkoutDate,jdbcType=TIMESTAMP_WITH_TIMEZONE}, nights = #{nights},
+        adults_count = #{adultsCount}, children_count = #{childrenCount}, currency = #{currency}, total_price = #{totalPrice},
+        tax_amount = #{taxAmount}, fee_amount = #{feeAmount}, status = #{status}, payment_status = #{paymentStatus},
+        guest_name = #{guestName}, guest_email = #{guestEmail}, guest_phone = #{guestPhone}, provider_booking_meta = #{providerBookingMeta,jdbcType=OTHER}::jsonb,
+        booked_at = #{bookedAt,jdbcType=TIMESTAMP_WITH_TIMEZONE}, cancelled_at = #{cancelledAt,jdbcType=TIMESTAMP_WITH_TIMEZONE}, updated_at = now()
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteHotelBookingById" parameterType="long">
+    DELETE FROM hotel_bookings WHERE id = #{id}
+  </delete>
+
+</mapper>
