@@ -18,7 +18,7 @@
         SELECT * FROM review_posts WHERE travel_plan_id = #{travelPlanId};
     </select>
 
-    <update id="updateReviewPost" parameterType="com.example.demo.dto.reviewPost.ReviewPost">
+    <update id="updateReviewPost" parameterType="ReviewPost">
         UPDATE review_posts
         SET content = #{content}, is_posted = #{isPosted}, review_post_url = #{reviewPostUrl}, created_at = #{createdAt},
             travel_plan_id = #{travelPlanId}, review_style_id = #{reviewStyleId}
