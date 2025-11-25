@@ -1,10 +1,15 @@
 package com.example.demo.planner.hotel.dto.request;
 
-import java.time.OffsetDateTime;
 import java.math.BigDecimal;
-import lombok.Data;
+import java.time.OffsetDateTime;
 
-@Data
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+
+@Builder
+@Getter
+@AllArgsConstructor
 public class HotelBookingRequest {
     private Long id;
     private Long userId;
