@@ -1,4 +1,4 @@
-package com.example.demo.planner.agent;
+package com.example.demo.planner.travel.agent;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.annotation.Tool;
