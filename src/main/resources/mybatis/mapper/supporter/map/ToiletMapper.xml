@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.demo.supporter.map.dao.ToiletDao">
+
+  <resultMap id="ToiletResultMap" type="Toilet">
+    <id     column="id"      property="id"/>
+    <result column="name"    property="name"/>
+    <result column="lat"     property="lat"/>
+    <result column="lng"     property="lng"/>
+    <result column="address" property="address"/>
+  </resultMap>
+
+  <!-- 단건 조회 -->
+  <select id="selectById" parameterType="long" resultMap="ToiletResultMap">
+    SELECT id, name, lat, lng, address
+    FROM toilets
+    WHERE id = #{id}
+  </select>
+
+  <!-- 전체 조회 -->
+  <select id="selectAll" resultMap="ToiletResultMap">
+    SELECT id, name, lat, lng, address
+    FROM toilets
+    ORDER BY id DESC
+  </select>
+
+  <!-- 주소 부분 일치 검색 -->
+  <select id="selectByAddressLike" parameterType="string" resultMap="ToiletResultMap">
+    SELECT id, name, lat, lng, address
+    FROM toilets
+    WHERE address ILIKE CONCAT('%', #{address}, '%')
+    ORDER BY name ASC
+  </select>
+
+  <!-- 위경도 범위 (바운딩 박스) -->
+  <select id="selectByLatLngBounds" parameterType="map" resultMap="ToiletResultMap">
+    SELECT id, name, lat, lng, address
+    FROM toilets
+    WHERE lat BETWEEN #{minLat} AND #{maxLat}
+      AND lng BETWEEN #{minLng} AND #{maxLng}
+    ORDER BY name ASC
+  </select>
+
+  <!-- 단건 INSERT -->
+  <insert id="insert" parameterType="Toilet" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO toilets (name, lat, lng, address)
+    VALUES (#{name}, #{lat}, #{lng}, #{address})
+  </insert>
+
+  <!-- 배치 INSERT -->
+  <insert id="batchInsert" parameterType="list">
+    INSERT INTO toilets (name, lat, lng, address)
+    VALUES
+    <foreach collection="list" item="t" separator=",">
+      (#{t.name}, #{t.lat}, #{t.lng}, #{t.address})
+    </foreach>
+  </insert>
+
+  <!-- UPDATE -->
+  <update id="update" parameterType="Toilet">
+    UPDATE toilets
+    SET name = #{name},
+        lat  = #{lat},
+        lng  = #{lng},
+        address = #{address}
+    WHERE id = #{id}
+  </update>
+
+  <!-- DELETE -->
+  <delete id="deleteById" parameterType="long">
+    DELETE FROM toilets
+    WHERE id = #{id}
+  </delete>
+
+  <!-- 존재하면 업데이트 없으면 삽입 (name+lat+lng 기준) -->
+  <insert id="upsertOnNameLatLng" parameterType="Toilet">
+    INSERT INTO toilets (name, lat, lng, address)
+    VALUES (#{name}, #{lat}, #{lng}, #{address})
+    ON CONFLICT (id) DO UPDATE
+      SET name = EXCLUDED.name,
+          lat = EXCLUDED.lat,
+          lng = EXCLUDED.lng,
+          address = EXCLUDED.address
+  </insert>
+
+</mapper>
