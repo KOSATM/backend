@@ -15,63 +15,63 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.demo.planner.hotel.dto.request.PaymentTransactionRequest;
-import com.example.demo.planner.hotel.dto.response.PaymentTransactionResponse;
-import com.example.demo.planner.hotel.service.PaymentTransactionService;
+import com.example.demo.planner.hotel.dto.request.HotelBookingRequest;
+import com.example.demo.planner.hotel.dto.response.HotelBookingResponse;
+import com.example.demo.planner.hotel.service.HotelBookingService;
 
 @RestController
-@RequestMapping("/api/payment-transactions")
-public class PaymentTransactionController {
+@RequestMapping("/api/hotel-bookings")
+public class HotelBookingController {
     
     @Autowired
-    private PaymentTransactionService paymentTransactionService;
+    private HotelBookingService hotelBookingService;
     
     @PostMapping
-    public ResponseEntity<Map<String, Object>> createPaymentTransaction(@RequestBody PaymentTransactionRequest request) {
-        Long transactionId = paymentTransactionService.savePaymentTransaction(request);
+    public ResponseEntity<Map<String, Object>> createHotelBooking(@RequestBody HotelBookingRequest request) {
+        Long bookingId = hotelBookingService.saveHotelBooking(request);
         
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
-        response.put("message", "결제 정보가 저장되었습니다.");
-        response.put("transactionId", transactionId);
+        response.put("message", "호텔 예약이 저장되었습니다.");
+        response.put("bookingId", bookingId);
         
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getPaymentTransaction(@PathVariable("id") Long id) {
-        PaymentTransactionResponse transaction = paymentTransactionService.getPaymentTransaction(id);
+    public ResponseEntity<Map<String, Object>> getHotelBooking(@PathVariable("id") Long id) {
+        HotelBookingResponse booking = hotelBookingService.getHotelBooking(id);
         
         Map<String, Object> response = new HashMap<>();
-        if (transaction != null) {
+        if (booking != null) {
             response.put("success", true);
-            response.put("data", transaction);
+            response.put("data", booking);
         } else {
             response.put("success", false);
-            response.put("message", "결제 정보를 찾을 수 없습니다.");
+            response.put("message", "예약을 찾을 수 없습니다.");
         }
         
         return ResponseEntity.ok(response);
     }
     
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> updatePaymentTransaction(@PathVariable("id") Long id, @RequestBody PaymentTransactionRequest request) {
-        paymentTransactionService.updatePaymentTransaction(id, request);
+    public ResponseEntity<Map<String, Object>> updateHotelBooking(@PathVariable("id") Long id, @RequestBody HotelBookingRequest request) {
+        hotelBookingService.updateHotelBooking(id, request);
         
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
-        response.put("message", "결제 정보가 업데이트되었습니다.");
+        response.put("message", "호텔 예약이 업데이트되었습니다.");
         
         return ResponseEntity.ok(response);
     }
     
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deletePaymentTransaction(@PathVariable("id") Long id) {
-        paymentTransactionService.deletePaymentTransaction(id);
+    public ResponseEntity<Map<String, Object>> deleteHotelBooking(@PathVariable("id") Long id) {
+        hotelBookingService.deleteHotelBooking(id);
         
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
-        response.put("message", "결제 정보가 삭제되었습니다.");
+        response.put("message", "호텔 예약이 삭제되었습니다.");
         
         return ResponseEntity.ok(response);
     }
