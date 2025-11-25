@@ -8,17 +8,26 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.demo.common.s3.service.S3Service;
 import com.example.demo.travelgram.review.dao.ReviewPhotoDao;
 import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
+import com.example.demo.travelgram.review.dto.entity.ReviewPhotoGroup;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoUploadRequest;
 import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReviewPhotoService {
 
     private final S3Service s3Service;
     private final ReviewPhotoDao reviewPhotoDao;
+
+    public Long createPhotoGroup() {
+        ReviewPhotoGroup group = new ReviewPhotoGroup();
+        reviewPhotoDao.insertReviewPhotoGroup(group);
+        return group.getId();
+    }
 
     public ReviewPhotoUploadResponse uploadPhoto(ReviewPhotoUploadRequest dto, MultipartFile file) {
 
@@ -42,22 +51,32 @@ public class ReviewPhotoService {
         }
         String storedName = folder + UUID.randomUUID().toString() + ext;
         // 4) S3 업로드
-        String s3Url = s3Service.uploadFile(file, storedName); // S3 업로드
+        String s3Url = null;
+        try {
+            log.info("Attempting S3 upload via s3Service...");
+            s3Url = s3Service.uploadFile(file, storedName); // S3 업로드
+            log.info("S3 upload successful. URL: {}", s3Url);
+        } catch (Exception e) {
+            log.error("🛑 CRITICAL S3 UPLOAD FAILURE for file {}", storedName, e);
+            // S3 업로드 실패 시 Custom Exception을 던지거나, RuntimeException으로 변환하여 상위로 전달
+            throw new RuntimeException("S3 file upload failed", e);
+        }
 
         // 5) DB에 저장할 엔티티 생성
         // 📌 세터 없이 빌더로 엔티티 생성
         ReviewPhoto photo = ReviewPhoto.builder()
                 .groupId(dto.getGroupId())
                 .orderIndex(dto.getOrderIndex())
-                .originalName(originalName)
-                .storedName(storedName)
+                // .originalName(originalName)
+                // .storedName(storedName)
                 .fileUrl(s3Url)
                 .build();
 
         // 6) DB 저장
-        reviewPhotoDao.insert(photo);
+        reviewPhotoDao.insertReviewPhoto(photo);
 
-        return new ReviewPhotoUploadResponse(photo.getId(),photo.getFileUrl(),photo.getOrderIndex());
+        return new ReviewPhotoUploadResponse(photo.getId(), photo.getFileUrl(), photo.getOrderIndex());
 
     }
+
 }

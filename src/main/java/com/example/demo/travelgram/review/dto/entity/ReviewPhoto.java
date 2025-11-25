@@ -11,8 +11,8 @@ public class ReviewPhoto {
     private Long id;
     private Long groupId;
     private String fileUrl;
-    private String originalName;
-    private String storedName;
+    // private String originalName;
+    // private String storedName;
     private Integer orderIndex;
 
     // private double lat;
