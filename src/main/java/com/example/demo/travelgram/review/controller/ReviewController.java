@@ -3,6 +3,7 @@ package com.example.demo.travelgram.review.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -44,28 +46,35 @@ public class ReviewController {
         List<Map<String, Object>> dataListJson;
         try {
             dataListJson = objectMapper.readValue(
-                dataListJsonString, 
-                new TypeReference<List<Map<String, Object>>>() {}
-            );
+                    dataListJsonString,
+                    new TypeReference<List<Map<String, Object>>>() {
+                    });
         } catch (Exception e) {
             log.error("Failed to parse dataListJson string: {}", dataListJsonString, e);
             return ResponseEntity.badRequest().body("Invalid JSON format for dataListJson");
         }
 
+        // 2. Map → DTO 변환
+        List<ReviewPhotoUploadRequest> dtoList = new ArrayList<>();
 
-    // 2. Map → DTO 변환
-    List<ReviewPhotoUploadRequest> dtoList = new ArrayList<>();
+        for (Map<String, Object> map : dataListJson) {
+            ReviewPhotoUploadRequest dto = new ReviewPhotoUploadRequest();
 
-    for (Map<String, Object> map : dataListJson) {
-        ReviewPhotoUploadRequest dto = new ReviewPhotoUploadRequest();
+            // Use Optional to check for null and throw a descriptive exception if missing
+            Number groupIdNumber = Optional.ofNullable(map.get("groupId"))
+                    .map(obj -> (Number) obj)
+                    .orElseThrow(() -> new IllegalArgumentException("Missing required parameter: 'groupId'"));
 
-        // 주의: JSON에서 숫자는 기본적으로 Integer 또는 Long으로 오므로 Number로 처리합니다.
-        dto.setGroupId(((Number) map.get("groupId")).longValue());
-        dto.setFileName((String) map.get("fileName"));
-        dto.setOrderIndex(((Number) map.get("orderIndex")).intValue());
+            Number orderIndexNumber = Optional.ofNullable(map.get("orderIndex"))
+                    .map(obj -> (Number) obj)
+                    .orElseThrow(() -> new IllegalArgumentException("Missing required parameter: 'orderIndex'"));
 
-        dtoList.add(dto);
-      }
+            dto.setGroupId(groupIdNumber.longValue());
+            dto.setFileName((String) map.get("fileName"));
+            dto.setOrderIndex(orderIndexNumber.intValue());
+
+            dtoList.add(dto);
+        }
 
         // 2) 파일 개수와 DTO 개수 체크
         if (dtoList.size() != files.size()) {
