@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class PhotoUploadResponse {
+public class ReviewPhotoUploadResponse {
     private Long photoId;
     private String fileUrl;
 }
