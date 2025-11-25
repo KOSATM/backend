@@ -1,18 +1,15 @@
-package com.example.demo.planner.hotel.dto.request;
+package com.example.demo.planner.hotel.dto.response;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-import lombok.Data;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 import lombok.AllArgsConstructor;
 
-@Data
-@Builder
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
-public class PaymentTransactionRequest {
+public class PaymentTransactionResponse {
+    private Long id;
     private Long hotelBookingId;
     private String paymentMethod;
     private String providerPaymentId;
@@ -23,4 +20,6 @@ public class PaymentTransactionRequest {
     private OffsetDateTime completedAt;
     private OffsetDateTime cancelledAt;
     private String rawResponse;
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
 }
