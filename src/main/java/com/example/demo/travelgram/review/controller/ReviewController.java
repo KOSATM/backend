@@ -1,5 +1,6 @@
 package com.example.demo.travelgram.review.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.http.MediaType;
@@ -13,13 +14,11 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
 import com.example.demo.travelgram.review.dto.entity.ReviewPost;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoUploadRequest;
 import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
 import com.example.demo.travelgram.review.service.ReviewPhotoService;
 import com.example.demo.travelgram.review.service.ReviewPostService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,18 +30,20 @@ public class ReviewController {
     private final ReviewPostService reviewPostService;
 
     @PostMapping(value = "/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> uploadReviewPhoto(
-            @RequestPart("data") String data,
-            @RequestPart("file") MultipartFile file) throws Exception {
+    public ResponseEntity<?> uploadReviewPhotos(
+            @RequestPart("dataList") List<ReviewPhotoUploadRequest> requests,
+            @RequestPart("files") List<MultipartFile> files) {
 
-        // JSON → DTO 변환
-        ObjectMapper mapper = new ObjectMapper();
-        ReviewPhotoUploadRequest dto = mapper.readValue(data, ReviewPhotoUploadRequest.class);
+        List<ReviewPhotoUploadResponse> result = new ArrayList<>();
 
-        // ✔ 서비스가 반환하는 타입에 맞춰서 호출
-        ReviewPhotoUploadResponse response = reviewPhotoService.uploadPhoto(dto, file); 
+        for (int i = 0; i < files.size(); i++) {
+            ReviewPhotoUploadResponse res = reviewPhotoService.uploadPhoto(
+                    requests.get(i),
+                    files.get(i));
+            result.add(res);
+        }
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/post")
