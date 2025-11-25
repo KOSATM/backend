@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.demo.common.s3.service.S3Service;
 import com.example.demo.travelgram.review.dao.ReviewPhotoDao;
 import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
 import com.example.demo.travelgram.review.dto.request.PhotoUploadRequest;
