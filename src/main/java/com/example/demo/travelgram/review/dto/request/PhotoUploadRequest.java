@@ -6,4 +6,5 @@ import lombok.Data;
 public class PhotoUploadRequest {
     private Long groupId;
     private String fileName;
+    private Integer orderIndex;
 }

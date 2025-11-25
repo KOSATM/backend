@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 public class ReviewPhotoService {
 
     private final S3Service s3Service;
-    private final ReviewPhotoDao reviewPhotoDao;
+    private final ReviewPhotoDao reviewPhotoMapper;
 
     public PhotoUploadResponse uploadPhoto(PhotoUploadRequest req, MultipartFile file) {
 
@@ -29,16 +29,16 @@ public class ReviewPhotoService {
         String fileUrl = s3Service.uploadFileToS3(file, storedName);
 
         // 3) DB 저장할 엔티티 구성
-        ReviewPhoto photo = new ReviewPhoto();
-        photo.setFileUrl(fileUrl);
-        photo.setGroupId(req.getGroupId());
-        photo.setOrderIndex(0);  // 최초 업로드 시 0, 이후 순서변경 API에서 수정
-        photo.setLat(null);
-        photo.setLng(null);
-        photo.setTakenAt(null);
+        ReviewPhoto photo = ReviewPhoto.builder()
+                .fileUrl(fileUrl)
+                .orderIndex(req.getOrderIndex()) // ❗ 업로드 순서 그대로 삽입
+                .groupId(req.getGroupId())
+                .build();
+
+        reviewPhotoMapper.insert(photo);
 
         // 4) insert 실행
-        reviewPhotoDao.insert(photo);
+        reviewPhotoMapper.insert(photo);
 
         // 5) 응답
         return new PhotoUploadResponse(photo.getId(), fileUrl);
