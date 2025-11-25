@@ -1,10 +1,11 @@
 package com.example.demo.travelgram.review.dao;
 
-import java.util.List;
+import org.apache.ibatis.annotations.Mapper;
 
 import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
-import com.example.demo.travelgram.review.dto.entity.ReviewPhotoGroup;
 
+
+@Mapper
 public interface ReviewPhotoDao {
 
     void insert(ReviewPhoto photo);

@@ -8,8 +8,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.demo.common.s3.service.S3Service;
 import com.example.demo.travelgram.review.dao.ReviewPhotoDao;
 import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
-import com.example.demo.travelgram.review.dto.request.PhotoUploadRequest;
-import com.example.demo.travelgram.review.dto.response.PhotoUploadResponse;
+import com.example.demo.travelgram.review.dto.request.ReviewPhotoUploadRequest;
+import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,29 +18,47 @@ import lombok.RequiredArgsConstructor;
 public class ReviewPhotoService {
 
     private final S3Service s3Service;
-    private final ReviewPhotoDao reviewPhotoMapper;
+    private final ReviewPhotoDao reviewPhotoDao;
 
-    public PhotoUploadResponse uploadPhoto(PhotoUploadRequest req, MultipartFile file) {
+    public ReviewPhotoUploadResponse uploadPhoto(ReviewPhotoUploadRequest dto, MultipartFile file) {
 
-        // 1) UUID 저장명 생성
-        String storedName = UUID.randomUUID().toString() + "_" + req.getFileName();
+        // 1) 파일 비어있으면 예외 처리
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("file is empty");
+        }
 
-        // 2) S3 업로드 → 실제 URL 반환
-        String fileUrl = s3Service.uploadFileToS3(file, storedName);
+        // 2) 확장자 추출
+        String originalName = file.getOriginalFilename();
 
-        // 3) DB 저장할 엔티티 구성
+        // 3) UUID 파일명 생성
+        if (originalName == null || !originalName.contains(".")) {
+            originalName = "unknown_" + UUID.randomUUID();
+        }
+        String ext = "";
+        int idx = originalName.lastIndexOf(".");
+        if (idx > -1) {
+            ext = originalName.substring(idx);
+        }
+        String storedName = UUID.randomUUID().toString() + ext;
+        // 4) S3 업로드
+        String s3url = s3Service.uploadFile(file, storedName);   // S3 업로드
+
+        // 5) DB에 저장할 엔티티 생성
+        // 📌 세터 없이 빌더로 엔티티 생성
         ReviewPhoto photo = ReviewPhoto.builder()
-                .fileUrl(fileUrl)
-                .orderIndex(req.getOrderIndex()) // ❗ 업로드 순서 그대로 삽입
-                .groupId(req.getGroupId())
+                .groupId(dto.getGroupId())
+                .orderIndex(dto.getOrderIndex())
+                .originalName(originalName)
+                .storedName(storedName)
+                .fileUrl(s3Url)
+                .lat(dto.getLat())       // 추가됨
+                .lng(dto.getLng())       // 추가됨
+                .takenAt(dto.getTakenAt()) // 추가됨
                 .build();
 
-        reviewPhotoMapper.insert(photo);
+        // 6) DB 저장
+        reviewPhotoDao.insert(photo);
 
-        // 4) insert 실행
-        reviewPhotoMapper.insert(photo);
-
-        // 5) 응답
-        return new PhotoUploadResponse(photo.getId(), fileUrl);
+        return photo;
     }
 }
