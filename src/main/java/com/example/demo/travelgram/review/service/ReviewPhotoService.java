@@ -51,9 +51,6 @@ public class ReviewPhotoService {
                 .originalName(originalName)
                 .storedName(storedName)
                 .fileUrl(s3Url)
-                .lat(dto.getLat())       // 추가됨
-                .lng(dto.getLng())       // 추가됨
-                .takenAt(dto.getTakenAt()) // 추가됨
                 .build();
 
         // 6) DB 저장

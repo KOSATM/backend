@@ -10,8 +10,22 @@
   </select>
 
   <insert id="insertReviewPhoto" parameterType="ReviewPhoto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO review_photos (file_url, lat, lng, taken_at, order_index, created_at, group_id)
-    VALUES (#{fileUrl}, #{lat}, #{lng}, #{takenAt}, #{orderIndex}, NOW(), #{groupId})
+    INSERT INTO review_photos
+    (
+        group_id,
+        file_url,
+        original_name,
+        stored_name,
+        order_index
+    )
+    VALUES
+    (
+        #{groupId},
+        #{fileUrl},
+        #{originalName},
+        #{storedName},
+        #{orderIndex}
+    );
   </insert>
 
   <update id="updateReviewPhoto" parameterType="ReviewPhoto">
