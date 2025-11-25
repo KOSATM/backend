@@ -11,7 +11,7 @@
     FROM hotel_bookings WHERE id = #{id}
   </select>
 
-  <insert id="insertHotelBooking" parameterType="com.example.demo.planner.hotel.dto.entity.HotelBooking" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertHotelBooking" parameterType="com.example.demo.planner.hotel.dto.request.HotelBookingRequest">
     INSERT INTO hotel_bookings (user_id, external_booking_id, hotel_id, room_type_id, rate_plan_id, checkin_date, checkout_date,
            nights, adults_count, children_count, currency, total_price, tax_amount, fee_amount, status, payment_status,
            guest_name, guest_email, guest_phone, provider_booking_meta, booked_at, cancelled_at, created_at, updated_at)
@@ -20,7 +20,7 @@
            #{guestName}, #{guestEmail}, #{guestPhone}, #{providerBookingMeta,jdbcType=OTHER}::jsonb, #{bookedAt,jdbcType=TIMESTAMP_WITH_TIMEZONE}, #{cancelledAt,jdbcType=TIMESTAMP_WITH_TIMEZONE}, now(), now())
   </insert>
 
-  <update id="updateHotelBooking" parameterType="com.example.demo.planner.hotel.dto.entity.HotelBooking">
+  <update id="updateHotelBooking" parameterType="com.example.demo.planner.hotel.dto.request.HotelBookingRequest">
     UPDATE hotel_bookings
     SET user_id = #{userId}, external_booking_id = #{externalBookingId}, hotel_id = #{hotelId}, room_type_id = #{roomTypeId},
         rate_plan_id = #{ratePlanId}, checkin_date = #{checkinDate,jdbcType=TIMESTAMP_WITH_TIMEZONE}, checkout_date = #{checkoutDate,jdbcType=TIMESTAMP_WITH_TIMEZONE}, nights = #{nights},

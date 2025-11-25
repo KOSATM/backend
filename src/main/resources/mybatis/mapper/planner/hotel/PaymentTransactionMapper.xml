@@ -10,14 +10,14 @@
     FROM payment_transactions WHERE id = #{id}
   </select>
 
-  <insert id="insertPaymentTransaction" parameterType="com.example.demo.planner.hotel.dto.entity.PaymentTransaction" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertPaymentTransaction" parameterType="com.example.demo.planner.hotel.dto.request.PaymentTransactionRequest">
     INSERT INTO payment_transactions (hotel_booking_id, payment_method, provider_payment_id, amount, currency, status,
            requested_at, completed_at, cancelled_at, raw_response, created_at, updated_at)
     VALUES (#{hotelBookingId}, #{paymentMethod}, #{providerPaymentId}, #{amount}, #{currency}, #{status},
            #{requestedAt,jdbcType=TIMESTAMP_WITH_TIMEZONE}, #{completedAt,jdbcType=TIMESTAMP_WITH_TIMEZONE}, #{cancelledAt,jdbcType=TIMESTAMP_WITH_TIMEZONE}, #{rawResponse}, now(), now())
   </insert>
 
-  <update id="updatePaymentTransaction" parameterType="com.example.demo.planner.hotel.dto.entity.PaymentTransaction">
+  <update id="updatePaymentTransaction" parameterType="com.example.demo.planner.hotel.dto.request.PaymentTransactionRequest">
     UPDATE payment_transactions
     SET hotel_booking_id = #{hotelBookingId}, payment_method = #{paymentMethod}, provider_payment_id = #{providerPaymentId},
         amount = #{amount}, currency = #{currency}, status = #{status}, requested_at = #{requestedAt,jdbcType=TIMESTAMP_WITH_TIMEZONE},
