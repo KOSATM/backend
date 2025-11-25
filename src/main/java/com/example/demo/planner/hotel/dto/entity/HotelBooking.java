@@ -1,16 +1,15 @@
 package com.example.demo.planner.hotel.dto.entity;
 
-import java.time.OffsetDateTime;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+
 import lombok.Getter;
-import lombok.AllArgsConstructor;
 
 @Getter
-@AllArgsConstructor
 public class HotelBooking {
     private Long id;
     private Long userId;
-    private String externalBookingId;
+    private String externalBookingId; // 이거 Id로 할거면 Long으로 바꾸고 name으로 할거면 String..
     private Long hotelId;
     private Long roomTypeId;
     private Long ratePlanId;
