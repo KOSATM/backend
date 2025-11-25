@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.dao.aiReview.AiReviewAnalysisDao">
+<mapper namespace="com.example.demo.travelgram.aiReview.dao.AiReviewAnalysisDao">
 
   <select id="selectAiReviewAnalysisById" resultType="AiReviewAnalysis">
     SELECT id, prompt_text, input_json, output_json, created_at, user_id, review_post_id
