@@ -11,6 +11,8 @@ public class Place {
     private double lng;
     private String address;
     private String placeType;
-    private String imageUrl;
-    private String thumbnailUrl;
+    private String internalOriginalUrl;
+    private String internalThumbnailUrl;
+    private String externalImageUrl;
+    private ImageStatusEnum imageStatus;
 }

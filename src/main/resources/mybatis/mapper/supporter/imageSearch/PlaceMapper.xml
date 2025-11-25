@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.demo.supporter.imageSearch.dao.PlaceDao">
+  <resultMap id="PlaceResultMap" type="Place">
+    <id column="id"                  property="id"/>
+    <result column="name"            property="name"/>
+    <result column="description"     property="description"/>
+    <result column="lat"             property="lat"/>
+    <result column="lng"             property="lng"/>
+    <result column="address"         property="address"/>
+    <result column="place_type"      property="placeType"/>
+    <result column="internal_original_url"  property="internalOriginalUrl"/>
+    <result column="internal_thumbnail_url" property="internalThumbnailUrl"/>
+    <result column="external_image_url"     property="externalImageUrl"/>
+    <result column="image_status"           property="imageStatus"/>
+  </resultMap>
+
+  <!-- 단건 조회 -->
+  <select id="selectById" parameterType="long" resultMap="PlaceResultMap">
+    SELECT id,name,description,lat,lng,address,place_type,
+           internal_original_url,internal_thumbnail_url,
+           external_image_url,image_status
+    FROM places
+    WHERE id = #{id}
+  </select>
+
+  <!-- place_type 기준 조회 -->
+  <select id="selectByPlaceType" parameterType="string" resultMap="PlaceResultMap">
+    SELECT id,name,description,lat,lng,address,place_type,
+           internal_original_url,internal_thumbnail_url,
+           external_image_url,image_status
+    FROM places
+    WHERE place_type = #{placeType}
+    ORDER BY name ASC
+  </select>
+
+  <!-- 전체 조회 -->
+  <select id="selectAll" resultMap="PlaceResultMap">
+    SELECT id,name,description,lat,lng,address,place_type,
+           internal_original_url,internal_thumbnail_url,
+           external_image_url,image_status
+    FROM places
+    ORDER BY id DESC
+  </select>
+
+  <!-- 위경도 범위 조회 -->
+  <select id="selectByLatLngBounds" parameterType="map" resultMap="PlaceResultMap">
+    SELECT id,name,description,lat,lng,address,place_type,
+           internal_original_url,internal_thumbnail_url,
+           external_image_url,image_status
+    FROM places
+    WHERE lat BETWEEN #{minLat} AND #{maxLat}
+      AND lng BETWEEN #{minLng} AND #{maxLng}
+    ORDER BY name ASC
+  </select>
+
+  <!-- INSERT -->
+  <insert id="insert" parameterType="Place" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO places (
+      name, description, lat, lng, address, place_type,
+      internal_original_url, internal_thumbnail_url,
+      external_image_url, image_status
+    ) VALUES (
+      #{name}, #{description}, #{lat}, #{lng}, #{address}, #{placeType},
+      #{internalOriginalUrl}, #{internalThumbnailUrl},
+      #{externalImageUrl}, #{imageStatus}
+    )
+  </insert>
+
+  <!-- 배치 INSERT -->
+  <insert id="batchInsert" parameterType="list">
+    INSERT INTO places (
+      name, description, lat, lng, address, place_type,
+      internal_original_url, internal_thumbnail_url,
+      external_image_url, image_status
+    ) VALUES
+    <foreach collection="list" item="p" separator=",">
+      (#{p.name}, #{p.description}, #{p.lat}, #{p.lng}, #{p.address}, #{p.placeType},
+       #{p.internalOriginalUrl}, #{p.internalThumbnailUrl},
+       #{p.externalImageUrl}, #{p.imageStatus})
+    </foreach>
+  </insert>
+
+  <!-- UPDATE -->
+  <update id="update" parameterType="Place">
+    UPDATE places
+    SET name = #{name},
+        description = #{description},
+        lat = #{lat},
+        lng = #{lng},
+        address = #{address},
+        place_type = #{placeType},
+        internal_original_url = #{internalOriginalUrl},
+        internal_thumbnail_url = #{internalThumbnailUrl},
+        external_image_url = #{externalImageUrl},
+        image_status = #{imageStatus}
+    WHERE id = #{id}
+  </update>
+
+  <!-- DELETE (단건) -->
+  <delete id="deleteById" parameterType="long">
+    DELETE FROM places WHERE id = #{id}
+  </delete>
+
+  <!-- place_type 기준 삭제 -->
+  <delete id="deleteByPlaceType" parameterType="string">
+    DELETE FROM places WHERE place_type = #{placeType}
+  </delete>
+</mapper>
