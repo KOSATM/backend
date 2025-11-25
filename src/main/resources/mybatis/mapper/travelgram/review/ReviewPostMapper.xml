@@ -14,7 +14,7 @@
         SELECT * FROM review_posts WHERE id = #{id};
     </select>
 
-    <select id="findReviewPostsByPlanId" resultType=".ReviewPost">
+    <select id="findReviewPostsByPlanId" resultType="ReviewPost">
         SELECT * FROM review_posts WHERE travel_plan_id = #{travelPlanId};
     </select>
 
