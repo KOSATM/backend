@@ -10,52 +10,18 @@
         VALUES (#{content}, #{isPosted}, #{reviewPostUrl}, NOW(), #{travelPlanId}, #{reviewStyleId});
     </insert>
 
-    <select id="findReviewPostById" resultType="ReviewPost">
+    <select id="selectReviewPostById" resultType="ReviewPost">
         SELECT * FROM review_posts WHERE id = #{id};
     </select>
 
-    <select id="findReviewPostsByPlanId" resultType="ReviewPost">
+    <select id="selectReviewPostsByPlanId" resultType="ReviewPost">
         SELECT * FROM review_posts WHERE travel_plan_id = #{travelPlanId};
     </select>
 
-    <!-- review_photo_groups -->
-    <insert id="insertPhotoGroup" parameterType="ReviewPhotoGroup" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO review_photo_groups (created_at, review_post_id)
-        VALUES (NOW(), #{reviewPostId});
-    </insert>
-
-    <select id="findGroupsByPostId" resultType="ReviewPhotoGroup">
-        SELECT * FROM review_photo_groups WHERE review_post_id = #{reviewPostId};
-    </select>
-
-    <!-- review_photos -->
-    <insert id="insertPhoto" parameterType="ReviewPhoto" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO review_photos (file_url, lat, lng, taken_at, order_index, created_at, group_id)
-        VALUES (#{fileUrl}, #{lat}, #{lng}, #{takenAt}, #{orderIndex}, NOW(), #{groupId});
-    </insert>
-
-    <select id="findPhotosByGroup" resultType="ReviewPhoto">
-        SELECT * FROM review_photos WHERE group_id = #{groupId};
-    </select>
-
-    <!-- review_hashtag_groups -->
-    <insert id="insertHashtagGroup" parameterType="ReviewHashtagGroup" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO review_hashtag_groups (created_at, review_post_id)
-        VALUES (NOW(), #{reviewPostId});
-    </insert>
-
-    <select id="findHashtagGroupsByPostId" resultType="ReviewHashtagGroup">
-        SELECT * FROM review_hashtag_groups WHERE review_post_id = #{reviewPostId};
-    </select>
-
-    <!-- review_hashtags -->
-    <insert id="insertHashtag" parameterType="ReviewHashtag" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO review_hashtags (name, is_selected, created_at, group_id)
-        VALUES (#{name}, #{isSelected}, NOW(), #{groupId});
-    </insert>
-
-    <select id="findHashtagsByGroup" resultType="ReviewHashtag">
-        SELECT * FROM review_hashtags WHERE group_id = #{groupId};
-    </select>
-
+    <update id="updateReviewPost" parameterType="com.example.demo.dto.reviewPost.ReviewPost">
+        UPDATE review_posts
+        SET content = #{content}, is_posted = #{isPosted}, review_post_url = #{reviewPostUrl}, created_at = #{createdAt},
+            travel_plan_id = #{travelPlanId}, review_style_id = #{reviewStyleId}
+        WHERE id = #{id}
+  </update>
 </mapper>

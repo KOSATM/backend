@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.dao.reviewHashtag.ReviewHashtagGroupDao">
+
+  <select id="selectHashtagGroupById" resultType="ReviewHashtagGroup">
+    SELECT id, created_at, review_post_id
+    FROM review_hastag_groups WHERE id = #{id}
+  </select>
+
+  <insert id="insertHashtagGroup" parameterType="ReviewHashtagGroup" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO review_hastag_groups (created_at, review_post_id)
+    VALUES (NOW(), #{reviewPostId})
+  </insert>
+
+  <update id="updateHashtagGroup" parameterType="ReviewHashtagGroup">
+    UPDATE review_hastag_groups
+    SET created_at = NOW(), review_post_id = #{reviewPostId}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteHashtagGroupById" parameterType="long">
+    DELETE FROM review_hastag_groups WHERE id = #{id}
+  </delete>
+
+</mapper>

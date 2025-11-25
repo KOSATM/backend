@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.dao.reviewPhoto.ReviewPhotoDao">
+
+  <select id="selectReviewPhotoById" resultType="ReviewPhoto">
+    SELECT id, file_url, lat, lng, taken_at, order_index, created_at, group_id
+    FROM review_photos WHERE id = #{id}
+  </select>
+
+  <insert id="insertReviewPhoto" parameterType="ReviewPhoto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO review_photos (file_url, lat, lng, taken_at, order_index, created_at, group_id)
+    VALUES (#{fileUrl}, #{lat}, #{lng}, #{takenAt}, #{orderIndex}, NOW(), #{groupId})
+  </insert>
+
+  <update id="updateReviewPhoto" parameterType="ReviewPhoto">
+    UPDATE review_photos
+    SET file_url = #{fileUrl}, lat = #{lat}, lng = #{lng}, taken_at = #{takenAt},
+        order_index = #{orderIndex}, created_at = NOW(), group_id = #{groupId}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteReviewPhotoById" parameterType="long">
+    DELETE FROM review_photos WHERE id = #{id}
+  </delete>
+
+</mapper>
