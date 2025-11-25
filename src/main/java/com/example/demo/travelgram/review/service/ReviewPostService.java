@@ -5,6 +5,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.example.demo.travelgram.review.dao.ReviewPostDao;
 import com.example.demo.travelgram.review.dto.*;
+import com.example.demo.travelgram.review.dto.entity.ReviewHashtag;
+import com.example.demo.travelgram.review.dto.entity.ReviewHashtagGroup;
+import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
+import com.example.demo.travelgram.review.dto.entity.ReviewPhotoGroup;
+import com.example.demo.travelgram.review.dto.entity.ReviewPost;
 
 @Service
 public class ReviewPostService {

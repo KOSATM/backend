@@ -2,18 +2,20 @@ package com.example.demo.travelgram.review.controller;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import com.example.demo.travelgram.review.dto.*;
+import com.example.demo.travelgram.review.dto.entity.*;
 import com.example.demo.travelgram.review.service.ReviewPostService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/review")
 public class ReviewPostController {
 
-    @Autowired
-    private ReviewPostService reviewPostService;
+    
+    private final ReviewPostService reviewPostService;
 
     @PostMapping("/post")
     public Long createReviewPost(@RequestBody ReviewPost post) {
