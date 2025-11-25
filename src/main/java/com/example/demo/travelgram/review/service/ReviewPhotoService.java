@@ -41,7 +41,7 @@ public class ReviewPhotoService {
         }
         String storedName = UUID.randomUUID().toString() + ext;
         // 4) S3 업로드
-        String s3url = s3Service.uploadFile(file, storedName);   // S3 업로드
+        String s3Url = s3Service.uploadFile(file, storedName); // S3 업로드
 
         // 5) DB에 저장할 엔티티 생성
         // 📌 세터 없이 빌더로 엔티티 생성
@@ -56,6 +56,7 @@ public class ReviewPhotoService {
         // 6) DB 저장
         reviewPhotoDao.insert(photo);
 
-        return photo;
+        return new ReviewPhotoUploadResponse(photo.getId(),photo.getFileUrl(),photo.getOrderIndex());
+
     }
 }

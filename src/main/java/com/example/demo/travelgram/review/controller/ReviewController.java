@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
 import com.example.demo.travelgram.review.dto.entity.ReviewPost;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoUploadRequest;
+import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
 import com.example.demo.travelgram.review.service.ReviewPhotoService;
 import com.example.demo.travelgram.review.service.ReviewPostService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,10 +39,10 @@ public class ReviewController {
         ObjectMapper mapper = new ObjectMapper();
         ReviewPhotoUploadRequest dto = mapper.readValue(data, ReviewPhotoUploadRequest.class);
 
-        // 서비스 호출
-        ReviewPhoto saved = reviewPhotoService.uploadPhoto(dto, file);
+        // ✔ 서비스가 반환하는 타입에 맞춰서 호출
+        ReviewPhotoUploadResponse response = reviewPhotoService.uploadPhoto(dto, file); 
 
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/post")
