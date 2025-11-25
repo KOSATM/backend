@@ -1,4 +1,4 @@
-package com.example.common.dto.user;
+package com.example.demo.common.dto.user;
 
 import java.time.OffsetDateTime;
 import lombok.Data;

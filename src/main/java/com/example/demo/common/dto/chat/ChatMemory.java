@@ -1,4 +1,4 @@
-package com.example.common.dto.chat;
+package com.example.demo.common.dto.chat;
 
 import java.time.OffsetDateTime;
 import lombok.Data;
