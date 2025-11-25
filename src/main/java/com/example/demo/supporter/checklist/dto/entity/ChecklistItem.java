@@ -1,4 +1,4 @@
-package com.example.demo.supporter.checklist.dto;
+package com.example.demo.supporter.checklist.dto.entity;
 
 import java.time.OffsetDateTime;
 import lombok.Data;
