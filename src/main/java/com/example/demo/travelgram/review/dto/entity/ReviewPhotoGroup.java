@@ -1,10 +1,11 @@
-package com.example.demo.travelgram.review.dto;
+package com.example.demo.travelgram.review.dto.entity;
 
 import java.time.OffsetDateTime;
-import lombok.Data;
 
-@Data
-public class ReviewHashtagGroup {
+import lombok.Getter;
+
+@Getter
+public class ReviewPhotoGroup {
     private Long id;
     private OffsetDateTime createdAt;
     private Long reviewPostId;

@@ -1,9 +1,10 @@
-package com.example.demo.travelgram.review.dto;
+package com.example.demo.travelgram.review.dto.entity;
 
 import java.time.OffsetDateTime;
-import lombok.Data;
 
-@Data
+import lombok.Getter;
+
+@Getter
 public class ReviewPhoto {
     private Long id;
     private String fileUrl;
