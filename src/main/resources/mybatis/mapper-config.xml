@@ -8,7 +8,7 @@
   </settings>
 
   <typeAliases>
-    
+    <package name="com.example.demo.travelgram.review.dto.entity"/>
   </typeAliases>
 
 </configuration>
