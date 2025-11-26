@@ -30,7 +30,6 @@ public class ReviewService {
 
     @Transactional
     public ReviewCreateResponse createReview(Long travelPlanId) {
-        // 📌 세터 없이 빌더로 엔티티 생성
         ReviewPost post = ReviewPost.builder()
                 .travelPlanId(travelPlanId)
                 .build();
@@ -84,7 +83,6 @@ public class ReviewService {
         }
 
         // 5) DB에 저장할 엔티티 생성
-        // 📌 세터 없이 빌더로 엔티티 생성
         ReviewPhoto photo = ReviewPhoto.builder()
                 .groupId(dto.getGroupId())
                 .orderIndex(dto.getOrderIndex())
