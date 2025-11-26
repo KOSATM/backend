@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -15,8 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.travelgram.review.dto.request.ReviewCreateRequest;
+import com.example.demo.travelgram.review.dto.request.ReviewPhotoOrderUpdateRequest;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoUploadRequest;
 import com.example.demo.travelgram.review.dto.response.ReviewCreateResponse;
+import com.example.demo.travelgram.review.dto.response.ReviewPhotoOrderUpdateResponse;
 import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
 import com.example.demo.travelgram.review.service.ReviewService;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -98,5 +101,11 @@ public class ReviewController {
         }
 
         return ResponseEntity.ok(result);
+    }
+
+    @PutMapping("/photo/order")
+    public ResponseEntity<?> updatePhotoOrder(@RequestBody ReviewPhotoOrderUpdateRequest request) {
+        reviewService.updatePhotoOrder(request);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -12,6 +12,8 @@ import com.example.demo.travelgram.review.dao.ReviewPostDao;
 import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
 import com.example.demo.travelgram.review.dto.entity.ReviewPhotoGroup;
 import com.example.demo.travelgram.review.dto.entity.ReviewPost;
+import com.example.demo.travelgram.review.dto.request.ReviewPhotoOrderUpdateRequest;
+import com.example.demo.travelgram.review.dto.request.ReviewPhotoOrderUpdateRequest.PhotoOrderItem;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoUploadRequest;
 import com.example.demo.travelgram.review.dto.response.ReviewCreateResponse;
 import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
@@ -96,4 +98,13 @@ public class ReviewService {
 
     }
 
+    @Transactional
+    public void updatePhotoOrder(ReviewPhotoOrderUpdateRequest request) {
+        for (PhotoOrderItem item : request.getPhotos()) {
+            reviewPhotoDao.updatePhotoOrder(
+                    item.getPhotoId(),
+                    item.getOrderIndex(),
+                    request.getGroupId());
+        }
+    }
 }
