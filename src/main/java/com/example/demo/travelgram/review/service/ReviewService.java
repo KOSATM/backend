@@ -30,7 +30,6 @@ public class ReviewService {
 
     @Transactional
     public ReviewCreateResponse createReview(Long travelPlanId) {
-        // 📌 세터 없이 빌더로 엔티티 생성
         ReviewPost post = ReviewPost.builder()
                 .travelPlanId(travelPlanId)
                 .build();
