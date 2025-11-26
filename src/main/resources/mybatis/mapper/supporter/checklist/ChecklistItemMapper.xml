@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.demo.supporter.checklist.dao.ChecklistItemDao">
+
+  <!-- ResultMap -->
+    <resultMap id="ChecklistItemResultMap" type="ChecklistItem">
+        <id property="id" column="id" />
+        <result property="checklistId" column="checklist_id" />
+        <result property="content" column="content" />
+        <result property="category" column="category" />
+        <result property="isChecked" column="is_checked" />
+        <result property="createdAt" column="created_at" />
+    </resultMap>
+
+    <!-- INSERT -->
+    <insert id="insert" parameterType="ChecklistItem"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO checklist_items
+        (checklist_id, content, category, is_checked, created_at)
+        VALUES
+        (#{checklistId}, #{content}, #{category}, #{isChecked}, #{createdAt})
+    </insert>
+
+    <!-- SELECT 단건 조회 -->
+    <select id="selectById" parameterType="long" resultMap="ChecklistItemResultMap">
+        SELECT id, checklist_id, content, category, is_checked, created_at
+        FROM checklist_items
+        WHERE id = #{id}
+    </select>
+
+    <!-- SELECT 전체 조회 (Optional) -->
+    <select id="selectAll" resultMap="ChecklistItemResultMap">
+        SELECT id, checklist_id, content, category, is_checked, created_at
+        FROM checklist_items
+        ORDER BY id DESC
+    </select>
+
+    <!-- UPDATE -->
+    <update id="update" parameterType="ChecklistItem">
+        UPDATE checklist_items
+        SET
+            checklist_id = #{checklistId},
+            content = #{content},
+            category = #{category},
+            is_checked = #{isChecked},
+            created_at = #{createdAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- DELETE -->
+    <delete id="delete" parameterType="long">
+        DELETE FROM checklist_items
+        WHERE id = #{id}
+    </delete>
+
+</mapper>

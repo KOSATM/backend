@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.demo.supporter.imageSearch.dao.ImageSearchPlaceDao">
+  <resultMap id="ImageSearchPlaceResultMap" type="com.example.demo.supporter.imageSearch.dto.entity.ImageSearchPlace">
+    <id property="id" column="id"/>
+    <result property="userId" column="user_id"/>
+    <result property="createdAt" column="created_at"/>
+    <result property="actionType" column="action_type"/>
+  </resultMap>
+
+    <!-- INSERT -->
+    <insert id="insert" parameterType="com.example.demo.supporter.imageSearch.dto.entity.ImageSearchPlace" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO image_search_places (user_id, created_at, action_type)
+        VALUES (#{userId}, #{createdAt}, #{actionType}::image_action_type)
+    </insert>
+
+    <!-- SELECT by ID -->
+    <select id="selectById" resultMap="ImageSearchPlaceResultMap">
+        SELECT *
+        FROM image_search_places
+        WHERE id = #{id}s
+    </select>
+
+    <!-- SELECT ALL -->
+    <select id="selectAll" resultMap="ImageSearchPlaceResultMap">
+        SELECT *
+        FROM image_search_places
+        ORDER BY id DESC
+    </select>
+
+    <!-- UPDATE -->
+    <update id="update" parameterType="com.example.demo.supporter.imageSearch.dto.entity.ImageSearchPlace">
+        UPDATE image_search_places
+        SET user_id = #{userId},
+            created_at = #{createdAt},
+            action_type = #{actionType}::image_action_type
+        WHERE id = #{id}
+    </update>
+
+    <!-- DELETE -->
+    <delete id="delete">
+        DELETE FROM image_search_places
+        WHERE id = #{id}
+    </delete>
+</mapper>

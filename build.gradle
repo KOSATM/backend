@@ -63,6 +63,12 @@ dependencies {
 	implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
+
+	// AWS S3
+	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.700'
+
+	// Multipart 안정성 보강
+    implementation 'commons-fileupload:commons-fileupload:1.5'
 }
 
 dependencyManagement {
