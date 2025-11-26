@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
-public class PlannerAgent {
+public class InternetSearchAgent {
   private ChatClient chatClient;
   private String searchEndpoint;
   private String apiKey;
@@ -22,7 +22,7 @@ public class PlannerAgent {
   private WebClient webClient;
   private ObjectMapper objectMapper = new ObjectMapper();
 
-  public PlannerAgent(
+  public InternetSearchAgent(
       ChatClient.Builder chatClientBuilder,
       @Value("${google.search.endpoint}") String endpoint,      
       @Value("${google.search.apiKey}") String apiKey,      
