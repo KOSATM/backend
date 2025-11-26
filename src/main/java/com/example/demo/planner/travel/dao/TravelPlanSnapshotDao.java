@@ -6,33 +6,21 @@ import java.util.List;
 
 @Mapper
 public interface TravelPlanSnapshotDao {
-    /**
-     * ID로 여행 계획 스냅샷을 조회합니다.
-     */
+    // ID로 개별 스냅샷 조회
     TravelPlanSnapshot selectTravelPlanSnapshotById(Long id);
 
-    /**
-     * 사용자의 모든 여행 계획 스냅샷을 조회합니다.
-     */
+    // 사용자의 모든 스냅샷 조회
     List<TravelPlanSnapshot> selectTravelPlanSnapshotsByUserId(Long userId);
 
-    /**
-     * 사용자의 최신 여행 계획 스냅샷을 조회합니다.
-     */
+    // 사용자의 최신 스냅샷 조회
     TravelPlanSnapshot selectLatestTravelPlanSnapshotByUserId(Long userId);
 
-    /**
-     * 여행 계획 스냅샷을 생성합니다.
-     */
+    // 스냅샷 저장
     int insertTravelPlanSnapshot(TravelPlanSnapshot travelPlanSnapshot);
 
-    /**
-     * 여행 계획 스냅샷을 삭제합니다.
-     */
+    // 특정 스냅샷 삭제
     int deleteTravelPlanSnapshot(Long id);
 
-    /**
-     * 사용자의 모든 여행 계획 스냅샷을 삭제합니다.
-     */
+    // 사용자의 모든 스냅샷 삭제
     int deleteTravelPlanSnapshotsByUserId(Long userId);
 }
