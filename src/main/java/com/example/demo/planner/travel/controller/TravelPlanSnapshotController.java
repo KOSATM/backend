@@ -76,7 +76,7 @@ public class TravelPlanSnapshotController {
      * @param travelPlanSnapshot 생성할 여행 계획 스냅샷
      * @return 생성된 여행 계획 스냅샷 (ID 포함)
      */
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<TravelPlanSnapshot> createTravelPlanSnapshot(@RequestBody TravelPlanSnapshot travelPlanSnapshot) {
         log.info("POST /api/travel/snapshots - Creating snapshot for user: {}", travelPlanSnapshot.getUserId());
         try {
