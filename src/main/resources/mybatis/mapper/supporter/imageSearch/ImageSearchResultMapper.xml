@@ -47,7 +47,7 @@
     </update>
 
     <!-- DELETE -->
-    <delete id="delete">
+    <delete id="delete" parameterType="long">
         DELETE FROM image_search_results
         WHERE id = #{id}
     </delete>

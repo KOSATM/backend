@@ -33,6 +33,6 @@ public class ImageSearchPlaceService {
 
     @Transactional
     public int delete(Long id) {
-        return dao.deleteById(id);
+        return dao.delete(id);
     }
 }
