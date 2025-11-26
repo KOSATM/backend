@@ -83,12 +83,9 @@ public class ReviewService {
         }
 
         // 5) DB에 저장할 엔티티 생성
-        // 📌 세터 없이 빌더로 엔티티 생성
         ReviewPhoto photo = ReviewPhoto.builder()
                 .groupId(dto.getGroupId())
                 .orderIndex(dto.getOrderIndex())
-                // .originalName(originalName)
-                // .storedName(storedName)
                 .fileUrl(s3Url)
                 .build();
 
