@@ -3,13 +3,17 @@ package com.example.demo.travelgram.review.service;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.common.s3.service.S3Service;
 import com.example.demo.travelgram.review.dao.ReviewPhotoDao;
+import com.example.demo.travelgram.review.dao.ReviewPostDao;
 import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
 import com.example.demo.travelgram.review.dto.entity.ReviewPhotoGroup;
+import com.example.demo.travelgram.review.dto.entity.ReviewPost;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoUploadRequest;
+import com.example.demo.travelgram.review.dto.response.ReviewCreateResponse;
 import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -18,19 +22,36 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ReviewPhotoService {
+public class ReviewService {
 
     private final S3Service s3Service;
     private final ReviewPhotoDao reviewPhotoDao;
+    private final ReviewPostDao reviewPostDao;
 
-    public Long createPhotoGroup() {
-        ReviewPhotoGroup group = new ReviewPhotoGroup();
+    @Transactional
+    public ReviewCreateResponse createReview(Long travelPlanId) {
+        // 📌 세터 없이 빌더로 엔티티 생성
+        ReviewPost post = ReviewPost.builder()
+                .travelPlanId(travelPlanId)
+                .build();
+
+        // 2. DB insert → post.id 자동 채워짐
+        reviewPostDao.insertDraft(post);
+
+        Long reviewPostId = post.getId();
+
+        // 3. photo_group 생성 시 reviewPostId 사용
+        ReviewPhotoGroup group = ReviewPhotoGroup.builder()
+                .reviewPostId(reviewPostId)
+                .build();
+        // 4. DB insert -> group.id 자동 생성됨
         reviewPhotoDao.insertReviewPhotoGroup(group);
-        return group.getId();
+
+        // 결과 리턴
+        return new ReviewCreateResponse(post.getId(), group.getId());
     }
 
     public ReviewPhotoUploadResponse uploadPhoto(ReviewPhotoUploadRequest dto, MultipartFile file) {
-
         // 1) 파일 비어있으면 예외 처리
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("file is empty");
