@@ -5,9 +5,9 @@
 <mapper namespace="com.example.demo.travelgram.review.dao.ReviewPostDao">
 
     <!-- review_posts -->
-    <insert id="insertReviewPost" parameterType="ReviewPost" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertDraft" parameterType="ReviewPost" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO review_posts (content, is_posted, review_post_url, created_at, travel_plan_id, review_style_id)
-        VALUES (#{content}, #{isPosted}, #{reviewPostUrl}, NOW(), #{travelPlanId}, #{reviewStyleId});
+        VALUES (null, false, null, NOW(), #{travelPlanId}, null);
     </insert>
 
     <select id="selectReviewPostById" resultType="ReviewPost">

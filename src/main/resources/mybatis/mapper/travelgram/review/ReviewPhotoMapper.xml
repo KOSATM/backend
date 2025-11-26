@@ -6,7 +6,7 @@
 
   <insert id="insertReviewPhotoGroup" parameterType="ReviewPhotoGroup" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO review_photo_groups (created_at, review_post_id)
-    VALUES (NOW(),2 )
+    VALUES (NOW(), #{reviewPostId} )
   </insert>
 
   <insert id="insertReviewPhoto" parameterType="ReviewPhoto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
