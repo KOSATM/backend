@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.planner.travel.dao.TravelPlanSnapshotMapper">
+<mapper namespace="com.example.demo.planner.travel.dao.TravelPlanSnapshotDao">
 
   <select id="selectTravelPlanSnapshotById" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.TravelPlanSnapshot">
     SELECT id, user_id, version_no, snapshot_json, created_at
