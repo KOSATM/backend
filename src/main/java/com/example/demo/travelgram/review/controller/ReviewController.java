@@ -19,7 +19,6 @@ import com.example.demo.travelgram.review.dto.request.ReviewCreateRequest;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoOrderUpdateRequest;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoUploadRequest;
 import com.example.demo.travelgram.review.dto.response.ReviewCreateResponse;
-import com.example.demo.travelgram.review.dto.response.ReviewPhotoOrderUpdateResponse;
 import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
 import com.example.demo.travelgram.review.service.ReviewService;
 import com.fasterxml.jackson.core.type.TypeReference;
