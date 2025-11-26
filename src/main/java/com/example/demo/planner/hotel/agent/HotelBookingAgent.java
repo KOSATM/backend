@@ -57,6 +57,8 @@ public class HotelBookingAgent {
             log.info("HotelBookingAgent - stay {} ~ {} ({} nights)", checkin, checkout, nights);
 
             // 1) DB 후보 조회
+            log.info("🔍 Querying DB with: checkinDate={}, checkoutDate={}, adults={}, children={}", 
+                checkin.toLocalDate(), checkout.toLocalDate(), adults, children);
             List<HotelRatePlanCandidate> candidates =
                     hotelCandidateService.findCandidates(checkin, checkout, adults, children);
 
@@ -65,10 +67,13 @@ public class HotelBookingAgent {
                 return null;
             }
 
+            log.info("📊 Found {} hotel candidates from DB", candidates.size());
+
             String tripPlanJson = objectMapper.writeValueAsString(tripPlan);
             String candidatesJson = objectMapper.writeValueAsString(candidates);
 
             // 2) LLM 호출
+            log.info("🤖 Calling LLM to select best hotel...");
             String llmResultJson = chatClient.prompt()
                     .system("""
                         너는 사용자의 서울 여행 일정에 맞는 호텔을 하나 골라
@@ -143,6 +148,9 @@ public class HotelBookingAgent {
             // 3) JSON → DTO
             HotelBookingRequest bookingRequest =
                     objectMapper.readValue(llmResultJson, HotelBookingRequest.class);
+
+            log.info("✅ LLM selected hotel: id={}, ratePlan={}", 
+                bookingRequest.getHotelId(), bookingRequest.getRatePlanId());
 
             // 최소한의 보정
             if (bookingRequest.getUserId() == null) {

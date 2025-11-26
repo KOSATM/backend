@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.demo.planner.hotel.dao.HotelCandidateDao">
+
+    <resultMap id="HotelRatePlanCandidateMap" type="com.example.demo.planner.hotel.dto.entity.HotelRatePlanCandidate">
+        <result column="hotel_id" property="hotelId" />
+        <result column="room_type_id" property="roomTypeId" />
+        <result column="rate_plan_id" property="ratePlanId" />
+        <result column="hotel_name" property="hotelName" />
+        <result column="room_name" property="roomName" />
+        <result column="rate_plan_name" property="ratePlanName" />
+        <result column="max_occupancy" property="maxOccupancy" />
+        <result column="price" property="price" />
+        <result column="tax_amount" property="taxAmount" />
+        <result column="fee_amount" property="feeAmount" />
+        <result column="currency" property="currency" />
+        <result column="star_rating" property="starRating" />
+        <result column="rating_score" property="ratingScore" />
+        <result column="review_count" property="reviewCount" />
+        <result column="neighborhood" property="neighborhood" />
+        <result column="near_metro" property="nearMetro" />
+        <result column="metro_station_name" property="metroStationName" />
+    </resultMap>
+
+    <select id="findCandidates" resultMap="HotelRatePlanCandidateMap">
+        SELECT DISTINCT
+            h.id as hotel_id,
+            r.id as room_type_id,
+            p.id as rate_plan_id,
+            h.name as hotel_name,
+            r.name as room_name,
+            p.name as rate_plan_name,
+            r.max_occupancy,
+            MIN(pr.price) as price,
+            MIN(pr.tax_amount) as tax_amount,
+            MIN(pr.fee_amount) as fee_amount,
+            p.currency,
+            h.star_rating,
+            h.rating_score,
+            h.review_count,
+            h.neighborhood,
+            h.near_metro,
+            h.metro_station_name
+        FROM hotels h
+        INNER JOIN hotel_rooms r ON h.id = r.hotel_id
+        INNER JOIN hotel_rate_plans p ON r.id = p.room_type_id
+        INNER JOIN hotel_rate_plan_prices pr ON p.id = pr.rate_plan_id
+        WHERE h.is_active = true
+          AND r.max_occupancy >= (#{adults} + #{children})
+          AND pr.is_closed = false
+          AND pr.stay_date >= #{checkinDate}
+          AND pr.stay_date &lt;= #{checkoutDate}
+        GROUP BY h.id, r.id, p.id, h.name, r.name, p.name, r.max_occupancy, p.currency, h.star_rating, h.rating_score, h.review_count, h.neighborhood, h.near_metro, h.metro_station_name
+        ORDER BY price ASC, h.rating_score DESC
+        LIMIT 20
+    </select>
+
+</mapper>
