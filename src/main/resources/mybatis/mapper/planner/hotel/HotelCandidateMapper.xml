@@ -8,19 +8,18 @@
         <result column="room_type_id" property="roomTypeId" />
         <result column="rate_plan_id" property="ratePlanId" />
         <result column="hotel_name" property="hotelName" />
-        <result column="room_name" property="roomName" />
-        <result column="rate_plan_name" property="ratePlanName" />
-        <result column="max_occupancy" property="maxOccupancy" />
-        <result column="price" property="price" />
-        <result column="tax_amount" property="taxAmount" />
-        <result column="fee_amount" property="feeAmount" />
-        <result column="currency" property="currency" />
+        <result column="district" property="district" />
+        <result column="neighborhood" property="neighborhood" />
+        <result column="address_line1" property="addressLine1" />
+        <result column="latitude" property="latitude" />
+        <result column="longitude" property="longitude" />
         <result column="star_rating" property="starRating" />
         <result column="rating_score" property="ratingScore" />
         <result column="review_count" property="reviewCount" />
-        <result column="neighborhood" property="neighborhood" />
-        <result column="near_metro" property="nearMetro" />
-        <result column="metro_station_name" property="metroStationName" />
+        <result column="total_price" property="totalPrice" />
+        <result column="tax_amount" property="taxAmount" />
+        <result column="fee_amount" property="feeAmount" />
+        <result column="currency" property="currency" />
     </resultMap>
 
     <select id="findCandidates" resultMap="HotelRatePlanCandidateMap">
@@ -29,19 +28,18 @@
             r.id as room_type_id,
             p.id as rate_plan_id,
             h.name as hotel_name,
-            r.name as room_name,
-            p.name as rate_plan_name,
-            r.max_occupancy,
-            MIN(pr.price) as price,
-            MIN(pr.tax_amount) as tax_amount,
-            MIN(pr.fee_amount) as fee_amount,
-            p.currency,
+            h.district,
+            h.neighborhood,
+            h.address_line1,
+            h.latitude,
+            h.longitude,
             h.star_rating,
             h.rating_score,
             h.review_count,
-            h.neighborhood,
-            h.near_metro,
-            h.metro_station_name
+            SUM(pr.price) as total_price,
+            SUM(pr.tax_amount) as tax_amount,
+            SUM(pr.fee_amount) as fee_amount,
+            p.currency
         FROM hotels h
         INNER JOIN hotel_rooms r ON h.id = r.hotel_id
         INNER JOIN hotel_rate_plans p ON r.id = p.room_type_id
@@ -51,8 +49,8 @@
           AND pr.is_closed = false
           AND pr.stay_date >= #{checkinDate}
           AND pr.stay_date &lt;= #{checkoutDate}
-        GROUP BY h.id, r.id, p.id, h.name, r.name, p.name, r.max_occupancy, p.currency, h.star_rating, h.rating_score, h.review_count, h.neighborhood, h.near_metro, h.metro_station_name
-        ORDER BY price ASC, h.rating_score DESC
+        GROUP BY h.id, r.id, p.id, h.name, h.district, h.neighborhood, h.address_line1, h.latitude, h.longitude, h.star_rating, h.rating_score, h.review_count, p.currency
+        ORDER BY total_price ASC, h.rating_score DESC
         LIMIT 20
     </select>
 

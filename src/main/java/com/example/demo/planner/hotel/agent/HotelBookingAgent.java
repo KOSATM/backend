@@ -69,85 +69,99 @@ public class HotelBookingAgent {
 
             log.info("📊 Found {} hotel candidates from DB", candidates.size());
 
-            String tripPlanJson = objectMapper.writeValueAsString(tripPlan);
+            // 로깅: DB 조회 데이터 확인
+            log.info("🏨 Found {} candidates from DB", candidates.size());
+            if (candidates.isEmpty()) {
+                throw new RuntimeException("No hotel candidates found");
+            }
+            
+            // 첫 번째 호텔 정보 로깅
+            HotelRatePlanCandidate firstHotel = candidates.get(0);
+            log.info("🏨 First hotel: id={}, name={}, price={}, lat={}, lng={}", 
+                firstHotel.getHotelId(), 
+                firstHotel.getHotelName(), 
+                firstHotel.getTotalPrice(),
+                firstHotel.getLatitude(),
+                firstHotel.getLongitude());
+            
             String candidatesJson = objectMapper.writeValueAsString(candidates);
+            
+            log.info("📋 Candidates JSON length: {} chars", candidatesJson.length());
 
             // 2) LLM 호출
             log.info("🤖 Calling LLM to select best hotel...");
             String llmResultJson = chatClient.prompt()
                     .system("""
-                        너는 사용자의 서울 여행 일정에 맞는 호텔을 하나 골라
-                        hotel_bookings 테이블에 저장할 수 있는 예약 정보를 만드는 역할을 한다.
-
-                        ## 입력 설명
-                        - itineraryJson: 사용자의 전체 여행 일정 정보 (날짜, 방문 장소, 예산 등 포함)
-                        - candidatesJson: DB에서 조회된 실제 호텔/객실/요금제 후보 리스트.
-                          각 후보에는 hotelId, roomTypeId, ratePlanId, 호텔 이름, 위치, 총 가격, 평점 등이 포함되어 있다.
-
-                        ## 선택 기준
-                        1. 동선
-                           - 일정에 나오는 장소들(명동, 경복궁, 북촌, 강남, 남산 등)과의 거리/접근성을 고려한다.
-                        2. 예산
-                           - tripPlan.budget 과 후보의 totalPrice 를 비교해서 예산을 크게 넘지 않도록 한다.
-                        3. 호텔 평점/리뷰
-                           - ratingScore, reviewCount, starRating(있다면)를 참고해서
-                             "너무 후진 곳"은 피하면서 합리적인 곳을 고른다.
-
-                        ## 출력 형식 (JSON만 반환)
-                        아래 Java DTO 구조(HotelBookingRequest)에 맞게 JSON 객체 하나만 반환해라.
-
-                        HotelBookingRequest:
+                        주어진 호텔 후보 목록에서 하나를 선택해 JSON으로 반환하세요.
+                        
+                        선택 기준:
+                        1. 거리: 여행 일정의 장소들과 가까운 호텔
+                        2. 가격: 합리적인 가격
+                        3. 평점: 높은 별점
+                        
+                        반환값: JSON 객체만 반환하세요 (마크다운 없음)
+                        """)
+                    .user(u -> u.text("""
+                        candidates: """ + candidatesJson + """
+                        
+                        userId: """ + tripPlan.getUserId() + """
+                        checkinDate: """ + checkin.toString() + """
+                        checkoutDate: """ + checkout.toString() + """
+                        nights: """ + nights + """
+                        adultsCount: """ + adults + """
+                        childrenCount: """ + children + """
+                        guestName: """ + guestName + """
+                        guestEmail: """ + guestEmail + """
+                        guestPhone: """ + guestPhone + """
+                        
+                        이 정보를 이용해 candidates에서 하나를 선택하고 아래 JSON을 작성하세요:
                         {
-                          "userId": <long>,
-                          "externalBookingId": "<string 또는 null>",
-                          "hotelId": <long>,
-                          "roomTypeId": <long>,
-                          "ratePlanId": <long>,
-                          "checkinDate": "yyyy-MM-dd'T'HH:mm:ssXXX",
-                          "checkoutDate": "yyyy-MM-dd'T'HH:mm:ssXXX",
-                          "nights": <int>,
-                          "adultsCount": <int>,
-                          "childrenCount": <int>,
-                          "currency": "<3-letter, 예: 'KRW'>",
-                          "totalPrice": <number>,
-                          "taxAmount": <number>,
-                          "feeAmount": <number>,
+                          "userId": <userId>,
+                          "externalBookingId": null,
+                          "hotelId": <선택한 호텔의 hotelId>,
+                          "roomTypeId": <선택한 호텔의 roomTypeId>,
+                          "ratePlanId": <선택한 호텔의 ratePlanId>,
+                          "checkinDate": <checkinDate>,
+                          "checkoutDate": <checkoutDate>,
+                          "nights": <nights>,
+                          "adultsCount": <adultsCount>,
+                          "childrenCount": <childrenCount>,
+                          "currency": "KRW",
+                          "totalPrice": <선택한 호텔의 totalPrice>,
+                          "taxAmount": <선택한 호텔의 taxAmount>,
+                          "feeAmount": <선택한 호텔의 feeAmount>,
                           "status": "PENDING",
                           "paymentStatus": "PENDING",
-                          "guestName": "<게스트 이름>",
-                          "guestEmail": "<게스트 이메일>",
-                          "guestPhone": "<게스트 전화번호>",
-                          "providerBookingMeta": "<JSON 또는 간단한 텍스트 설명>",
-                          "bookedAt": "yyyy-MM-dd'T'HH:mm:ssXXX",
+                          "guestName": <guestName>,
+                          "guestEmail": <guestEmail>,
+                          "guestPhone": <guestPhone>,
+                          "providerBookingMeta": "selected",
+                          "bookedAt": <checkinDate>,
                           "cancelledAt": null
                         }
-
-                        ### 중요:
-                        - JSON 이외의 텍스트(설명, 주석 등)는 절대 출력하지 마라.
-                        - 날짜/시간 형식은 반드시 위에 적은 ISO-8601 형식을 지켜라.
-                        - userId, 인원 수, 게스트 정보는 사용자 입력 값(tripPlan, adults, children, guest*)를 그대로 사용해라.
-                        """)
-                    .user(u -> u
-                            .text("itineraryJson:")
-                            .text(tripPlanJson)
-                            .text("candidatesJson:")
-                            .text(candidatesJson)
-                            .text("adults: " + adults)
-                            .text("children: " + children)
-                            .text("guestName: " + guestName)
-                            .text("guestEmail: " + guestEmail)
-                            .text("guestPhone: " + guestPhone)
-                            .text("checkin: " + checkin.toString())
-                            .text("checkout: " + checkout.toString())
-                            .text("nights: " + nights)
-                            .text("userId: " + tripPlan.getUserId())
-                    )
+                        """))
                     .call()
                     .content();
 
             // 3) JSON → DTO
+            log.info("📝 Raw LLM response: {}", llmResultJson);
+            
+            // 마크다운 코드블록 제거
+            String cleanJson = llmResultJson
+                    .replaceAll("```json\\s*", "")
+                    .replaceAll("```\\s*", "")
+                    .replaceAll("```", "")
+                    .trim();
+            
+            log.info("🧹 Cleaned JSON: {}", cleanJson);
+            
             HotelBookingRequest bookingRequest =
-                    objectMapper.readValue(llmResultJson, HotelBookingRequest.class);
+                    objectMapper.readValue(cleanJson, HotelBookingRequest.class);
+            
+            log.info("✅ Parsed hotel: hotelId={}, roomTypeId={}, ratePlanId={}", 
+                bookingRequest.getHotelId(), 
+                bookingRequest.getRoomTypeId(), 
+                bookingRequest.getRatePlanId());
 
             log.info("✅ LLM selected hotel: id={}, ratePlan={}", 
                 bookingRequest.getHotelId(), bookingRequest.getRatePlanId());
