@@ -5,7 +5,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-public class ImageSearchPlace {
+public class ImageSearchSession {
     private Long id;
     private Long userId;
     private OffsetDateTime createdAt;
