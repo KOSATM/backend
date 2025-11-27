@@ -46,6 +46,6 @@ public class ToiletController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Integer> delete(@PathVariable Long id) {
-        return ResponseEntity.ok(service.delete(id));
+        return ResponseEntity.ok(service.deleteAll());
     }
 }
