@@ -1,7 +1,12 @@
 package com.example.demo.planner.travel.controller;
 
+import com.example.demo.planner.travel.agent.TravelPlanVersionAgent;
 import com.example.demo.planner.travel.dto.entity.TravelPlanSnapshot;
 import com.example.demo.planner.travel.service.TravelPlanSnapshotService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -9,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
 
 /**
  * TravelPlanSnapshotController는 여행 계획 스냅샷 관련 API를 처리합니다.
@@ -22,6 +28,7 @@ import java.util.List;
 public class TravelPlanSnapshotController {
 
     private final TravelPlanSnapshotService travelPlanSnapshotService;
+    private final TravelPlanVersionAgent travelPlanVersionAgent;
 
     /**
      * ID로 여행 계획 스냅샷을 조회합니다.
@@ -80,9 +87,9 @@ public class TravelPlanSnapshotController {
     public ResponseEntity<TravelPlanSnapshot> createTravelPlanSnapshot(@RequestBody TravelPlanSnapshot travelPlanSnapshot) {
         log.info("POST /api/travel/snapshots - Creating snapshot for user: {}", travelPlanSnapshot.getUserId());
         try {
-            travelPlanSnapshotService.saveTravelPlanSnapshot(travelPlanSnapshot);
-            log.info("Travel plan snapshot created with id: {}", travelPlanSnapshot.getId());
-            return ResponseEntity.status(HttpStatus.CREATED).body(travelPlanSnapshot);
+            TravelPlanSnapshot saved = travelPlanSnapshotService.saveTravelPlanSnapshot(travelPlanSnapshot);
+            log.info("Travel plan snapshot created with id: {}", saved.getId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
         } catch (Exception e) {
             log.error("Error creating travel plan snapshot", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -131,4 +138,13 @@ public class TravelPlanSnapshotController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @PostMapping("/llm-test/{userId}")
+    public Object postMethodName(@PathVariable Long userId, @RequestParam String question) throws JsonMappingException, JsonProcessingException {
+        // ObjectMapper objectMapper = new ObjectMapper();
+        // return objectMapper.readValue(travelPlanVersionAgent.manageVersionWithUserInteraction(userId, question), TravelPlanSnapshot.class);
+        
+        return travelPlanVersionAgent.manageVersionWithUserInteraction(userId, question);
+    }
+    
 }
