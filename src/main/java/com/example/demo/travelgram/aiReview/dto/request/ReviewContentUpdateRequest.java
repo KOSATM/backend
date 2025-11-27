@@ -1,10 +1,11 @@
-package com.example.demo.travelgram.review.dto.request;
+package com.example.demo.travelgram.aiReview.dto.request;
 
 import lombok.Data;
 
 
 @Data
 public class ReviewContentUpdateRequest {
+    private Long postId;
     private String content;
 
 }

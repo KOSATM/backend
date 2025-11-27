@@ -5,9 +5,8 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class ReviewPublishResponse {
-
-    private Long id; //review_posts
+public class ReviewPostResponse {
+    private Long id;
     private String postUrl;
-    private boolean is_posted = true;
+    // private boolean isPosted = true;
 }
