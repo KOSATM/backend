@@ -1,22 +1,18 @@
 package com.example.demo.supporter.map.service;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 import com.example.demo.supporter.map.apiclient.ToiletApiClient;
 import com.example.demo.supporter.map.dao.ToiletDao;
 import com.example.demo.supporter.map.dto.entity.Toilet;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
@@ -25,7 +21,6 @@ public class ToiletService {
 
 	private final ToiletApiClient apiClient;
 	private final ToiletDao dao;
-	private final Toilet toilet;
 
 	/**
 	 * 데이터를 전체 삭제하고 다시 전체 API로 채움
