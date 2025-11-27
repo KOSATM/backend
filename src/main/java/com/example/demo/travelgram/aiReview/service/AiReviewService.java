@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.example.demo.travelgram.aiReview.agent.AiReviewAgent;
 import com.example.demo.travelgram.aiReview.dao.AiReviewDao;
 import com.example.demo.travelgram.aiReview.dto.entity.AiReviewAnalysis;
 import com.example.demo.travelgram.aiReview.dto.entity.AiReviewHashtag;
@@ -22,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class AiReviewService {
     private final AiReviewDao aiReviewDao;
+    private final AiReviewAgent aiReviewAgent;
 
         // 1) AI 스타일 생성
     public List<AiReviewStyleResponse> generateAiStyles(Long postId) {
@@ -33,11 +35,11 @@ public class AiReviewService {
         List<AiReviewStyleResponse> styles = new ArrayList<>();
 
         for (int i = 0; i < 4; i++) {
-            AiReviewStyle style = aiReviewDao.generateStyle(analysis.getId());
+            AiReviewStyle style = aiReviewAgent.generateStyle(analysis.getId());
             aiReviewDao.insertAiReviewStyle(style);
 
             // 태그 3개 생성/저장 >> 대표 태그를 3개 보여주기만 하고 나머지 태그도 그거랑 비슷한거로 10~20개 추천해주면 되지 않나?
-            List<String> tags = aiReviewDao.generateHashtags(style.getId());
+            List<String> tags = aiReviewAgent.generateHashtags(style.getId());
             for (String tag : tags) {
                 aiReviewDao.insertAiReviewHashtag(new AiReviewHashtag(style.getId(), tag));
             }
