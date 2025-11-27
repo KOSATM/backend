@@ -4,30 +4,30 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
-import com.example.demo.supporter.imageSearch.dao.ImageSearchResultDao;
-import com.example.demo.supporter.imageSearch.dto.entity.ImageSearchResult;
+import com.example.demo.supporter.imageSearch.dao.ImageSearchCandidateDao;
+import com.example.demo.supporter.imageSearch.dto.entity.ImageSearchCandidate;
 
 @Service
 @RequiredArgsConstructor
-public class ImageSearchResultService {
-    private final ImageSearchResultDao dao;
+public class ImageSearchCandidateService {
+    private final ImageSearchCandidateDao dao;
 
-    public ImageSearchResult get(Long id) {
+    public ImageSearchCandidate get(Long id) {
         return dao.selectById(id);
     }
 
-    public List<ImageSearchResult> getAll() {
+    public List<ImageSearchCandidate> getAll() {
         return dao.selectAll();
     }
 
     @Transactional
-    public Long create(ImageSearchResult r) {
+    public Long create(ImageSearchCandidate r) {
         dao.insert(r);
         return r.getId();
     }
 
     @Transactional
-    public int update(ImageSearchResult r) {
+    public int update(ImageSearchCandidate r) {
         return dao.update(r);
     }
 

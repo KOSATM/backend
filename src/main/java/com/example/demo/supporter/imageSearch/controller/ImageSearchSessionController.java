@@ -1,35 +1,36 @@
 package com.example.demo.supporter.imageSearch.controller;
 
-import java.util.List;
+import com.example.demo.supporter.imageSearch.dto.entity.ImageSearchSession;
+import com.example.demo.supporter.imageSearch.service.ImageSearchSessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.example.demo.supporter.imageSearch.dto.entity.Place;
-import com.example.demo.supporter.imageSearch.service.PlaceService;
+
+import java.util.List;
 
 @RestController
-@RequestMapping("/supporter/places")
+@RequestMapping("/supporter/image-search/places")
 @RequiredArgsConstructor
-public class PlaceController {
-    private final PlaceService service;
+public class ImageSearchSessionController {
+    private final ImageSearchSessionService service;
 
     @GetMapping("/{id}")
-    public ResponseEntity<Place> get(@PathVariable Long id) {
+    public ResponseEntity<ImageSearchSession> get(@PathVariable Long id) {
         return ResponseEntity.ok(service.get(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<Place>> list() {
+    public ResponseEntity<List<ImageSearchSession>> list() {
         return ResponseEntity.ok(service.getAll());
     }
 
     @PostMapping
-    public ResponseEntity<Long> create(@RequestBody Place p) {
+    public ResponseEntity<Long> create(@RequestBody ImageSearchSession p) {
         return ResponseEntity.ok(service.create(p));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Integer> update(@PathVariable Long id, @RequestBody Place p) {
+    public ResponseEntity<Integer> update(@PathVariable Long id, @RequestBody ImageSearchSession p) {
         p.setId(id);
         return ResponseEntity.ok(service.update(p));
     }
