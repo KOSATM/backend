@@ -10,6 +10,8 @@
         VALUES (null, false, null, NOW(), #{travelPlanId}, null);
     </insert>
 
+    <!-- review_style_Id만 넣어서 update..., content까지 같이 업데이트하고나서 hashtagGroups insert하고 hashtags insert -->
+
     <select id="selectReviewPostById" resultType="ReviewPost">
         SELECT * FROM review_posts WHERE id = #{id};
     </select>
