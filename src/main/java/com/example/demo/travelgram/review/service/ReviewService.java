@@ -1,5 +1,6 @@
 package com.example.demo.travelgram.review.service;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -7,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.common.s3.service.S3Service;
+import com.example.demo.travelgram.review.dao.ReviewHashtagDao;
 import com.example.demo.travelgram.review.dao.ReviewPhotoDao;
 import com.example.demo.travelgram.review.dao.ReviewPostDao;
 import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
@@ -27,8 +29,14 @@ import lombok.extern.slf4j.Slf4j;
 public class ReviewService {
 
     private final S3Service s3Service;
+
     private final ReviewPhotoDao reviewPhotoDao;
     private final ReviewPostDao reviewPostDao;
+    private final ReviewHashtagDao reviewHashtagDao;
+
+    // ======================================
+    // 1) 리뷰 포스트 영역
+    // ======================================
 
     @Transactional
     public ReviewCreateResponse createReview(Long travelPlanId) {
@@ -51,6 +59,14 @@ public class ReviewService {
         // 결과 리턴
         return new ReviewCreateResponse(post.getId(), group.getId());
     }
+    
+    // public ReviewUpdateResponse updatePost(Long postId, ReviewUpdateRequest req) {
+    //     // ...
+    // }
+
+    // ======================================
+    // 2) 사진 업로드/순서 영역
+    // ======================================
 
     public ReviewPhotoUploadResponse uploadPhoto(ReviewPhotoUploadRequest dto, MultipartFile file) {
         // 1) 파일 비어있으면 예외 처리
@@ -106,5 +122,22 @@ public class ReviewService {
                     item.getOrderIndex(),
                     request.getGroupId());
         }
+    }
+
+    public void deletePhoto(Long photoId) {
+        // 포토그룹에서 포토만 삭제가 되어야 함, 포토그룹은 삭제 되면 안 됨!
+        reviewPhotoDao.deleteReviewPhoto(photoId);
+    }
+
+     // ======================================
+    // 3) 해시태그 영역
+    // ======================================
+
+    public void createHashtagGroup(Long postId, List<String> tags) {
+        // ...
+    }
+
+    public void updateHashtagGroup(Long postId, List<String> tags) {
+        // ...
     }
 }
