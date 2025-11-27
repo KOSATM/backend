@@ -6,24 +6,24 @@
 
   <select id="selectTravelPlanById" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.TravelPlan">
     SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended
-    FROM travel_plans
+    FROM plans
     WHERE id = #{id}
   </select>
 
   <select id="selectTravelPlansByUserId" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.TravelPlan">
     SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended
-    FROM travel_plans
+    FROM plans
     WHERE user_id = #{userId}
     ORDER BY created_at DESC
   </select>
 
   <insert id="insertTravelPlan" parameterType="com.example.demo.planner.travel.dto.entity.TravelPlan" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO travel_plans (user_id, budget, start_date, end_date, created_at, updated_at, is_ended)
+    INSERT INTO plans (user_id, budget, start_date, end_date, created_at, updated_at, is_ended)
     VALUES (#{userId}, #{budget}, #{startDate}, #{endDate}, now(), null, #{isEnded})
   </insert>
 
   <update id="updateTravelPlan" parameterType="com.example.demo.planner.travel.dto.entity.TravelPlan">
-    UPDATE travel_plans
+    UPDATE plans
     SET user_id = #{userId},
         budget = #{budget},
         start_date = #{startDate},
@@ -34,7 +34,7 @@
   </update>
 
   <delete id="deleteTravelPlan" parameterType="long">
-    DELETE FROM travel_plans
+    DELETE FROM plans
     WHERE id = #{id}
   </delete>
 
