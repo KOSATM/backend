@@ -22,7 +22,7 @@ public class ToiletService {
 	private final ToiletApiClient apiClient;
 	private final ToiletDao dao;
 
-	/**
+	/*
 	 * 데이터를 전체 삭제하고 다시 전체 API로 채움
 	 */
 	public void refreshToiletData() throws Exception {
