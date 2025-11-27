@@ -152,18 +152,18 @@ public class ReviewService {
     }
 
 
-    // 3) 해시태그 저장
-    public void updateHashtags(Long postId, ReviewHashtagUpdateRequest req) {
+    // // 3) 해시태그 저장
+    // public void updateHashtags(Long postId, ReviewHashtagUpdateRequest req) {
 
-        // 기존 태그 삭제 후 재삽입
-        reviewHashtagDao.deleteByPostId(postId);
+    //     // 기존 태그 삭제 후 재삽입
+    //     reviewHashtagDao.deleteByPostId(postId);
 
-        Long groupId = reviewHashtagDao.insertGroup(new ReviewHashtagGroup(postId));
+    //     Long groupId = reviewHashtagDao.insertGroup(new ReviewHashtagGroup(postId));
 
-        for (String tag : req.getHashtags()) {
-            reviewHashtagDao.insertHashtag(new ReviewHashtag(groupId, tag));
-        }
-    }
+    //     for (String tag : req.getHashtags()) {
+    //         reviewHashtagDao.insertHashtag(new ReviewHashtag(groupId, tag));
+    //     }
+    // }
 
     // 4) 캡션 수정
     public ReviewPostResponse updateContent(Long postId, ReviewContentUpdateRequest req) {
@@ -172,13 +172,17 @@ public class ReviewService {
     }
 
     // 5) 프리뷰 조회
-    public ReviewPreviewResponse getPreview(Long postId) {
-        ReviewPost post = reviewPostDao.findById(postId);
-        List<ReviewPhoto> photos = reviewPhotoDao.findByPostId(postId);
-        List<String> hashtags = reviewHashtagDao.findHashtagsByPostId(postId);
+    // public ReviewPreviewResponse getPreview(Long postId) {
+    //     ReviewPost post = reviewPostDao.findById(postId);
+    //     List<ReviewPhoto> photos = reviewPhotoDao.findByPostId(postId);
+    //     // 해시태그 그룹이랑 post랑 일대일 매칭
+    //     ReviewHashtagGroup group = reviewHashtagDao.findHashtagGroupByPostId(postId);
+    //     // 포문 돌려야 되는데???
+    //     List<ReviewHashtag> hashtags = reviewHashtagDao.findHashtagsBygroupId(group.getId());
 
-        return new ReviewPreviewResponse(post, photos, hashtags);
-    }
+
+    //     return new ReviewPreviewResponse(post, photos, hashtags);
+    // }
 
     // 6) 게시(Publish)
     public ReviewPostResponse publish(Long postId) {

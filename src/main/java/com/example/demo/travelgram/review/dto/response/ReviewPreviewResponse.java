@@ -8,7 +8,7 @@ import com.example.demo.travelgram.review.dto.entity.ReviewPost;
 
 public class ReviewPreviewResponse {
     private ReviewPost post;
-    private List<ReviewPhoto> photo;
-    private List<ReviewHashtag> hashtag;
+    private List<ReviewPhoto> photos;
+    private List<ReviewHashtag> hashtags;
 
 }

@@ -22,12 +22,15 @@ import lombok.extern.slf4j.Slf4j;
 public class AiReviewController {
 
     private final AiReviewService aiReviewService;
-        // 1) AI 스타일 생성
-    @PostMapping("/{postId}/ai/styles")
-    public ResponseEntity<List<AiReviewStyleResponse>> generateStyles(
-            @PathVariable Long postId
-    ) {
-        return ResponseEntity.ok(aiReviewService.generateAiStyles(postId));
-    }
+
+    // AI agent가 해야되는거 아니냐
+
+    // 1) AI 스타일 생성
+    // @PostMapping("/{postId}/ai/styles")
+    // public ResponseEntity<List<AiReviewStyleResponse>> generateStyles(
+    //         @PathVariable Long postId
+    // ) {
+    //     return ResponseEntity.ok(aiReviewService.generateAiStyles(postId));
+    // }
     
 }

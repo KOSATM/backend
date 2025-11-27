@@ -12,7 +12,9 @@ public interface ReviewHashtagDao {
     void deleteByPostId(Long postId);
     Long insertGroup(ReviewHashtagGroup group);
     void insertHashtag(ReviewHashtag hashtag);
-    List<String> findHashtagsByPostId(Long postId);
+    ReviewHashtagGroup findHashtagGroupByPostId(Long postId);
+    List<ReviewHashtag> findHashtagsBygroupId(Long groupId);
+    // 그룹아이디를 찾아서 그룹에 해당하는 해시태그를 포문으로 돌려야함
 
     
 }

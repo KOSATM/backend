@@ -131,26 +131,26 @@ public class ReviewController {
     // 3) review_posts update, style 부터
     // ======================================
 
-    // 2) 스타일 선택 적용 (AI 캡션 자동 반영)
-    @PutMapping("/{postId}/style")
-    public ResponseEntity<ReviewPostResponse> applyStyle(
-            @PathVariable Long postId,
-            @RequestBody ReviewStyleSelectRequest request
-    ) {
-        return ResponseEntity.ok(reviewService.applyStyle(postId, request));
-    }
+    // 2) 스타일 선택 적용 (AI 캡션까지 자동 반영)
+    // @PutMapping("/{postId}/style")
+    // public ResponseEntity<ReviewPostResponse> applyStyle(
+    //         @PathVariable Long postId,
+    //         @RequestBody ReviewStyleSelectRequest request
+    // ) {
+    //     return ResponseEntity.ok(reviewService.applyStyle(postId, request));
+    // }
 
-    // 3) 해시태그 선택 저장
-    @PutMapping("/{postId}/hashtags")
-    public ResponseEntity<Void> updateHashtags(
-            @PathVariable Long postId,
-            @RequestBody ReviewHashtagUpdateRequest request
-    ) {
-        reviewService.updateHashtags(postId, request);
-        return ResponseEntity.ok().build();
-    }
+    // 3) 해시태그 선택 저장, 여기서 해시태그 그룹 아이디 인서트 먼저 일어나야함
+    // @PutMapping("/{postId}/hashtags")
+    // public ResponseEntity<Void> updateHashtags(
+    //         @PathVariable Long postId,
+    //         @RequestBody ReviewHashtagUpdateRequest request
+    // ) {
+    //     reviewService.updateHashtags(postId, request);
+    //     return ResponseEntity.ok().build();
+    // }
 
-    // 4) 캡션 수정
+    // 4) 캡션 수정, 마지막 업데이트
     @PutMapping("/{postId}/content")
     public ResponseEntity<ReviewPostResponse> updateContent(
             @PathVariable Long postId,
@@ -160,12 +160,12 @@ public class ReviewController {
     }
 
     // 5) 프리뷰 조회
-    @GetMapping("/{postId}")
-    public ResponseEntity<ReviewPreviewResponse> getPreview(
-            @PathVariable Long postId
-    ) {
-        return ResponseEntity.ok(reviewService.getPreview(postId));
-    }
+    // @GetMapping("/{postId}")
+    // public ResponseEntity<ReviewPreviewResponse> getPreview(
+    //         @PathVariable Long postId
+    // ) {
+    //     return ResponseEntity.ok(reviewService.getPreview(postId));
+    // }
 
     // 6) 게시하기
     @PutMapping("/{postId}/publish")

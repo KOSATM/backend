@@ -25,42 +25,42 @@ public class AiReviewService {
     private final AiReviewDao aiReviewDao;
     private final AiReviewAgent aiReviewAgent;
 
-        // 1) AI 스타일 생성
-    public List<AiReviewStyleResponse> generateAiStyles(Long postId) {
+    // // 1) AI 스타일 생성
+    // public List<AiReviewStyleResponse> generateAiStyles(Long postId) {
 
-        // AI 호출 → AiReviewAnalysis, AiReviewStyle(4개), AiReviewHashtag(각 3개) 저장
-        AiReviewAnalysis analysis = new AiReviewAnalysis(postId);
-        aiReviewDao.insertAiReview(analysis);
+    //     // AI 호출 → AiReviewAnalysis, AiReviewStyle(4개), AiReviewHashtag(각 3개) 저장
+    //     AiReviewAnalysis analysis = new AiReviewAnalysis(postId);
+    //     aiReviewDao.insertAiReview(analysis);
 
-        List<AiReviewStyleResponse> styles = new ArrayList<>();
+    //     List<AiReviewStyleResponse> styles = new ArrayList<>();
 
-        for (int i = 0; i < 4; i++) {
-            AiReviewStyle style = aiReviewAgent.generateStyle(analysis.getId());
-            aiReviewDao.insertAiReviewStyle(style);
+    //     for (int i = 0; i < 4; i++) {
+    //         AiReviewStyle style = aiReviewAgent.generateStyle(analysis.getId());
+    //         aiReviewDao.insertAiReviewStyle(style);
 
-            // 태그 3개 생성/저장 >> 대표 태그를 3개 보여주기만 하고 나머지 태그도 그거랑 비슷한거로 10~20개 추천해주면 되지 않나?
-            List<String> tags = aiReviewAgent.generateHashtags(style.getId());
-            for (String tag : tags) {
-                aiReviewDao.insertAiReviewHashtag(new AiReviewHashtag(style.getId(), tag));
-            }
+    //         // 태그 3개 생성/저장 >> 대표 태그를 3개 보여주기만 하고 나머지 태그도 그거랑 비슷한거로 10~20개 추천해주면 되지 않나?
+    //         List<String> tags = aiReviewAgent.generateHashtags(style.getId());
+    //         for (String tag : tags) {
+    //             aiReviewDao.insertAiReviewHashtag(new AiReviewHashtag(style.getId(), tag));
+    //         }
 
-            styles.add(new AiReviewStyleResponse(style, tags));
-        }
+    //         styles.add(new AiReviewStyleResponse(style, tags));
+    //     }
 
-        return styles;
-    }
+    //     return styles;
+    // }
 
-    // 2) 스타일 선택 + AI 캡션 기본 입력
-    public ReviewPostResponse applyStyle(Long postId, ReviewStyleSelectRequest req) {
+    // // 2) 스타일 선택 + AI 캡션 기본 입력
+    // public ReviewPostResponse applyStyle(Long postId, ReviewStyleSelectRequest req) {
 
-        ReviewPost post = reviewPostDao.findById(postId);
+    //     ReviewPost post = reviewPostDao.findById(postId);
 
-        AiReviewStyle style = aiReviewDao.findStyleById(req.getStyleId());
-        post.setStyleId(req.getStyleId());
-        post.setContent(style.getGeneratedCaption()); // AI 캡션 바로 세팅
+    //     AiReviewStyle style = aiReviewDao.findStyleById(req.getStyleId());
+    //     post.setStyleId(req.getStyleId());
+    //     post.setContent(style.getGeneratedCaption()); // AI 캡션 바로 세팅
 
-        reviewPostDao.update(post);
+    //     reviewPostDao.update(post);
 
-        return new ReviewPostResponse(postId, generatePostUrl(postId));
-    }
+    //     return new ReviewPostResponse(postId, generatePostUrl(postId));
+    // }
 }
