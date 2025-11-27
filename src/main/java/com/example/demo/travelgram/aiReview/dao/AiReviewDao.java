@@ -1,9 +1,16 @@
 package com.example.demo.travelgram.aiReview.dao;
 
-import com.example.demo.travelgram.aiReview.dto.entity.*;
+import org.apache.ibatis.annotations.Mapper;
+
+import com.example.demo.travelgram.aiReview.dto.entity.AiReviewAnalysis;
+import com.example.demo.travelgram.aiReview.dto.entity.AiReviewHashtag;
+import com.example.demo.travelgram.aiReview.dto.entity.AiReviewStyle;
+@Mapper
 public interface AiReviewDao {
-    void insertAiReview(AiReviewAnalysis aiReviewAnalysis);
-    void insertAiReviewHashtag(AiReviewHashtag aiReviewHashtag);
-    void insertAiReviewStyle(AiReviewStyle aiReviewStyle);
-    
+
+    void insertAiReview(AiReviewAnalysis analysis);
+    void insertAiReviewStyle(AiReviewStyle style);
+    void insertAiReviewHashtag(AiReviewHashtag tag);
+    AiReviewStyle findStyleById(Long id);
 }
+
