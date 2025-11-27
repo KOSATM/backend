@@ -1,5 +1,6 @@
 package com.example.demo.travelgram.review.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -8,17 +9,28 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.common.s3.service.S3Service;
+import com.example.demo.travelgram.aiReview.dao.AiReviewDao;
+import com.example.demo.travelgram.aiReview.dto.entity.AiReviewAnalysis;
+import com.example.demo.travelgram.aiReview.dto.entity.AiReviewHashtag;
+import com.example.demo.travelgram.aiReview.dto.entity.AiReviewStyle;
+import com.example.demo.travelgram.aiReview.dto.request.ReviewContentUpdateRequest;
+import com.example.demo.travelgram.aiReview.dto.response.AiReviewStyleResponse;
 import com.example.demo.travelgram.review.dao.ReviewHashtagDao;
 import com.example.demo.travelgram.review.dao.ReviewPhotoDao;
 import com.example.demo.travelgram.review.dao.ReviewPostDao;
+import com.example.demo.travelgram.review.dto.entity.ReviewHashtag;
+import com.example.demo.travelgram.review.dto.entity.ReviewHashtagGroup;
 import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
 import com.example.demo.travelgram.review.dto.entity.ReviewPhotoGroup;
 import com.example.demo.travelgram.review.dto.entity.ReviewPost;
+import com.example.demo.travelgram.review.dto.request.ReviewHashtagUpdateRequest;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoOrderUpdateRequest;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoOrderUpdateRequest.PhotoOrderItem;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoUploadRequest;
 import com.example.demo.travelgram.review.dto.response.ReviewCreateResponse;
 import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
+import com.example.demo.travelgram.review.dto.response.ReviewPostResponse;
+import com.example.demo.travelgram.review.dto.response.ReviewPreviewResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,10 +71,7 @@ public class ReviewService {
         // 결과 리턴
         return new ReviewCreateResponse(post.getId(), group.getId());
     }
-    
-    // public ReviewUpdateResponse updatePost(Long postId, ReviewUpdateRequest req) {
-    //     // ...
-    // }
+
 
     // ======================================
     // 2) 사진 업로드/순서 영역
@@ -129,15 +138,59 @@ public class ReviewService {
         reviewPhotoDao.deleteReviewPhoto(photoId);
     }
 
-     // ======================================
-    // 3) 해시태그 영역
-    // ======================================
+    // AI가 스타일 4개 보여주는 부분이 aiReview에서 이뤄짐
+    // 캡션 내용 보여주고 해시태그 대표 3~5개 보여준 카드
+    // 그 중에서 사용자가 스타일 한 개 선택시 캡션 내용 확정, ai가 추천하는 태그 확정
+    // 해시태그 페이지 진입시 해시태그 그룹 아이디 생성
+    // 해시태그를 그 중에서 사용자가 고르고 따로 추가도 가능
+    // 캡션 edit 페이지에서 사용자가 수정, next버튼 누르면 content DB update
+    // 인스타 프리뷰 보여주고 publish 버튼 누르면 포스팅 완료
 
-    public void createHashtagGroup(Long postId, List<String> tags) {
-        // ...
+    // 2) 사용자가 스타일 선택 -> 캡션 내용, 해시태그 대표 3~5개? 보여주기
+    public void applyStyle(Long postId, Long styleId){
+        reviewPostDao.updateStyleId(postId, styleId);
     }
 
-    public void updateHashtagGroup(Long postId, List<String> tags) {
-        // ...
+
+    // 3) 해시태그 저장
+    public void updateHashtags(Long postId, ReviewHashtagUpdateRequest req) {
+
+        // 기존 태그 삭제 후 재삽입
+        reviewHashtagDao.deleteByPostId(postId);
+
+        Long groupId = reviewHashtagDao.insertGroup(new ReviewHashtagGroup(postId));
+
+        for (String tag : req.getHashtags()) {
+            reviewHashtagDao.insertHashtag(new ReviewHashtag(groupId, tag));
+        }
+    }
+
+    // 4) 캡션 수정
+    public ReviewPostResponse updateContent(Long postId, ReviewContentUpdateRequest req) {
+        reviewPostDao.updateContent(postId, req.getContent());
+        return new ReviewPostResponse(postId, generatePostUrl(postId));
+    }
+
+    // 5) 프리뷰 조회
+    public ReviewPreviewResponse getPreview(Long postId) {
+        ReviewPost post = reviewPostDao.findById(postId);
+        List<ReviewPhoto> photos = reviewPhotoDao.findByPostId(postId);
+        List<String> hashtags = reviewHashtagDao.findHashtagsByPostId(postId);
+
+        return new ReviewPreviewResponse(post, photos, hashtags);
+    }
+
+    // 6) 게시(Publish)
+    public ReviewPostResponse publish(Long postId) {
+
+        String url = generatePostUrl(postId);
+
+        reviewPostDao.publish(postId, url);
+
+        return new ReviewPostResponse(postId, url);
+    }
+
+    private String generatePostUrl(Long postId) {
+        return "/reviews/" + postId; // 나중에 도메인 붙이면 됨
     }
 }

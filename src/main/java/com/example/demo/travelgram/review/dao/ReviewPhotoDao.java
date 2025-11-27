@@ -1,5 +1,7 @@
 package com.example.demo.travelgram.review.dao;
 
+import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -16,5 +18,6 @@ public interface ReviewPhotoDao {
                       @Param("orderIndex") Integer orderIndex,
                       @Param("groupId") Long groupId);
     // List<ReviewPhoto> findPhotosByGroup(Long groupId);
+    List<ReviewPhoto> findByPostId(Long postId);
     void deleteReviewPhoto(Long id);
 }

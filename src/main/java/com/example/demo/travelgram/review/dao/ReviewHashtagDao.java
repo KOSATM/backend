@@ -9,11 +9,10 @@ import com.example.demo.travelgram.review.dto.entity.ReviewHashtagGroup;
 
 @Mapper
 public interface ReviewHashtagDao {
-    int insertHashtagGroup(ReviewHashtagGroup group);
-    List<ReviewHashtagGroup> findHashtagGroupsByPostId(Long reviewPostId);
-
-    int insertHashtag(ReviewHashtag hashtag);
-    List<ReviewHashtag> findHashtagsByGroup(Long groupId);
+    void deleteByPostId(Long postId);
+    Long insertGroup(ReviewHashtagGroup group);
+    void insertHashtag(ReviewHashtag hashtag);
+    List<String> findHashtagsByPostId(Long postId);
 
     
 }

@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -18,6 +19,9 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.demo.travelgram.aiReview.dto.request.ReviewContentUpdateRequest;
+import com.example.demo.travelgram.aiReview.dto.request.ReviewStyleSelectRequest;
+import com.example.demo.travelgram.aiReview.dto.response.AiReviewStyleResponse;
 import com.example.demo.travelgram.review.dto.request.*;
 import com.example.demo.travelgram.review.dto.response.*;
 import com.example.demo.travelgram.review.service.ReviewService;
@@ -48,7 +52,6 @@ public class ReviewController {
 
         return ResponseEntity.ok(result);
     }
-
 
     // ======================================
     // 2) 사진 업로드/순서 영역
@@ -123,9 +126,53 @@ public class ReviewController {
         return ResponseEntity.noContent().build();
     }
 
+
     // ======================================
-    // 3) 해시태그 영역
+    // 3) review_posts update, style 부터
     // ======================================
-    
+
+    // 2) 스타일 선택 적용 (AI 캡션 자동 반영)
+    @PutMapping("/{postId}/style")
+    public ResponseEntity<ReviewPostResponse> applyStyle(
+            @PathVariable Long postId,
+            @RequestBody ReviewStyleSelectRequest request
+    ) {
+        return ResponseEntity.ok(reviewService.applyStyle(postId, request));
+    }
+
+    // 3) 해시태그 선택 저장
+    @PutMapping("/{postId}/hashtags")
+    public ResponseEntity<Void> updateHashtags(
+            @PathVariable Long postId,
+            @RequestBody ReviewHashtagUpdateRequest request
+    ) {
+        reviewService.updateHashtags(postId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    // 4) 캡션 수정
+    @PutMapping("/{postId}/content")
+    public ResponseEntity<ReviewPostResponse> updateContent(
+            @PathVariable Long postId,
+            @RequestBody ReviewContentUpdateRequest request
+    ) {
+        return ResponseEntity.ok(reviewService.updateContent(postId, request));
+    }
+
+    // 5) 프리뷰 조회
+    @GetMapping("/{postId}")
+    public ResponseEntity<ReviewPreviewResponse> getPreview(
+            @PathVariable Long postId
+    ) {
+        return ResponseEntity.ok(reviewService.getPreview(postId));
+    }
+
+    // 6) 게시하기
+    @PutMapping("/{postId}/publish")
+    public ResponseEntity<ReviewPostResponse> publish(
+            @PathVariable Long postId
+    ) {
+        return ResponseEntity.ok(reviewService.publish(postId));
+    }
     
 }
