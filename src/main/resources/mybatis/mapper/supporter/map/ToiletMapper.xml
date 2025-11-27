@@ -10,6 +10,11 @@
     <result column="lng"     property="lng"/>
     <result column="address" property="address"/>
   </resultMap>
+  
+  <!-- DELETEALL -->
+  <delete id="deleteAll">
+  	TRUNCATE TABLE toilets
+  </delete>
 
   <!-- 단건 조회 -->
   <select id="selectById" parameterType="long" resultMap="ToiletResultMap">

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.example.demo.supporter.imageSearch.dao.PlaceDao">
-  <resultMap id="PlaceResultMap" type="Place">
+<mapper namespace="com.example.demo.supporter.imageSearch.dao.ImagePlaceDao">
+  <resultMap id="ImagePlaceResultMap" type="ImagePlace">
     <id column="id"                  property="id"/>
     <result column="name"            property="name"/>
     <result column="description"     property="description"/>
@@ -17,47 +17,47 @@
   </resultMap>
 
   <!-- 단건 조회 -->
-  <select id="selectById" parameterType="long" resultMap="PlaceResultMap">
+  <select id="selectById" parameterType="long" resultMap="ImagePlaceResultMap">
     SELECT id,name,description,lat,lng,address,place_type,
            internal_original_url,internal_thumbnail_url,
            external_image_url,image_status
-    FROM places
+    FROM image_places
     WHERE id = #{id}
   </select>
 
   <!-- place_type 기준 조회 -->
-  <select id="selectByPlaceType" parameterType="string" resultMap="PlaceResultMap">
+  <select id="selectByPlaceType" parameterType="string" resultMap="ImagePlaceResultMap">
     SELECT id,name,description,lat,lng,address,place_type,
            internal_original_url,internal_thumbnail_url,
            external_image_url,image_status
-    FROM places
+    FROM image_places
     WHERE place_type = #{placeType}
     ORDER BY name ASC
   </select>
 
   <!-- 전체 조회 -->
-  <select id="selectAll" resultMap="PlaceResultMap">
+  <select id="selectAll" resultMap="ImagePlaceResultMap">
     SELECT id,name,description,lat,lng,address,place_type,
            internal_original_url,internal_thumbnail_url,
            external_image_url,image_status
-    FROM places
+    FROM image_places
     ORDER BY id DESC
   </select>
 
   <!-- 위경도 범위 조회 -->
-  <select id="selectByLatLngBounds" parameterType="map" resultMap="PlaceResultMap">
+  <select id="selectByLatLngBounds" parameterType="map" resultMap="ImagePlaceResultMap">
     SELECT id,name,description,lat,lng,address,place_type,
            internal_original_url,internal_thumbnail_url,
            external_image_url,image_status
-    FROM places
+    FROM image_places
     WHERE lat BETWEEN #{minLat} AND #{maxLat}
       AND lng BETWEEN #{minLng} AND #{maxLng}
     ORDER BY name ASC
   </select>
 
   <!-- INSERT -->
-  <insert id="insert" parameterType="Place" useGeneratedKeys="true" keyProperty="id">
-    INSERT INTO places (
+  <insert id="insert" parameterType="ImagePlace" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO image_places (
       name, description, lat, lng, address, place_type,
       internal_original_url, internal_thumbnail_url,
       external_image_url, image_status
@@ -70,7 +70,7 @@
 
   <!-- 배치 INSERT -->
   <insert id="batchInsert" parameterType="list">
-    INSERT INTO places (
+    INSERT INTO image_places (
       name, description, lat, lng, address, place_type,
       internal_original_url, internal_thumbnail_url,
       external_image_url, image_status
@@ -83,8 +83,8 @@
   </insert>
 
   <!-- UPDATE -->
-  <update id="update" parameterType="Place">
-    UPDATE places
+  <update id="update" parameterType="ImagePlace">
+    UPDATE image_places
     SET name = #{name},
         description = #{description},
         lat = #{lat},
@@ -100,11 +100,11 @@
 
   <!-- DELETE (단건) -->
   <delete id="deleteById" parameterType="long">
-    DELETE FROM places WHERE id = #{id}
+    DELETE FROM image_places WHERE id = #{id}
   </delete>
 
   <!-- place_type 기준 삭제 -->
   <delete id="deleteByPlaceType" parameterType="string">
-    DELETE FROM places WHERE place_type = #{placeType}
+    DELETE FROM image_places WHERE place_type = #{placeType}
   </delete>
 </mapper>

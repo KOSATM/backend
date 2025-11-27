@@ -6,37 +6,37 @@
 
   <select id="selectTravelPlanSnapshotById" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.TravelPlanSnapshot">
     SELECT id, user_id, version_no, snapshot_json, created_at
-    FROM travel_plan_snapshots
+    FROM plan_snapshots
     WHERE id = #{id}
   </select>
 
   <select id="selectTravelPlanSnapshotsByUserId" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.TravelPlanSnapshot">
     SELECT id, user_id, version_no, snapshot_json, created_at
-    FROM travel_plan_snapshots
+    FROM plan_snapshots
     WHERE user_id = #{userId}
     ORDER BY version_no DESC
   </select>
 
   <select id="selectLatestTravelPlanSnapshotByUserId" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.TravelPlanSnapshot">
     SELECT id, user_id, version_no, snapshot_json, created_at
-    FROM travel_plan_snapshots
+    FROM plan_snapshots
     WHERE user_id = #{userId}
     ORDER BY version_no DESC
     LIMIT 1
   </select>
 
   <insert id="insertTravelPlanSnapshot" parameterType="com.example.demo.planner.travel.dto.entity.TravelPlanSnapshot" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO travel_plan_snapshots (user_id, version_no, snapshot_json, created_at)
+    INSERT INTO plan_snapshots (user_id, version_no, snapshot_json, created_at)
     VALUES (#{userId}, #{versionNo}, #{snapshotJson}::json, now())
   </insert>
 
   <delete id="deleteTravelPlanSnapshot" parameterType="long">
-    DELETE FROM travel_plan_snapshots
+    DELETE FROM plan_snapshots
     WHERE id = #{id}
   </delete>
 
   <delete id="deleteTravelPlanSnapshotsByUserId" parameterType="long">
-    DELETE FROM travel_plan_snapshots
+    DELETE FROM plan_snapshots
     WHERE user_id = #{userId}
   </delete>
 

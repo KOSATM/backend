@@ -3,7 +3,7 @@ package com.example.demo.supporter.imageSearch.dto.entity;
 import lombok.Data;
 
 @Data
-public class Place {
+public class ImagePlace {
     private Long id;
     private String name;
     private String description;
