@@ -165,6 +165,31 @@ public class HotelBookingAgent {
 
             log.info("✅ LLM selected hotel: id={}, ratePlan={}", 
                 bookingRequest.getHotelId(), bookingRequest.getRatePlanId());
+            
+            // 선택된 호텔 정보 찾기
+            HotelRatePlanCandidate selectedHotel = candidates.stream()
+                .filter(h -> h.getHotelId().equals(bookingRequest.getHotelId()) &&
+                           h.getRoomTypeId().equals(bookingRequest.getRoomTypeId()) &&
+                           h.getRatePlanId().equals(bookingRequest.getRatePlanId()))
+                .findFirst()
+                .orElse(null);
+            
+            // 호텔 정보 저장
+            if (selectedHotel != null) {
+                log.info("🏨 Selected Hotel: {}, Price: {}, Location: {}", 
+                    selectedHotel.getHotelName(), 
+                    selectedHotel.getTotalPrice(),
+                    selectedHotel.getNeighborhood());
+                
+                // 호텔 상세 정보 저장
+                String hotelDetail = "호텔: " + selectedHotel.getHotelName() + 
+                                    " | 객실: " + selectedHotel.getRoomTypeName() +
+                                    " | 침대: " + selectedHotel.getBedType() +
+                                    " | 요금제: " + selectedHotel.getRatePlanName() +
+                                    (selectedHotel.getIncludesBreakfast() != null && selectedHotel.getIncludesBreakfast() ? 
+                                     " | 조식: 포함" : "");
+                bookingRequest.setProviderBookingMeta(hotelDetail);
+            }
 
             // 최소한의 보정
             if (bookingRequest.getUserId() == null) {
