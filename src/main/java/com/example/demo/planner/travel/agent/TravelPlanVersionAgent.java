@@ -11,6 +11,8 @@ import org.springframework.stereotype.Component;
 import com.example.demo.planner.travel.dao.TravelPlanSnapshotDao;
 import com.example.demo.planner.travel.dto.entity.TravelPlanSnapshot;
 import com.example.demo.planner.travel.dto.response.TravelPlanSnapshotContent;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -52,7 +54,7 @@ public class TravelPlanVersionAgent {
 
         사용자의 요청에 따라 적절한 도구를 호출하세요.
         - 버전 정보가 주어진 경우 해당 버전 상세 조회 -> `getVersionDetails` 사용
-        - 사용자가 수정을 지시할 경우 최신 버전 조회, 지시에 따른 수정 후 표시
+        - 사용자가 수정을 지시할 경우 최신 버전 조회, 지시에 따른 수정 후 표시 -> `generateSnapshot` 사용
         """;
 
     ChatClient chatClient = chatClientBuilder.build();
@@ -60,7 +62,8 @@ public class TravelPlanVersionAgent {
 
     String response = chatClient.prompt()
         .system(systemPrompt)
-        // .user("사용자 ID: " + userId + ", 계획 ID: " + planId + ", 현재 계획: " + currentPlanJson)
+        // .user("사용자 ID: " + userId + ", 계획 ID: " + planId + ", 현재 계획: " +
+        // currentPlanJson)
         .user("사용자 ID: " + userId + "지시: " + question)
         .tools(tools)
         .call()
@@ -87,12 +90,49 @@ public class TravelPlanVersionAgent {
     /**
      * 현재 여행 계획을 스냅샷으로 저장합니다.
      * 사용자가 계획에 만족하거나 수정을 완료했을 때 호출됩니다.
+     * @throws JsonProcessingException 
+     * @throws JsonMappingException 
+     */
+    @Tool(description = "최신 여행 계획 스냅샷을 기반으로 사용자가 요청한 부분을 수정하여 새로운 스냅샷을 생성합니다.", returnDirect = true)
+    public Object createModifiedSnapshot(
+        @ToolParam(description = "수정할 일정의 날짜 (예: 2025-12-21)") String date,
+        @ToolParam(description = "수정할 일정 제목 (예: '강남 카페 투어')") String scheduleTitle,
+        @ToolParam(description = "사용자가 원하는 새로운 내용 (예: '성수동 카페 투어')") String newTitle) throws JsonMappingException, JsonProcessingException {
+      // 내부에서 userId 기반 최신 스냅샷 조회
+      TravelPlanSnapshot latest = travelPlanSnapshotDao.selectLatestTravelPlanSnapshotByUserId(userId);
+
+      // snapshotJson 파싱
+      TravelPlanSnapshotContent content = objectMapper.readValue(latest.getSnapshotJson(), TravelPlanSnapshotContent.class);
+
+      // 해당 날짜/일정 찾아서 title 변경
+      content.getDays().stream()
+          .filter(d -> d.getDate().equals(date))
+          .flatMap(d -> d.getSchedules().stream())
+          .filter(s -> s.getTitle().equals(scheduleTitle))
+          .forEach(s -> s.setTitle(newTitle));
+
+      // 새로운 스냅샷 생성
+      TravelPlanSnapshot newSnapshot = new TravelPlanSnapshot();
+      newSnapshot.setUserId(userId);
+      newSnapshot.setVersionNo(latest.getVersionNo() + 1);
+      newSnapshot.setSnapshotJson(objectMapper.writeValueAsString(content));
+      newSnapshot.setCreatedAt(OffsetDateTime.now());
+
+      // DB에 저장 후 반환
+      // travelPlanSnapshotDao.insertTravelPlanSnapshot(newSnapshot);
+
+      return content;
+    }
+
+    /**
+     * 현재 여행 계획을 스냅샷으로 저장합니다.
+     * 사용자가 계획에 만족하거나 수정을 완료했을 때 호출됩니다.
      */
     @Tool(description = "현재 여행 계획을 스냅샷으로 저장합니다. 사용자가 계획을 승인했을 때 호출하세요.", returnDirect = true)
     public String createSnapshot(
         @ToolParam(description = "저장할 여행 계획 JSON") String planJson,
         @ToolParam(description = "이 버전에 대한 설명 (예: 초기 계획, 수정됨 등)") String description) {
-      
+
       ObjectMapper objectMapper = new ObjectMapper();
 
       log.info("스냅샷 생성 시작 - 사용자: {}, 계획: {}", userId);
@@ -112,11 +152,12 @@ public class TravelPlanVersionAgent {
         return objectMapper.writeValueAsString(snapshot);
 
         // 저장
-        // TravelPlanSnapshot saved = travelPlanSnapshotService.saveTravelPlanSnapshot(snapshot);
+        // TravelPlanSnapshot saved =
+        // travelPlanSnapshotService.saveTravelPlanSnapshot(snapshot);
 
         // log.info("스냅샷 생성 완료 - 스냅샷ID: {}, 버전: {}", saved.getId(), nextVersionNo);
         // return String.format("버전 %d으로 여행 계획이 저장되었습니다. (스냅샷 ID: %d)%n설명: %s",
-        //     nextVersionNo, saved.getId(), description);
+        // nextVersionNo, saved.getId(), description);
 
       } catch (Exception e) {
         log.error("스냅샷 생성 실패", e);
@@ -200,10 +241,10 @@ public class TravelPlanVersionAgent {
 
         // log.info("버전 복원 완료 - 원본버전: {}, 새버전: {}", targetVersionNo, maxVersionNo + 1);
         // return String.format(
-        //     "버전 %d의 여행 계획이 복원되었습니다.%n"
-        //         + "새로운 버전: %d (스냅샷 ID: %d)%n"
-        //         + "이전 버전은 보존됩니다.",
-        //     targetVersionNo, maxVersionNo + 1, saved.getId());
+        // "버전 %d의 여행 계획이 복원되었습니다.%n"
+        // + "새로운 버전: %d (스냅샷 ID: %d)%n"
+        // + "이전 버전은 보존됩니다.",
+        // targetVersionNo, maxVersionNo + 1, saved.getId());
 
       } catch (Exception e) {
         log.error("버전 복원 실패", e);
@@ -307,7 +348,8 @@ public class TravelPlanVersionAgent {
 
         log.info("snapshot: {}", snapshot.toString());
         // snapshot.getSnapshotJson();
-        TravelPlanSnapshotContent content = objectMapper.readValue(snapshot.getSnapshotJson(), TravelPlanSnapshotContent.class);
+        TravelPlanSnapshotContent content = objectMapper.readValue(snapshot.getSnapshotJson(),
+            TravelPlanSnapshotContent.class);
 
         return content;
 
@@ -318,16 +360,16 @@ public class TravelPlanVersionAgent {
         // details.append(String.format("생성일: %s%n", snapshot.getCreatedAt()));
         // details.append(String.format("예산: %s원%n", planJson.path("budget").asText()));
         // details.append(String.format("기간: %s ~ %s%n",
-        //     planJson.path("startDate").asText(),
-        //     planJson.path("endDate").asText()));
+        // planJson.path("startDate").asText(),
+        // planJson.path("endDate").asText()));
         // details.append(String.format("일정 수: %d일%n", planJson.path("days").size()));
 
         // 각 일정 요약
         // details.append("\n주요 일정:\n");
         // planJson.path("days").forEach(day -> {
-        //   details.append(String.format("- %s: %s%n",
-        //       day.path("date").asText(),
-        //       day.path("title").asText()));
+        // details.append(String.format("- %s: %s%n",
+        // day.path("date").asText(),
+        // day.path("title").asText()));
         // });
 
         // return details.toString();
@@ -352,36 +394,39 @@ public class TravelPlanVersionAgent {
   /**
    * 특정 버전을 직접 복원하는 메서드 (비도구 방식)
    */
-  // public TravelPlanSnapshot restoreVersionDirect(Long userId, Integer targetVersionNo) {
-  //   log.info("버전 직접 복원 - 사용자: {}, 버전: {}", userId, targetVersionNo);
+  // public TravelPlanSnapshot restoreVersionDirect(Long userId, Integer
+  // targetVersionNo) {
+  // log.info("버전 직접 복원 - 사용자: {}, 버전: {}", userId, targetVersionNo);
 
-  //   try {
-  //     List<TravelPlanSnapshot> allSnapshots = travelPlanSnapshotDao.selectTravelPlanSnapshotsByUserId(userId);
+  // try {
+  // List<TravelPlanSnapshot> allSnapshots =
+  // travelPlanSnapshotDao.selectTravelPlanSnapshotsByUserId(userId);
 
-  //     TravelPlanSnapshot targetSnapshot = allSnapshots.stream()
-  //         .filter(s -> s.getVersionNo().equals(targetVersionNo))
-  //         .findFirst()
-  //         .orElseThrow(() -> new IllegalArgumentException("버전을 찾을 수 없습니다"));
+  // TravelPlanSnapshot targetSnapshot = allSnapshots.stream()
+  // .filter(s -> s.getVersionNo().equals(targetVersionNo))
+  // .findFirst()
+  // .orElseThrow(() -> new IllegalArgumentException("버전을 찾을 수 없습니다"));
 
-  //     Integer maxVersionNo = allSnapshots.stream()
-  //         .map(TravelPlanSnapshot::getVersionNo)
-  //         .max(Integer::compareTo)
-  //         .orElse(0);
+  // Integer maxVersionNo = allSnapshots.stream()
+  // .map(TravelPlanSnapshot::getVersionNo)
+  // .max(Integer::compareTo)
+  // .orElse(0);
 
-  //     TravelPlanSnapshot restoredSnapshot = new TravelPlanSnapshot();
-  //     restoredSnapshot.setUserId(userId);
-  //     restoredSnapshot.setVersionNo(maxVersionNo + 1);
-  //     restoredSnapshot.setSnapshotJson(targetSnapshot.getSnapshotJson());
-  //     restoredSnapshot.setCreatedAt(OffsetDateTime.now());
+  // TravelPlanSnapshot restoredSnapshot = new TravelPlanSnapshot();
+  // restoredSnapshot.setUserId(userId);
+  // restoredSnapshot.setVersionNo(maxVersionNo + 1);
+  // restoredSnapshot.setSnapshotJson(targetSnapshot.getSnapshotJson());
+  // restoredSnapshot.setCreatedAt(OffsetDateTime.now());
 
-  //     TravelPlanSnapshot saved = travelPlanSnapshotDao.saveTravelPlanSnapshot(restoredSnapshot);
-  //     log.info("버전 직접 복원 완료 - 새버전: {}", maxVersionNo + 1);
+  // TravelPlanSnapshot saved =
+  // travelPlanSnapshotDao.saveTravelPlanSnapshot(restoredSnapshot);
+  // log.info("버전 직접 복원 완료 - 새버전: {}", maxVersionNo + 1);
 
-  //     return saved;
+  // return saved;
 
-  //   } catch (Exception e) {
-  //     log.error("버전 직접 복원 실패", e);
-  //     throw new RuntimeException("버전 복원 실패: " + e.getMessage(), e);
-  //   }
+  // } catch (Exception e) {
+  // log.error("버전 직접 복원 실패", e);
+  // throw new RuntimeException("버전 복원 실패: " + e.getMessage(), e);
+  // }
   // }
 }
