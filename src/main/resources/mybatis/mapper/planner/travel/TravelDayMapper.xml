@@ -6,24 +6,24 @@
 
   <select id="selectTravelDayById" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.TravelDay">
     SELECT id, travel_plan_id, day_index, title, plan_date
-    FROM travel_days
+    FROM plan_days
     WHERE id = #{id}
   </select>
 
   <select id="selectTravelDaysByPlanId" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.TravelDay">
     SELECT id, travel_plan_id, day_index, title, plan_date
-    FROM travel_days
+    FROM plan_days
     WHERE travel_plan_id = #{travelPlanId}
     ORDER BY day_index ASC
   </select>
 
   <insert id="insertTravelDay" parameterType="com.example.demo.planner.travel.dto.entity.TravelDay" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO travel_days (travel_plan_id, day_index, title, plan_date)
+    INSERT INTO plan_days (travel_plan_id, day_index, title, plan_date)
     VALUES (#{travelPlanId}, #{dayIndex}, #{title}, #{planDate})
   </insert>
 
   <update id="updateTravelDay" parameterType="com.example.demo.planner.travel.dto.entity.TravelDay">
-    UPDATE travel_days
+    UPDATE plan_days
     SET travel_plan_id = #{travelPlanId},
         day_index = #{dayIndex},
         title = #{title},
@@ -32,12 +32,12 @@
   </update>
 
   <delete id="deleteTravelDay" parameterType="long">
-    DELETE FROM travel_days
+    DELETE FROM plan_days
     WHERE id = #{id}
   </delete>
 
   <delete id="deleteTravelDaysByPlanId" parameterType="long">
-    DELETE FROM travel_days
+    DELETE FROM plan_days
     WHERE travel_plan_id = #{travelPlanId}
   </delete>
 

@@ -6,32 +6,32 @@
 
   <select id="selectTravelPlaceById" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.TravelPlace">
     SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost
-    FROM travel_places
+    FROM plan_places
     WHERE id = #{id}
   </select>
 
   <select id="selectTravelPlacesByDayId" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.TravelPlace">
     SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost
-    FROM travel_places
+    FROM plan_places
     WHERE day_id = #{dayId}
     ORDER BY start_at ASC
   </select>
 
   <select id="selectTravelPlacesByPlanId" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.TravelPlace">
     SELECT tp.id, tp.day_id, tp.title, tp.start_at, tp.end_at, tp.place_name, tp.address, tp.lat, tp.lng, tp.expected_cost
-    FROM travel_places tp
+    FROM plan_places tp
     INNER JOIN travel_days td ON tp.day_id = td.id
     WHERE td.travel_plan_id = #{travelPlanId}
     ORDER BY td.day_index ASC, tp.start_at ASC
   </select>
 
   <insert id="insertTravelPlace" parameterType="com.example.demo.planner.travel.dto.entity.TravelPlace" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO travel_places (day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost)
+    INSERT INTO plan_places (day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost)
     VALUES (#{dayId}, #{title}, #{startAt}, #{endAt}, #{placeName}, #{address}, #{lat}, #{lng}, #{expectedCost})
   </insert>
 
   <update id="updateTravelPlace" parameterType="com.example.demo.planner.travel.dto.entity.TravelPlace">
-    UPDATE travel_places
+    UPDATE plan_places
     SET day_id = #{dayId},
         title = #{title},
         start_at = #{startAt},
@@ -45,12 +45,12 @@
   </update>
 
   <delete id="deleteTravelPlace" parameterType="long">
-    DELETE FROM travel_places
+    DELETE FROM plan_places
     WHERE id = #{id}
   </delete>
 
   <delete id="deleteTravelPlacesByDayId" parameterType="long">
-    DELETE FROM travel_places
+    DELETE FROM plan_places
     WHERE day_id = #{dayId}
   </delete>
 
