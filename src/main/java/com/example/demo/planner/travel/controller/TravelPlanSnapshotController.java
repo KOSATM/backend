@@ -1,14 +1,23 @@
 package com.example.demo.planner.travel.controller;
 
-import com.example.demo.planner.travel.dto.entity.TravelPlanSnapshot;
-import com.example.demo.planner.travel.service.TravelPlanSnapshotService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.example.demo.planner.travel.dto.entity.TravelPlanSnapshot;
+import com.example.demo.planner.travel.service.TravelPlanSnapshotService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 
 /**
  * TravelPlanSnapshotController는 여행 계획 스냅샷 관련 API를 처리합니다.
@@ -80,9 +89,9 @@ public class TravelPlanSnapshotController {
     public ResponseEntity<TravelPlanSnapshot> createTravelPlanSnapshot(@RequestBody TravelPlanSnapshot travelPlanSnapshot) {
         log.info("POST /api/travel/snapshots - Creating snapshot for user: {}", travelPlanSnapshot.getUserId());
         try {
-            travelPlanSnapshotService.saveTravelPlanSnapshot(travelPlanSnapshot);
-            log.info("Travel plan snapshot created with id: {}", travelPlanSnapshot.getId());
-            return ResponseEntity.status(HttpStatus.CREATED).body(travelPlanSnapshot);
+            TravelPlanSnapshot saved = travelPlanSnapshotService.saveTravelPlanSnapshot(travelPlanSnapshot);
+            log.info("Travel plan snapshot created with id: {}", saved.getId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
         } catch (Exception e) {
             log.error("Error creating travel plan snapshot", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
