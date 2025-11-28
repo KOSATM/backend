@@ -1,21 +1,25 @@
 package com.example.demo.common.chat.intent;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.stereotype.Component;
 
-import com.example.demo.common.chat.intent.dto.IntentCommand;
+import com.example.demo.common.chat.intent.dto.IntentItem;
 import com.example.demo.common.chat.intent.dto.request.IntentRequest;
 import com.example.demo.common.chat.intent.dto.response.IntentResponse;
 import com.example.demo.common.chat.intent.service.IntentProcessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
+@ToString
 public class IntentAnalysisAgent {
 
   private ChatClient chatClient;
@@ -27,13 +31,8 @@ public class IntentAnalysisAgent {
     this.intentProcessor = intentProcessor;
   }
 
-  // public IntentResponse analyze(IntentRequest request){
-  public String analyze() {
-    // IntentRequest intentRequest =
-    // IntentRequest.builder().currentUrl("/planner").userMessage("강남 위주로 여행지
-    // 추천해줘").build();
-    IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner")
-        .userMessage("오늘 날씨 알려주고 2일차 일정 수정하고 싶어?").build();
+  public IntentResponse analyze(IntentRequest intentRequest) {
+    BeanOutputConverter<IntentResponse> beanOutputConverter = new BeanOutputConverter<>(IntentResponse.class);
 
     String systemPrompt = """
             당신은 여행 서비스 전체에서 공통으로 사용되는 "의도 분석 에이전트(Intent Classification Agent)"입니다.
@@ -46,35 +45,13 @@ public class IntentAnalysisAgent {
 
             # ✔ Category(기능군)
 
-            - planner       : 여행 일정 생성·관리·추천 등 일정 관련 기능
-            - supporter     : 번역, 환율, 날씨 등 여행 도우미 기능
-            - travelgram    : 여행 기록 작성, 사진 업로드 등 기록 기능
-            - etc           : 위 어느 범주에도 속하지 않는 경우
+            %s
 
             ---
 
             # ✔ IntentType 목록
 
-            ## PLANNER
-            - travel_plan
-            - plan_add
-            - plan_delete
-            - plan_modify
-            - plan_place_recommend
-            - attraction_recommend
-            - hotel_recommend
-
-            ## SUPPORTER
-            - currency_exchange
-            - translation
-            - weather
-
-            ## TRAVELGRAM
-            - create_post
-            - add_photo
-
-            ## ETC
-            - etc
+            %s
 
             ---
 
@@ -104,59 +81,88 @@ public class IntentAnalysisAgent {
             {
               "intents": [
                 {
-                  "category": "planner",
                   "intent": "plan_add",
                   "confidence": 0.92,
                   "arguments": {
-                    "date": "내일",
-                    "place": "롯데타워"
+                    "key1": "value1",
+                    "key2": "value2"
                   }
                 }
               ]
             }
 
-            - intents: 감지된 Intent 배열
-            - category: planner | supporter | travelgram | etc
             - intent: IntentType 중 하나
             - confidence: 0.0~1.0
             - arguments: 필요한 정보만 포함
 
             ---
 
-            # ✔ 입력
-
-            USER_MESSAGE: "%s"
-            CURRENT_URL: "%s"
-            (CURRENT_URL는 참고 정보이며 Intent 판단에 직접 사용하지 않는다.)
-
-            ---
-
             # ✔ 출력
             오직 JSON만 출력한다.
 
-        """;
+        """.formatted(CategoryType.buildCategoryList(), IntentType.buildIntentList());
 
     String userPrompt = """
         USER_MESSAGE: "%s"
         CURRENT_URL: "%s"
+
+        ※ CURRENT_URL은 참고용 맥락 정보이며, Intent 분류에는 절대 사용하지 마십시오.
         """.formatted(intentRequest.getUserMessage(), intentRequest.getCurrentUrl());
+
+    // String responseJSON = chatClient.prompt()
+    // .system(systemPrompt)
+    // .user(userPrompt)
+    // .options(ChatOptions.builder().temperature(0.0).build()).call().content();
+
+    // IntentResponse intentResponse = chatClient.prompt()
+    // .system(systemPrompt)
+    // .user(userPrompt)
+    // .options(ChatOptions.builder().temperature(0.0).build()).call().entity(IntentResponse.class);
+
+    // log.info("responseJSON: {}", responseJSON);
+    // log.info(intentResponse.toString());
+    // return null;
 
     String responseJSON = chatClient.prompt()
         .system(systemPrompt)
         .user(userPrompt)
         .options(ChatOptions.builder().temperature(0.0).build()).call().content();
+    log.info("responseJSON: {}", responseJSON);
 
-    // log.info("responseJSON: {}", responseJSON);
+    IntentResponse intentResponse = beanOutputConverter.convert(responseJSON);
 
-    try {
-      IntentResponse IntentResponse = objectMapper.readValue(responseJSON, IntentResponse.class);
-      List<IntentCommand> intentCommands = IntentResponse.getIntents().stream()
-          .map(intentProcessor::toCommand)
-          .toList();
-      log.info(intentCommands.toString());
-    } catch (Exception e) {
-      log.info("JSON 역직렬화 실패");
-    }
-    return responseJSON;
+    if (intentResponse == null)
+      // fallback — etc 단일 intent 생성
+      return IntentResponse.builder()
+          .intents(List.of(
+              IntentItem.builder()
+                  .intent("etc")
+                  .confidence(0.0)
+                  .arguments(Map.of())
+                  .build()))
+          .build();
+
+    return intentResponse;
+
+    // try {
+    // IntentResponse intentResponse = objectMapper.readValue(responseJSON,
+    // IntentResponse.class);
+    // return intentResponse;
+
+    // } catch (JsonProcessingException e) {
+    // log.warn("▶ JSON 파싱 실패: {}", e.getMessage());
+
+    // fallback — etc 단일 intent 생성
+    // return IntentResponse.builder()
+    // .intents(List.of(
+    // IntentItem.builder()
+    // .category("etc")
+    // .intent("etc")
+    // .confidence(0.0)
+    // .arguments(Map.of())
+    // .build()))
+    // .build();
+    // }
+
   }
 }
