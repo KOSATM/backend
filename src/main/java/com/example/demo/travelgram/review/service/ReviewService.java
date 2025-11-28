@@ -43,7 +43,7 @@ public class ReviewService {
     @Transactional
     public ReviewCreateResponse createReview(Long planId) {
         ReviewPost post = ReviewPost.builder()
-                .PlanId(planId)
+                .planId(planId)
                 .build();
 
         // 2. DB insert → post.id 자동 채워짐

@@ -13,6 +13,6 @@ public class ReviewPost {
     private Boolean isPosted;
     private String reviewPostUrl;
     private OffsetDateTime createdAt;
-    private Long PlanId;
+    private Long planId;
     private Long reviewStyleId;
 }
