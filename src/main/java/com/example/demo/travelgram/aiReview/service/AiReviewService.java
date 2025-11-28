@@ -1,19 +1,9 @@
 package com.example.demo.travelgram.aiReview.service;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.springframework.stereotype.Service;
 
-import com.example.demo.travelgram.aiReview.agent.AiReviewAgent;
 import com.example.demo.travelgram.aiReview.dao.AiReviewDao;
-import com.example.demo.travelgram.aiReview.dto.entity.AiReviewAnalysis;
-import com.example.demo.travelgram.aiReview.dto.entity.AiReviewHashtag;
-import com.example.demo.travelgram.aiReview.dto.entity.AiReviewStyle;
-import com.example.demo.travelgram.aiReview.dto.request.ReviewStyleSelectRequest;
-import com.example.demo.travelgram.aiReview.dto.response.AiReviewStyleResponse;
-import com.example.demo.travelgram.review.dto.entity.ReviewPost;
-import com.example.demo.travelgram.review.dto.response.ReviewPostResponse;
+
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class AiReviewService {
     private final AiReviewDao aiReviewDao;
-    private final AiReviewAgent aiReviewAgent;
 
     // // 1) AI 스타일 생성
     // public List<AiReviewStyleResponse> generateAiStyles(Long postId) {
