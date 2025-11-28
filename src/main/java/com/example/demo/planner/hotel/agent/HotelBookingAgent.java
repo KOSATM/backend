@@ -216,6 +216,22 @@ public class HotelBookingAgent {
             if (bookingRequest.getPaymentStatus() == null) {
                 bookingRequest.setPaymentStatus("PENDING");
             }
+            
+            // 호텔 정보 추가
+            if (selectedHotel != null) {
+                bookingRequest.setHotelName(selectedHotel.getHotelName());
+                bookingRequest.setNeighborhood(selectedHotel.getNeighborhood());
+                bookingRequest.setRoomTypeName(selectedHotel.getRoomTypeName());
+                bookingRequest.setRatePlanName(selectedHotel.getRatePlanName());
+                bookingRequest.setHasFreeWifi(selectedHotel.getHasFreeWifi());
+                bookingRequest.setHasParking(selectedHotel.getHasParking());
+                bookingRequest.setIsPetFriendly(selectedHotel.getIsPetFriendly());
+                bookingRequest.setIsFamilyFriendly(selectedHotel.getIsFamilyFriendly());
+                bookingRequest.setHas24hFrontdesk(selectedHotel.getHas24hFrontdesk());
+                bookingRequest.setNearMetro(selectedHotel.getNearMetro());
+                bookingRequest.setMetroStationName(selectedHotel.getMetroStationName());
+                bookingRequest.setAirportDistanceKm(selectedHotel.getAirportDistanceKm());
+            }
 
             return bookingRequest;
 
@@ -225,3 +241,4 @@ public class HotelBookingAgent {
         }
     }
 }
+

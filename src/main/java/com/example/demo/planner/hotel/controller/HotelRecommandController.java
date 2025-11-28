@@ -61,9 +61,40 @@ public class HotelRecommandController {
             log.info("✅ Hotel recommendation successful");
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
+            response.put("message", "추천 숙소입니다. 예약을 진행하시겠습니까?");
             
-            // 고객 친화적 요약 정보
+            // 1. hotel_bookings 테이블에 들어갈 데이터 (DB 저장용)
+            Map<String, Object> bookingData = new HashMap<>();
+            bookingData.put("userId", recommendation.getUserId());
+            bookingData.put("externalBookingId", recommendation.getExternalBookingId());
+            bookingData.put("hotelId", recommendation.getHotelId());
+            bookingData.put("roomTypeId", recommendation.getRoomTypeId());
+            bookingData.put("ratePlanId", recommendation.getRatePlanId());
+            bookingData.put("checkinDate", recommendation.getCheckinDate());
+            bookingData.put("checkoutDate", recommendation.getCheckoutDate());
+            bookingData.put("nights", recommendation.getNights());
+            bookingData.put("adultsCount", recommendation.getAdultsCount());
+            bookingData.put("childrenCount", recommendation.getChildrenCount());
+            bookingData.put("currency", recommendation.getCurrency());
+            bookingData.put("totalPrice", recommendation.getTotalPrice());
+            bookingData.put("taxAmount", recommendation.getTaxAmount());
+            bookingData.put("feeAmount", recommendation.getFeeAmount());
+            bookingData.put("status", recommendation.getStatus());
+            bookingData.put("paymentStatus", recommendation.getPaymentStatus());
+            bookingData.put("guestName", recommendation.getGuestName());
+            bookingData.put("guestEmail", recommendation.getGuestEmail());
+            bookingData.put("guestPhone", recommendation.getGuestPhone());
+            bookingData.put("providerBookingMeta", recommendation.getProviderBookingMeta());
+            bookingData.put("bookedAt", recommendation.getBookedAt());
+            bookingData.put("cancelledAt", recommendation.getCancelledAt());
+            
+            response.put("bookingData", bookingData);
+            
+            // 2. 사용자 친화 정보 (UI 표시용)
             Map<String, Object> hotelSummary = new HashMap<>();
+            hotelSummary.put("hotelName", recommendation.getHotelName());
+            hotelSummary.put("neighborhood", recommendation.getNeighborhood());
+            hotelSummary.put("roomTypeName", recommendation.getRoomTypeName());
             hotelSummary.put("nights", recommendation.getNights() + "박");
             hotelSummary.put("checkInDate", recommendation.getCheckinDate().toLocalDate());
             hotelSummary.put("checkOutDate", recommendation.getCheckoutDate().toLocalDate());
@@ -71,13 +102,6 @@ public class HotelRecommandController {
             if (recommendation.getChildrenCount() > 0) {
                 hotelSummary.put("children", recommendation.getChildrenCount() + "명");
             }
-            
-            // 호텔 정보 (providerBookingMeta에서 추출)
-            if (recommendation.getProviderBookingMeta() != null) {
-                hotelSummary.put("hotelInfo", recommendation.getProviderBookingMeta());
-            }
-            hotelSummary.put("hotelId", recommendation.getHotelId());
-            hotelSummary.put("roomTypeId", recommendation.getRoomTypeId());
             
             // 가격 정보
             Map<String, Object> priceInfo = new HashMap<>();
@@ -91,11 +115,34 @@ public class HotelRecommandController {
             priceInfo.put("currency", recommendation.getCurrency() != null ? recommendation.getCurrency() : "KRW");
             hotelSummary.put("pricing", priceInfo);
             
-            response.put("summary", hotelSummary);
-            response.put("message", "추천 숙소입니다. 예약을 진행하시겠습니까?");
+            // 호텔 편의시설
+            Map<String, Object> facilities = new HashMap<>();
+            if (recommendation.getHasFreeWifi() != null) {
+                facilities.put("WiFi", recommendation.getHasFreeWifi() ? "있음" : "없음");
+            }
+            if (recommendation.getHasParking() != null) {
+                facilities.put("주차", recommendation.getHasParking() ? "있음" : "없음");
+            }
+            if (recommendation.getIsPetFriendly() != null) {
+                facilities.put("반려동물", recommendation.getIsPetFriendly() ? "허용" : "불허");
+            }
+            if (recommendation.getIsFamilyFriendly() != null) {
+                facilities.put("가족친화", recommendation.getIsFamilyFriendly() ? "예" : "아니오");
+            }
+            if (recommendation.getHas24hFrontdesk() != null) {
+                facilities.put("24시간프론트", recommendation.getHas24hFrontdesk() ? "있음" : "없음");
+            }
+            if (recommendation.getNearMetro() != null && recommendation.getNearMetro()) {
+                facilities.put("지하철", "근처 (" + (recommendation.getMetroStationName() != null ? recommendation.getMetroStationName() : "") + ")");
+            }
+            if (recommendation.getAirportDistanceKm() != null) {
+                facilities.put("공항거리", recommendation.getAirportDistanceKm() + " km");
+            }
+            if (!facilities.isEmpty()) {
+                hotelSummary.put("facilities", facilities);
+            }
             
-            // 기존의 상세한 계약정보도 포함
-            response.put("bookingDetails", recommendation);
+            response.put("hotelSummary", hotelSummary);
             
             return response;
             

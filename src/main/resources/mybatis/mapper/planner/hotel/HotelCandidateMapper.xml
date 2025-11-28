@@ -34,9 +34,22 @@
             h.star_rating,
             h.rating_score,
             h.review_count,
+            h.has_free_wifi,
+            h.has_parking,
+            h.is_pet_friendly,
+            h.is_family_friendly,
+            h.has_24h_frontdesk,
+            h.has_english_staff,
+            h.near_metro,
+            h.metro_station_name,
+            h.airport_distance_km,
+            h.has_breakfast_restaurant,
             r.id as room_type_id,
             r.name as room_type_name,
             r.bed_type,
+            r.room_size_sqm,
+            r.has_kitchenette,
+            r.is_accessible_room,
             p.id as rate_plan_id,
             p.name as rate_plan_name,
             p.meal_plan,
@@ -55,7 +68,10 @@
           AND pr.stay_date >= #{checkinDate}
           AND pr.stay_date &lt;= #{checkoutDate}
         GROUP BY h.id, h.name, h.district, h.neighborhood, h.address_line1, h.latitude, h.longitude, 
-                 h.star_rating, h.rating_score, h.review_count, r.id, r.name, r.bed_type, 
+                 h.star_rating, h.rating_score, h.review_count, h.has_free_wifi, h.has_parking, 
+                 h.is_pet_friendly, h.is_family_friendly, h.has_24h_frontdesk, h.has_english_staff,
+                 h.near_metro, h.metro_station_name, h.airport_distance_km, h.has_breakfast_restaurant,
+                 r.id, r.name, r.bed_type, r.room_size_sqm, r.has_kitchenette, r.is_accessible_room,
                  p.id, p.name, p.meal_plan, p.includes_breakfast, p.currency
         ORDER BY total_price ASC, h.rating_score DESC
         LIMIT 20
