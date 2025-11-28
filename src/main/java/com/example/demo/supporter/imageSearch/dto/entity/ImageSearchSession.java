@@ -6,8 +6,8 @@ import lombok.Data;
 
 @Data
 public class ImageSearchSession {
-    private Long id;
-    private Long userId;
+    private Long id; //PK
+    private Long userId; //FK
     private OffsetDateTime createdAt;
-    private String actionType;
+    private String actionType; //"save_only", "add plan", "replaced_plan"
 }
