@@ -40,6 +40,9 @@ public class HotelRecommandController {
         String guestEmail = "guest@example.com";
         String guestPhone = "+82-10-0000-0000";
         
+        // 사용자 선호도 (요청본문에서 받기)
+        String userPreferences = tripPlan.getPreferences() != null ? tripPlan.getPreferences() : "";
+        
         try {
             HotelBookingRequest recommendation = hotelBookingAgent.createBookingFromItinerary(
                 tripPlan,
@@ -47,7 +50,8 @@ public class HotelRecommandController {
                 children,
                 guestName,
                 guestEmail,
-                guestPhone
+                guestPhone,
+                userPreferences
             );
             
             if (recommendation == null) {

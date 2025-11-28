@@ -44,7 +44,8 @@ public class HotelBookingAgent {
             int children,
             String guestName,
             String guestEmail,
-            String guestPhone
+            String guestPhone,
+            String userPreferences
     ) {
         try {
             LocalDate startDate = tripPlan.getStartDate();
@@ -98,6 +99,7 @@ public class HotelBookingAgent {
                         1. 거리: 여행 일정의 장소들과 가까운 호텔
                         2. 가격: 합리적인 가격
                         3. 평점: 높은 별점
+                        4. 사용자 요청사항: 반드시 우선으로 고려
                         
                         반환값: JSON 객체만 반환하세요 (마크다운 없음)
                         """)
@@ -113,6 +115,8 @@ public class HotelBookingAgent {
                         guestName: """ + guestName + """
                         guestEmail: """ + guestEmail + """
                         guestPhone: """ + guestPhone + """
+                        """ + (userPreferences != null && !userPreferences.isEmpty() ? 
+                            "사용자 요청사항: " + userPreferences + "\n" : "") + """
                         
                         이 정보를 이용해 candidates에서 하나를 선택하고 아래 JSON을 작성하세요:
                         {

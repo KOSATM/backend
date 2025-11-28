@@ -20,6 +20,8 @@ public class TripPlanRequest {
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate endDate;
+    
+    private String preferences;  // 사용자 요청사항
 
     private List<TripDayRequest> days;
 
