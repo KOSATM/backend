@@ -1,9 +1,12 @@
 package com.example.demo.travelgram.aiReview.dto.entity;
 
 import java.time.OffsetDateTime;
-import lombok.Data;
 
-@Data
+import lombok.Builder;
+import lombok.Getter;
+
+@Builder
+@Getter
 public class AiReviewStyle {
     private Long id;
     private String name;
