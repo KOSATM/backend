@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.example.demo.planner.travel.agent.TravelPlanVersionAgent;
 import com.example.demo.planner.travel.dao.TravelPlanSnapshotDao;
 import com.example.demo.planner.travel.dto.entity.TravelPlanSnapshot;
 
@@ -21,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class TravelPlanSnapshotService {
     private final TravelPlanSnapshotDao travelPlanSnapshotDao;
-    private final TravelPlanVersionAgent travelPlanVersionAgent;
 
     // ### 단순 CRUD ###
     // ID로 개별 스냅샷 조회
@@ -60,7 +58,5 @@ public class TravelPlanSnapshotService {
         log.info("Deleting all travel plan snapshots for user: {}", userId);
         travelPlanSnapshotDao.deleteTravelPlanSnapshotsByUserId(userId);
     }
-
-    // ### Agent 사용 ###
 
 }
