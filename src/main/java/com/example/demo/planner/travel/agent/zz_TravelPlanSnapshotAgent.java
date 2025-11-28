@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class TravelPlanSnapshotAgent {
+public class zz_TravelPlanSnapshotAgent {
 
   private final TravelPlanSnapshotDao travelPlanSnapshotDao;
   private final ChatClient.Builder chatClientBuilder;
@@ -116,7 +116,7 @@ public class TravelPlanSnapshotAgent {
       newSnapshot.setUserId(userId);
       newSnapshot.setVersionNo(latest.getVersionNo() + 1);
       newSnapshot.setSnapshotJson(objectMapper.writeValueAsString(content));
-      newSnapshot.setCreatedAt(OffsetDateTime.now());
+      newSnapshot.setCreatedAt(OffsetDateTime.now().toString());
 
       // DB에 저장 후 반환
       // travelPlanSnapshotDao.insertTravelPlanSnapshot(newSnapshot);
@@ -147,7 +147,7 @@ public class TravelPlanSnapshotAgent {
         snapshot.setUserId(userId);
         snapshot.setVersionNo(nextVersionNo);
         snapshot.setSnapshotJson(planJson);
-        snapshot.setCreatedAt(OffsetDateTime.now());
+        snapshot.setCreatedAt(OffsetDateTime.now().toString());
 
         return objectMapper.writeValueAsString(snapshot);
 
@@ -232,7 +232,7 @@ public class TravelPlanSnapshotAgent {
         restoredSnapshot.setUserId(userId);
         restoredSnapshot.setVersionNo(maxVersionNo + 1);
         restoredSnapshot.setSnapshotJson(targetSnapshot.getSnapshotJson());
-        restoredSnapshot.setCreatedAt(OffsetDateTime.now());
+        restoredSnapshot.setCreatedAt(OffsetDateTime.now().toString());
 
         return objectMapper.writeValueAsString(restoredSnapshot);
 
@@ -328,7 +328,8 @@ public class TravelPlanSnapshotAgent {
     /**
      * 특정 버전의 상세 정보를 조회합니다.
      */
-    @Tool(description = "특정 버전의 여행 계획 상세 정보를 조회합니다. 데이터베이스에서 SELECT 쿼리를 실행하고 JSON 데이터를 반환합니다. INSERT/UPDATE/DELETE는 실행할 수 없습니다.", returnDirect = true)
+    @Tool(description = "특정 버전의 여행 계획 상세 정보를 조회합니다. 데이터베이스에서 SELECT 쿼리를 실행하고 JSON 데이터를 반환합니다. INSERT/UPDATE/DELETE는 실행할 수 없습니다."
+    , returnDirect = false)
     public Object getVersionDetails(
         @ToolParam(description = "조회할 버전 번호") Integer versionNo) {
 
@@ -347,11 +348,13 @@ public class TravelPlanSnapshotAgent {
         }
 
         log.info("snapshot: {}", snapshot.toString());
-        // snapshot.getSnapshotJson();
-        TravelPlanSnapshotContent content = objectMapper.readValue(snapshot.getSnapshotJson(),
-            TravelPlanSnapshotContent.class);
-
-        return content;
+        // String content = snapshot.getSnapshotJson();
+        // TravelPlanSnapshotContent content = objectMapper.readValue(snapshot.getSnapshotJson(),
+        //     TravelPlanSnapshotContent.class);
+        
+        String snapshotStr = objectMapper.writeValueAsString(snapshot);
+        TravelPlanSnapshot res = objectMapper.readValue(snapshotStr, TravelPlanSnapshot.class);
+        return res;
 
         // JsonNode planJson = objectMapper.readTree(snapshot.getSnapshotJson());
 
