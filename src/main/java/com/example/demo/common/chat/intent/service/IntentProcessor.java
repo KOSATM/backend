@@ -6,7 +6,10 @@ import com.example.demo.common.chat.intent.IntentType;
 import com.example.demo.common.chat.intent.dto.IntentCommand;
 import com.example.demo.common.chat.intent.dto.IntentItem;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Component
+@Slf4j
 public class IntentProcessor {
 
     public IntentCommand toCommand(IntentItem item) {
