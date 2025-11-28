@@ -8,7 +8,7 @@ import com.example.demo.supporter.imageSearch.dto.entity.ImagePlace;
 import com.example.demo.supporter.imageSearch.service.ImagePlaceService;
 
 @RestController
-@RequestMapping("/supporter/places")
+@RequestMapping("/supporter/image-search/places")
 @RequiredArgsConstructor
 public class ImagePlaceController {
     private final ImagePlaceService service;

@@ -5,8 +5,8 @@ import lombok.Data;
 
 @Data
 public class Checklist {
-    private Long id;
-    private Long userId;
-    private Integer dayIndex;
+    private Long id; //PK
+    private Long userId; //FK
+    private Integer dayIndex; //day1, day2, ...
     private OffsetDateTime createdAt;
 }
