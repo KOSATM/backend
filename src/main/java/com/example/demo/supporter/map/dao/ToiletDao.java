@@ -10,5 +10,6 @@ public interface ToiletDao {
     List<Toilet> selectAll();
     int insert(Toilet toilet);
     int update(Toilet toilet);
-    int deleteById(Long id);
+    int deleteAll();
+//    int deleteById(Long id);
 }

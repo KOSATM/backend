@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.demo.supporter.imageSearch.dao.ImageSearchSessionDao">
+  <resultMap id="ImageSearchSessionResultMap" type="ImageSearchSession">
+    <id property="id" column="id"/>
+    <result property="userId" column="user_id"/>
+    <result property="createdAt" column="created_at"/>
+    <result property="actionType" column="action_type"/>
+  </resultMap>
+
+    <!-- INSERT -->
+    <insert id="insert" parameterType="ImageSearchSession" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO image_search_sessions (user_id, created_at, action_type)
+        VALUES (#{userId}, #{createdAt}, #{actionType}::image_action_type)
+    </insert>
+
+    <!-- SELECT by ID -->
+    <select id="selectById" resultMap="ImageSearchSessionResultMap">
+        SELECT *
+        FROM image_search_sessions
+        WHERE id = #{id}
+    </select>
+
+    <!-- SELECT ALL -->
+    <select id="selectAll" resultMap="ImageSearchSessionResultMap">
+        SELECT *
+        FROM image_search_sessions
+        ORDER BY id DESC
+    </select>
+
+    <!-- UPDATE -->
+    <update id="update" parameterType="ImageSearchSession">
+        UPDATE image_search_sessions
+        SET user_id = #{userId},
+            created_at = #{createdAt},
+            action_type = #{actionType}::image_action_type
+        WHERE id = #{id}
+    </update>
+
+    <!-- DELETE -->
+    <delete id="delete">
+        DELETE FROM image_search_sessions
+        WHERE id = #{id}
+    </delete>
+</mapper>

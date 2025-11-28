@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.demo.supporter.imageSearch.dao.ImageSearchCandidateDao">
+
+  <resultMap id="ImageSearchCandidateResultMap" type="ImageSearchCandidate">
+      <id property="id" column="id"/>
+      <result property="imageSearchPlaceId" column="image_search_place_id"/>
+      <result property="placeId" column="place_id"/>
+      <result property="isSelected" column="is_selected"/>
+      <result property="rank" column="rank"/>
+  </resultMap>
+
+    <!-- INSERT -->
+    <insert id="insert"
+            parameterType="ImageSearchCandidate"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO image_search_candidates (image_search_place_id, place_id, is_selected, rank)
+        VALUES (#{imageSearchPlaceId}, #{placeId}, #{isSelected}, #{rank})
+    </insert>
+
+    <!-- SELECT BY ID -->
+    <select id="selectById" resultMap="ImageSearchCandidateResultMap">
+        SELECT *
+        FROM image_search_candidates
+        WHERE id = #{id}
+    </select>
+
+    <!-- SELECT ALL BY image_search_place_id -->
+    <select id="findByImageSearchPlaceId" resultMap="ImageSearchCandidateResultMap">
+        SELECT *
+        FROM image_search_candidates
+        WHERE image_search_place_id = #{imageSearchPlaceId}
+        ORDER BY rank ASC
+    </select>
+
+    <!-- UPDATE -->
+    <update id="update"
+            parameterType="ImageSearchCandidate">
+        UPDATE image_search_candidates
+        SET
+            image_search_place_id = #{imageSearchPlaceId},
+            place_id = #{placeId},
+            is_selected = #{isSelected},
+            rank = #{rank}
+        WHERE id = #{id}
+    </update>
+
+    <!-- DELETE -->
+    <delete id="delete" parameterType="long">
+        DELETE FROM image_search_candidates
+        WHERE id = #{id}
+    </delete>
+
+</mapper>
