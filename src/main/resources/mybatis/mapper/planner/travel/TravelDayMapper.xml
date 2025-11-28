@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.planner.travel.dao.TravelDayMapper">
+<mapper namespace="com.example.demo.planner.travel.dao.TravelDayDao">
 
   <select id="selectTravelDayById" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.TravelDay">
     SELECT id, travel_plan_id, day_index, title, plan_date
