@@ -26,7 +26,6 @@ public class HotelBookingAgent {
     private final HotelCandidateService hotelCandidateService;
     private final ObjectMapper objectMapper;
 
-    // 🔴 여기가 진짜 중요: 이 생성자 하나만 존재해야 함
     @Autowired
     public HotelBookingAgent(
             ChatClient.Builder chatClientBuilder,
@@ -38,7 +37,7 @@ public class HotelBookingAgent {
         this.objectMapper = objectMapper;
     }
 
-    public HotelBookingRequest createBookingFromItinerary(
+    public List<HotelBookingRequest> createBookingFromItinerary(
             TripPlanRequest tripPlan,
             int adults,
             int children,
@@ -69,14 +68,7 @@ public class HotelBookingAgent {
             }
 
             log.info("📊 Found {} hotel candidates from DB", candidates.size());
-
-            // 로깅: DB 조회 데이터 확인
-            log.info("🏨 Found {} candidates from DB", candidates.size());
-            if (candidates.isEmpty()) {
-                throw new RuntimeException("No hotel candidates found");
-            }
             
-            // 첫 번째 호텔 정보 로깅
             HotelRatePlanCandidate firstHotel = candidates.get(0);
             log.info("🏨 First hotel: id={}, name={}, price={}, lat={}, lng={}", 
                 firstHotel.getHotelId(), 
@@ -89,19 +81,21 @@ public class HotelBookingAgent {
             
             log.info("📋 Candidates JSON length: {} chars", candidatesJson.length());
 
-            // 2) LLM 호출
-            log.info("🤖 Calling LLM to select best hotel...");
+            // 2) LLM 호출 - 3개 추천
+            log.info("🤖 Calling LLM to select top 3 hotels...");
             String llmResultJson = chatClient.prompt()
                     .system("""
-                        주어진 호텔 후보 목록에서 하나를 선택해 JSON으로 반환하세요.
+                        주어진 호텔 후보 목록에서 TOP 3개를 선택해 JSON 배열로 반환하세요.
                         
-                        선택 기준:
-                        1. 거리: 여행 일정의 장소들과 가까운 호텔
-                        2. 가격: 합리적인 가격
-                        3. 평점: 높은 별점
-                        4. 사용자 요청사항: 반드시 우선으로 고려
+                        선택 기준 (우선순위):
+                        1. 사용자 요청사항: 반드시 모든 조건을 만족해야 함
+                        2. 거리: 여행 일정의 장소들과 가까운 호텔
+                        3. 가격: 합리적인 가격
+                        4. 평점: 높은 별점
                         
-                        반환값: JSON 객체만 반환하세요 (마크다운 없음)
+                        중요: 사용자 요청사항이 있으면 그 조건을 만족하는 호텔만 선택하세요!
+                        
+                        반환값: JSON 배열로 3개의 객체를 반환하세요 (마크다운 없음)
                         """)
                     .user(u -> u.text("""
                         candidates: """ + candidatesJson + """
@@ -116,33 +110,9 @@ public class HotelBookingAgent {
                         guestEmail: """ + guestEmail + """
                         guestPhone: """ + guestPhone + """
                         """ + (userPreferences != null && !userPreferences.isEmpty() ? 
-                            "사용자 요청사항: " + userPreferences + "\n" : "") + """
+                            "사용자 요청사항: " + userPreferences + "\n사용자 요청사항을 반드시 만족하는 호텔만 선택하세요.\n" : "") + """
                         
-                        이 정보를 이용해 candidates에서 하나를 선택하고 아래 JSON을 작성하세요:
-                        {
-                          "userId": <userId>,
-                          "externalBookingId": null,
-                          "hotelId": <선택한 호텔의 hotelId>,
-                          "roomTypeId": <선택한 호텔의 roomTypeId>,
-                          "ratePlanId": <선택한 호텔의 ratePlanId>,
-                          "checkinDate": <checkinDate>,
-                          "checkoutDate": <checkoutDate>,
-                          "nights": <nights>,
-                          "adultsCount": <adultsCount>,
-                          "childrenCount": <childrenCount>,
-                          "currency": "KRW",
-                          "totalPrice": <선택한 호텔의 totalPrice>,
-                          "taxAmount": <선택한 호텔의 taxAmount>,
-                          "feeAmount": <선택한 호텔의 feeAmount>,
-                          "status": "PENDING",
-                          "paymentStatus": "PENDING",
-                          "guestName": <guestName>,
-                          "guestEmail": <guestEmail>,
-                          "guestPhone": <guestPhone>,
-                          "providerBookingMeta": "selected",
-                          "bookedAt": <checkinDate>,
-                          "cancelledAt": null
-                        }
+                        TOP 3개 호텔을 선택하고 JSON 배열로 반환하세요.
                         """))
                     .call()
                     .content();
@@ -150,94 +120,115 @@ public class HotelBookingAgent {
             // 3) JSON → DTO
             log.info("📝 Raw LLM response: {}", llmResultJson);
             
-            // 마크다운 코드블록 제거
             String cleanJson = llmResultJson
                     .replaceAll("```json\\s*", "")
                     .replaceAll("```\\s*", "")
                     .replaceAll("```", "")
                     .trim();
             
+            // 첫 번째 [ 찾기
+            int startIdx = cleanJson.indexOf('[');
+            int endIdx = cleanJson.lastIndexOf(']');
+            
+            if (startIdx >= 0 && endIdx > startIdx) {
+                cleanJson = cleanJson.substring(startIdx, endIdx + 1);
+            }
+            
             log.info("🧹 Cleaned JSON: {}", cleanJson);
             
-            HotelBookingRequest bookingRequest =
-                    objectMapper.readValue(cleanJson, HotelBookingRequest.class);
+            // JSON 배열 파싱
+            List<HotelBookingRequest> bookingRequestList = objectMapper.readValue(
+                cleanJson, 
+                objectMapper.getTypeFactory().constructCollectionType(List.class, HotelBookingRequest.class)
+            );
             
-            log.info("✅ Parsed hotel: hotelId={}, roomTypeId={}, ratePlanId={}", 
-                bookingRequest.getHotelId(), 
-                bookingRequest.getRoomTypeId(), 
-                bookingRequest.getRatePlanId());
-
-            log.info("✅ LLM selected hotel: id={}, ratePlan={}", 
-                bookingRequest.getHotelId(), bookingRequest.getRatePlanId());
+            if (bookingRequestList == null || bookingRequestList.isEmpty()) {
+                log.warn("LLM returned empty list");
+                return null;
+            }
             
-            // 선택된 호텔 정보 찾기
-            HotelRatePlanCandidate selectedHotel = candidates.stream()
-                .filter(h -> h.getHotelId().equals(bookingRequest.getHotelId()) &&
-                           h.getRoomTypeId().equals(bookingRequest.getRoomTypeId()) &&
-                           h.getRatePlanId().equals(bookingRequest.getRatePlanId()))
-                .findFirst()
-                .orElse(null);
+            log.info("✅ Parsed {} hotels", bookingRequestList.size());
             
-            // 호텔 정보 저장
-            if (selectedHotel != null) {
-                log.info("🏨 Selected Hotel: {}, Price: {}, Location: {}", 
-                    selectedHotel.getHotelName(), 
-                    selectedHotel.getTotalPrice(),
-                    selectedHotel.getNeighborhood());
+            // 각 호텔에 정보 추가
+            for (HotelBookingRequest bookingRequest : bookingRequestList) {
+                if (bookingRequest.getUserId() == null) {
+                    bookingRequest.setUserId(tripPlan.getUserId());
+                }
+                if (bookingRequest.getAdultsCount() == null) {
+                    bookingRequest.setAdultsCount(adults);
+                }
+                if (bookingRequest.getChildrenCount() == null) {
+                    bookingRequest.setChildrenCount(children);
+                }
+                if (bookingRequest.getCheckinDate() == null) {
+                    bookingRequest.setCheckinDate(checkin);
+                }
+                if (bookingRequest.getCheckoutDate() == null) {
+                    bookingRequest.setCheckoutDate(checkout);
+                }
+                if (bookingRequest.getNights() == null) {
+                    bookingRequest.setNights((int) nights);
+                }
+                if (bookingRequest.getStatus() == null) {
+                    bookingRequest.setStatus("PENDING");
+                }
+                if (bookingRequest.getPaymentStatus() == null) {
+                    bookingRequest.setPaymentStatus("PENDING");
+                }
                 
-                // 호텔 상세 정보 저장
-                String hotelDetail = "호텔: " + selectedHotel.getHotelName() + 
-                                    " | 객실: " + selectedHotel.getRoomTypeName() +
-                                    " | 침대: " + selectedHotel.getBedType() +
-                                    " | 요금제: " + selectedHotel.getRatePlanName() +
-                                    (selectedHotel.getIncludesBreakfast() != null && selectedHotel.getIncludesBreakfast() ? 
-                                     " | 조식: 포함" : "");
-                bookingRequest.setProviderBookingMeta(hotelDetail);
-            }
-
-            // 최소한의 보정
-            if (bookingRequest.getUserId() == null) {
-                bookingRequest.setUserId(tripPlan.getUserId());
-            }
-            if (bookingRequest.getAdultsCount() == null) {
-                bookingRequest.setAdultsCount(adults);
-            }
-            if (bookingRequest.getChildrenCount() == null) {
-                bookingRequest.setChildrenCount(children);
-            }
-            if (bookingRequest.getCheckinDate() == null) {
-                bookingRequest.setCheckinDate(checkin);
-            }
-            if (bookingRequest.getCheckoutDate() == null) {
-                bookingRequest.setCheckoutDate(checkout);
-            }
-            if (bookingRequest.getNights() == null) {
-                bookingRequest.setNights((int) nights);
-            }
-            if (bookingRequest.getStatus() == null) {
-                bookingRequest.setStatus("PENDING");
-            }
-            if (bookingRequest.getPaymentStatus() == null) {
-                bookingRequest.setPaymentStatus("PENDING");
+                // Guest 정보 설정
+                if (bookingRequest.getGuestName() == null) {
+                    bookingRequest.setGuestName(guestName);
+                }
+                if (bookingRequest.getGuestEmail() == null) {
+                    bookingRequest.setGuestEmail(guestEmail);
+                }
+                if (bookingRequest.getGuestPhone() == null) {
+                    bookingRequest.setGuestPhone(guestPhone);
+                }
+                if (bookingRequest.getBookedAt() == null) {
+                    bookingRequest.setBookedAt(checkin);
+                }
+                
+                // 선택된 호텔 정보 찾기
+                HotelRatePlanCandidate selectedHotel = candidates.stream()
+                    .filter(h -> h.getHotelId().equals(bookingRequest.getHotelId()) &&
+                               h.getRoomTypeId().equals(bookingRequest.getRoomTypeId()) &&
+                               h.getRatePlanId().equals(bookingRequest.getRatePlanId()))
+                    .findFirst()
+                    .orElse(null);
+                
+                // 호텔 정보 저장
+                if (selectedHotel != null) {
+                    log.info("🏨 Selected Hotel: {}, Price: {}, Location: {}", 
+                        selectedHotel.getHotelName(), 
+                        selectedHotel.getTotalPrice(),
+                        selectedHotel.getNeighborhood());
+                    
+                    String hotelDetail = "호텔: " + selectedHotel.getHotelName() + 
+                                        " | 객실: " + selectedHotel.getRoomTypeName() +
+                                        " | 침대: " + selectedHotel.getBedType() +
+                                        " | 요금제: " + selectedHotel.getRatePlanName() +
+                                        (selectedHotel.getIncludesBreakfast() != null && selectedHotel.getIncludesBreakfast() ? 
+                                         " | 조식: 포함" : "");
+                    bookingRequest.setProviderBookingMeta(hotelDetail);
+                    
+                    bookingRequest.setHotelName(selectedHotel.getHotelName());
+                    bookingRequest.setNeighborhood(selectedHotel.getNeighborhood());
+                    bookingRequest.setRoomTypeName(selectedHotel.getRoomTypeName());
+                    bookingRequest.setRatePlanName(selectedHotel.getRatePlanName());
+                    bookingRequest.setHasFreeWifi(selectedHotel.getHasFreeWifi());
+                    bookingRequest.setHasParking(selectedHotel.getHasParking());
+                    bookingRequest.setIsPetFriendly(selectedHotel.getIsPetFriendly());
+                    bookingRequest.setIsFamilyFriendly(selectedHotel.getIsFamilyFriendly());
+                    bookingRequest.setHas24hFrontdesk(selectedHotel.getHas24hFrontdesk());
+                    bookingRequest.setNearMetro(selectedHotel.getNearMetro());
+                    bookingRequest.setMetroStationName(selectedHotel.getMetroStationName());
+                    bookingRequest.setAirportDistanceKm(selectedHotel.getAirportDistanceKm());
+                }
             }
             
-            // 호텔 정보 추가
-            if (selectedHotel != null) {
-                bookingRequest.setHotelName(selectedHotel.getHotelName());
-                bookingRequest.setNeighborhood(selectedHotel.getNeighborhood());
-                bookingRequest.setRoomTypeName(selectedHotel.getRoomTypeName());
-                bookingRequest.setRatePlanName(selectedHotel.getRatePlanName());
-                bookingRequest.setHasFreeWifi(selectedHotel.getHasFreeWifi());
-                bookingRequest.setHasParking(selectedHotel.getHasParking());
-                bookingRequest.setIsPetFriendly(selectedHotel.getIsPetFriendly());
-                bookingRequest.setIsFamilyFriendly(selectedHotel.getIsFamilyFriendly());
-                bookingRequest.setHas24hFrontdesk(selectedHotel.getHas24hFrontdesk());
-                bookingRequest.setNearMetro(selectedHotel.getNearMetro());
-                bookingRequest.setMetroStationName(selectedHotel.getMetroStationName());
-                bookingRequest.setAirportDistanceKm(selectedHotel.getAirportDistanceKm());
-            }
-
-            return bookingRequest;
+            return bookingRequestList;
 
         } catch (Exception e) {
             log.error("HotelBookingAgent error", e);
