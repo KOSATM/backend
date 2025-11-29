@@ -9,7 +9,7 @@ import lombok.Getter;
 @Getter
 public class ReviewPhoto {
     private Long id;
-    private Long groupId;
+    private Long photoGroupId;
     private String fileUrl;
     private Integer orderIndex;
 

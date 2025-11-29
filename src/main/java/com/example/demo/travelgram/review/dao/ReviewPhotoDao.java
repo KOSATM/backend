@@ -13,12 +13,11 @@ import com.example.demo.travelgram.review.dto.entity.ReviewPhotoGroup;
 public interface ReviewPhotoDao {
 
     void insertReviewPhotoGroup(ReviewPhotoGroup group);
-    void insertReviewPhoto(ReviewPhoto photo);
+    void insertReviewPhoto(ReviewPhoto reviewPhoto);
     void updatePhotoOrder(@Param("photoId") Long photoId,
                       @Param("orderIndex") Integer orderIndex,
-                      @Param("groupId") Long groupId);
+                      @Param("photoGroupId") Long photoGroupId);
     ReviewPhotoGroup findPhotoGroupByPostId(Long postId);
-    // List<ReviewPhoto> findPhotosByGroup(Long groupId);
     List<ReviewPhoto> findByPostId(Long postId);
     void deleteReviewPhoto(Long id);
 }
