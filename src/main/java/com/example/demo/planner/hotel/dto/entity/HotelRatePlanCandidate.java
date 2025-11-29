@@ -18,9 +18,24 @@ public class HotelRatePlanCandidate {
     private String neighborhood;  // Myeong-dong 등
     private String addressLine1;
     
+    // 호텔 편의시설
+    private Boolean hasFreeWifi;
+    private Boolean hasParking;
+    private Boolean isPetFriendly;
+    private Boolean isFamilyFriendly;
+    private Boolean has24hFrontdesk;
+    private Boolean hasEnglishStaff;
+    private Boolean nearMetro;
+    private String metroStationName;
+    private BigDecimal airportDistanceKm;
+    private Boolean hasBreakfastRestaurant;
+    
     // 객실 정보
     private String roomTypeName;  // 디럭스, 스위트 등
     private String bedType;       // 침대 타입
+    private BigDecimal roomSizeSqm; // 객실 크기
+    private Boolean hasKitchenette;
+    private Boolean isAccessibleRoom;
     
     // 요금제 정보
     private String ratePlanName;  // 요금제명
