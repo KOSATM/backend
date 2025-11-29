@@ -8,40 +8,40 @@
 
   <select id="selectHashtagGroupById" resultType="ReviewHashtagGroup">
     SELECT id, created_at, review_post_id
-    FROM review_hastag_groups WHERE id = #{id}
+    FROM review_hashtag_groups WHERE id = #{id}
   </select>
 
   <insert id="insertHashtagGroup" parameterType="ReviewHashtagGroup" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO review_hastag_groups (created_at, review_post_id)
+    INSERT INTO review_hashtag_groups (created_at, review_post_id)
     VALUES (NOW(), #{reviewPostId})
   </insert>
 
   <update id="updateHashtagGroup" parameterType="ReviewHashtagGroup">
-    UPDATE review_hastag_groups
+    UPDATE review_hashtag_groups
     SET created_at = NOW(), review_post_id = #{reviewPostId}
     WHERE id = #{id}
   </update>
 
   <delete id="deleteHashtagGroupById" parameterType="long">
-    DELETE FROM review_hastag_groups WHERE id = #{id}
+    DELETE FROM review_hashtag_groups WHERE id = #{id}
   </delete>
 
 
   <!-- ReviewHashtag -->
 
   <insert id="insertHashtag" parameterType="ReviewHashtag" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO review_hashtags (name, is_selected, created_at, group_id)
-    VALUES (#{name}, #{isSelected}, NOW(), #{groupId})
+    INSERT INTO review_hashtags (name, is_selected, created_at, hashtag_group_id)
+    VALUES (#{name}, #{isSelected}, NOW(), #{hashtagGroupId})
   </insert>
 
   <select id="selectHashtagById" resultType="ReviewHashtag">
-    SELECT id, name, is_selected, created_at, group_id
+    SELECT id, name, is_selected, created_at, hashtag_group_id
     FROM review_hashtags WHERE id = #{id}
   </select>
   
   <update id="updateHashtag" parameterType="ReviewHashtag">
     UPDATE review_hashtags
-    SET name = #{name}, is_selected = #{isSelected}, created_at = NOW(), group_id = #{groupId}
+    SET name = #{name}, is_selected = #{isSelected}, created_at = NOW(), hashtag_group_id = #{hashtagGroupId}
     WHERE id = #{id}
   </update>
 

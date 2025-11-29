@@ -7,5 +7,6 @@ import lombok.Data;
 @Data
 public class ReviewCreateResponse {
     private Long reviewPostId;
-    private Long groupId;
+    private Long photoGroupId;
+    private Long hashtagGroupId;
 }
