@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.demo.common.global.annotation.NoWrap;
 import com.example.demo.travelgram.review.dto.request.*;
 import com.example.demo.travelgram.review.dto.response.*;
 import com.example.demo.travelgram.review.service.ReviewService;
@@ -51,6 +52,7 @@ public class ReviewController {
     // ======================================
     // 2) 사진 업로드/순서 영역
     // ======================================
+    @NoWrap
     @PostMapping(value = "/photos/upload", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<?> uploadReviewPhoto(
             @RequestPart("dataListJson") String dataListJsonString,
@@ -75,7 +77,7 @@ public class ReviewController {
             ReviewPhotoUploadRequest dto = new ReviewPhotoUploadRequest();
 
             // Use Optional to check for null and throw a descriptive exception if missing
-            Number groupIdNumber = Optional.ofNullable(map.get("groupId"))
+            Number photoGroupIdNumber = Optional.ofNullable(map.get("photoGroupId"))
                     .map(obj -> (Number) obj)
                     .orElseThrow(() -> new IllegalArgumentException("Missing required parameter: 'groupId'"));
 
@@ -83,7 +85,7 @@ public class ReviewController {
                     .map(obj -> (Number) obj)
                     .orElseThrow(() -> new IllegalArgumentException("Missing required parameter: 'orderIndex'"));
 
-            dto.setGroupId(groupIdNumber.longValue());
+            dto.setPhotoGroupId(photoGroupIdNumber.longValue());
             dto.setFileName((String) map.get("fileName"));
             dto.setOrderIndex(orderIndexNumber.intValue());
 
@@ -113,59 +115,6 @@ public class ReviewController {
     public ResponseEntity<?> updatePhotoOrder(@RequestBody ReviewPhotoOrderUpdateRequest request) {
         reviewService.updatePhotoOrder(request);
         return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/photo/delete/{id}")
-    public ResponseEntity<?> deletePhoto(@PathVariable ("id") Long id){
-        reviewService.deletePhoto(id);
-        return ResponseEntity.noContent().build();
-    }
-
-
-    // ======================================
-    // 3) review_posts 사용자가 AI 해시태그로부터 해시태그 선택 및 추가
-    // ======================================
-
-    // 해시태그 그룹 생성
-    @PostMapping("{postId}/hashtagGroups")
-    public ResponseEntity<?> createHashtagGroup(@PathVariable Long postId) {
-        
-        return ResponseEntity.ok(reviewService.insertHashtagGroup(postId));
-    }
-    
-    // 3) 해시태그 선택 저장, 여기서 해시태그 그룹 아이디 인서트 먼저 일어나야함
-    // @PostMapping("/{postId}/hashtags")
-    // public ResponseEntity<Void> updateHashtags(
-    //         @PathVariable Long postId,
-    //         @RequestBody ReviewHashtagUpdateRequest request
-    // ) {
-    //     reviewService.updateHashtags(postId, request);
-    //     return ResponseEntity.ok().build();
-    // }
-
-    // 4) 캡션 수정, 마지막 업데이트
-    @PutMapping("/{postId}/caption")
-    public ResponseEntity<ReviewPostResponse> updateUserCaption(
-            @PathVariable Long postId,
-            @RequestBody ReviewUserCaptionUpdateRequest request
-    ) {
-        return ResponseEntity.ok(reviewService.updateUserCaption(request));
-    }
-
-    // 5) 프리뷰 조회
-    // @GetMapping("/{postId}")
-    // public ResponseEntity<ReviewPreviewResponse> getPreview(
-    //         @PathVariable Long postId
-    // ) {
-    //     return ResponseEntity.ok(reviewService.getPreview(postId));
-    // }
-
-    // 6) 게시하기
-    @PutMapping("/{postId}/publish")
-    public ResponseEntity<String> publish(
-            @PathVariable Long postId
-    ) {
-        return ResponseEntity.ok(reviewService.publish(postId));
     }
     
 }
