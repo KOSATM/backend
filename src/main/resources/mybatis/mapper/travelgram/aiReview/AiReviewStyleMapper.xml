@@ -14,6 +14,11 @@
     FROM ai_review_styles WHERE id = #{id}
   </select>
 
+  <select id="findStyleByAnalaysisId" resultType="AiReviewStyle">
+    SELECT id, name, created_at, tone_code, description, review_analysis_id
+    FROM ai_review_styles WHERE review_analysis_id = #{reviewAnalysisId}
+  </select>
+
   <update id="updateAiReviewStyle" parameterType="AiReviewStyle">
     UPDATE ai_review_styles
     SET name = #{name}, created_at = #{createdAt}, tone_code=#{toneCode}, description=#{description}, review_analysis_id = #{reviewAnalysisId}

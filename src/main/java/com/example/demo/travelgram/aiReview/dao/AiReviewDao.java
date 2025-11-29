@@ -11,6 +11,6 @@ public interface AiReviewDao {
     void insertAiReviewAnalysis(AiReviewAnalysis analysis);
     void insertAiReviewStyle(AiReviewStyle style);
     void insertAiReviewHashtag(AiReviewHashtag tag);
-    AiReviewStyle findStyleById(Long id);
+    AiReviewStyle findStyleByAnalysisId(Long id);
 }
 
