@@ -5,20 +5,19 @@
 <mapper namespace="com.example.demo.travelgram.aiReview.dao.AiReviewAnalysisDao">
 
   <insert id="insertAiReviewAnalysis" parameterType="AiReviewAnalysis" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO ai_review_analysis (prompt_text, input_json, output_json, created_at, user_id, review_post_id)
-    VALUES (#{promptText}, #{inputJson}, #{outputJson}, now(), #{userId}, #{reviewPostId})
+    INSERT INTO ai_review_analysis (input_json, output_json, created_at, user_id, review_post_id)
+    VALUES (#{inputJson}, #{outputJson}, now(), #{userId}, #{reviewPostId})
   </insert>
 
   <select id="selectAiReviewAnalysisById" resultType="AiReviewAnalysis">
-    SELECT id, prompt_text, input_json, output_json, created_at, user_id, review_post_id
+    SELECT input_json, output_json, created_at, user_id, review_post_id
     FROM ai_review_analysis WHERE id = #{id}
   </select>
 
 
-
   <update id="updateAiReviewAnalysis" parameterType="AiReviewAnalysis">
     UPDATE ai_review_analysis
-    SET prompt_text = #{promptText}, input_json = #{inputJson}, output_json = #{outputJson},
+    SET input_json = #{inputJson}, output_json = #{outputJson},
         created_at = #{createdAt}, user_id = #{userId}, review_post_id = #{reviewPostId}
     WHERE id = #{id}
   </update>

@@ -14,13 +14,7 @@ public interface ReviewPostDao {
 
     ReviewPost findById(Long id);
 
-    void update(ReviewPost post);
-    
-    void updateStyleId(@Param("id")Long id, @Param("styleId") Long styleId);
-    
-    // AI가 생성한 해시태그 Read해서 보여주기
-
-    void updateContent(@Param("id") Long id, @Param("content") String content);
+    void updateUserCaption(@Param("id") Long id, @Param("cation") String caption);
 
 
     void publish(@Param("id") Long id, @Param("postUrl") String postUrl);

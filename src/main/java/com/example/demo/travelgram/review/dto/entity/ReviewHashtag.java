@@ -7,7 +7,6 @@ import lombok.Getter;
 public class ReviewHashtag {
     private Long id;
     private String name;
-    private Boolean isSelected;
     private OffsetDateTime createdAt;
     private Long groupId;
 }

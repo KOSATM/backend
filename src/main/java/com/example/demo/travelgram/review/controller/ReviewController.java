@@ -8,20 +8,15 @@ import java.util.Optional;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.demo.travelgram.aiReview.dto.request.ReviewContentUpdateRequest;
-import com.example.demo.travelgram.aiReview.dto.request.ReviewStyleSelectRequest;
-import com.example.demo.travelgram.aiReview.dto.response.AiReviewStyleResponse;
 import com.example.demo.travelgram.review.dto.request.*;
 import com.example.demo.travelgram.review.dto.response.*;
 import com.example.demo.travelgram.review.service.ReviewService;
@@ -34,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/review")
+@RequestMapping("/reviews")
 public class ReviewController {
     private final ReviewService reviewService;
     private final ObjectMapper objectMapper; // ObjectMapper 주입
@@ -48,7 +43,7 @@ public class ReviewController {
     public ResponseEntity<ReviewCreateResponse> createReview(
             @RequestBody ReviewCreateRequest request) {
 
-        ReviewCreateResponse result = reviewService.createReview(request.getTravelPlanId());
+        ReviewCreateResponse result = reviewService.createReview(request.getPlanId());
 
         return ResponseEntity.ok(result);
     }
@@ -128,20 +123,18 @@ public class ReviewController {
 
 
     // ======================================
-    // 3) review_posts update, style 부터
+    // 3) review_posts 사용자가 AI 해시태그로부터 해시태그 선택 및 추가
     // ======================================
 
-    // 2) 스타일 선택 적용 (AI 캡션까지 자동 반영)
-    // @PutMapping("/{postId}/style")
-    // public ResponseEntity<ReviewPostResponse> applyStyle(
-    //         @PathVariable Long postId,
-    //         @RequestBody ReviewStyleSelectRequest request
-    // ) {
-    //     return ResponseEntity.ok(reviewService.applyStyle(postId, request));
-    // }
-
+    // 해시태그 그룹 생성
+    @PostMapping("{postId}/hashtagGroups")
+    public ResponseEntity<?> createHashtagGroup(@PathVariable Long postId) {
+        
+        return ResponseEntity.ok(reviewService.insertHashtagGroup(postId));
+    }
+    
     // 3) 해시태그 선택 저장, 여기서 해시태그 그룹 아이디 인서트 먼저 일어나야함
-    // @PutMapping("/{postId}/hashtags")
+    // @PostMapping("/{postId}/hashtags")
     // public ResponseEntity<Void> updateHashtags(
     //         @PathVariable Long postId,
     //         @RequestBody ReviewHashtagUpdateRequest request
@@ -151,12 +144,12 @@ public class ReviewController {
     // }
 
     // 4) 캡션 수정, 마지막 업데이트
-    @PutMapping("/{postId}/content")
-    public ResponseEntity<ReviewPostResponse> updateContent(
+    @PutMapping("/{postId}/caption")
+    public ResponseEntity<ReviewPostResponse> updateUserCaption(
             @PathVariable Long postId,
-            @RequestBody ReviewContentUpdateRequest request
+            @RequestBody ReviewUserCaptionUpdateRequest request
     ) {
-        return ResponseEntity.ok(reviewService.updateContent(postId, request));
+        return ResponseEntity.ok(reviewService.updateUserCaption(request));
     }
 
     // 5) 프리뷰 조회
@@ -169,7 +162,7 @@ public class ReviewController {
 
     // 6) 게시하기
     @PutMapping("/{postId}/publish")
-    public ResponseEntity<ReviewPostResponse> publish(
+    public ResponseEntity<String> publish(
             @PathVariable Long postId
     ) {
         return ResponseEntity.ok(reviewService.publish(postId));

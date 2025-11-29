@@ -9,12 +9,13 @@ import com.example.demo.travelgram.review.dto.entity.ReviewHashtagGroup;
 
 @Mapper
 public interface ReviewHashtagDao {
-    void deleteByPostId(Long postId);
-    Long insertGroup(ReviewHashtagGroup group);
-    void insertHashtag(ReviewHashtag hashtag);
+    void insertHashtagGroup(Long postId);
+    void insertHashtag(Long groupId);
+    // void insertPersonalHashtag(Long groupId, String name); // request Dto로 받아야하나 근데 그럼 그냥 해시태그잔아
+    void deleteHashtag(Long hashtagId);
+
     ReviewHashtagGroup findHashtagGroupByPostId(Long postId);
-    List<ReviewHashtag> findHashtagsBygroupId(Long groupId);
-    // 그룹아이디를 찾아서 그룹에 해당하는 해시태그를 포문으로 돌려야함
+    List<ReviewHashtag> findHashtagsBygroupId(Long groupId); //읽기용
 
     
 }
