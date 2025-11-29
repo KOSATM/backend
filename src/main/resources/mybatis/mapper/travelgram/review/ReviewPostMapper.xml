@@ -6,11 +6,9 @@
 
     <!-- review_posts -->
     <insert id="insertDraft" parameterType="ReviewPost" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO review_posts (caption, is_posted, review_post_url, created_at, plan_id, review_style_id)
-        VALUES (null, false, null, NOW(), #{planId}, null);
+        INSERT INTO review_posts (caption, is_posted, review_post_url, created_at, plan_id, photo_group_id, hashtag_group_id, review_style_id)
+        VALUES (null, false, null, NOW(), #{planId}, #{photoGroupId}, #{hashtagGroupId}, null);
     </insert>
-
-    <!-- review_style_Id만 넣어서 update..., content까지 같이 업데이트하고나서 hashtagGroups insert하고 hashtags insert -->
 
     <select id="selectReviewPostById" resultType="ReviewPost">
         SELECT * FROM review_posts WHERE id = #{id};
@@ -23,7 +21,8 @@
     <update id="updateReviewPost" parameterType="ReviewPost">
         UPDATE review_posts
         SET caption = #{caption}, is_posted = #{isPosted}, review_post_url = #{reviewPostUrl}, created_at = #{createdAt},
-            plan_id = #{planId}, review_style_id = #{reviewStyleId}
+            plan_id = #{planId}, photo_group_id =#{photoGroupId}, hashtag_group_id=#{hashtagGroupId},
+            review_style_id = #{reviewStyleId}
         WHERE id = #{id}
   </update>
 </mapper>
