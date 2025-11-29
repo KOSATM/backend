@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.demo.travelgram.aiReview.dto.response.AiReviewStyleResponse;
 import com.example.demo.travelgram.aiReview.service.AiReviewService;
 
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/aiReview")
+@RequestMapping("/aiReviews")
 public class AiReviewController {
 
     private final AiReviewService aiReviewService;
