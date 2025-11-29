@@ -11,7 +11,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class AiReviewStyleResponse {
-    private AiReviewStyle style;
-    private String content;
+    private AiReviewStyle style; //caption 포함 되어있음
     private List<ReviewHashtag> hashtags;
 }
