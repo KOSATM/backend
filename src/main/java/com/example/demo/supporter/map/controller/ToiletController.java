@@ -3,13 +3,10 @@ package com.example.demo.supporter.map.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.supporter.map.dto.entity.Toilet;
@@ -30,8 +27,24 @@ public class ToiletController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping()
-    public ResponseEntity<Integer> delete() {
-        return ResponseEntity.ok(service.deleteAll());
+    @GetMapping("in-bounds")
+    public ResponseEntity<List<Toilet>> getToiletsInBounds(
+        @RequestParam Double northEastLat,
+        @RequestParam Double northEastLng,
+        @RequestParam Double southWestLat,
+        @RequestParam Double southWestLng
+    ) {
+        List<Toilet> toilets = service.findToiletsInBounds(northEastLat, northEastLng, southWestLat, southWestLng);
+        return ResponseEntity.ok(toilets);
+    }
+
+    @GetMapping("nearest")
+    public ResponseEntity<List<Toilet>> getNearestToilets(  
+        @RequestParam Double userLat,
+        @RequestParam Double userLng,
+        @RequestParam(defaultValue = "3") Integer limit
+    ) {
+        List<Toilet> toilets = service.findNearestToilets(userLat, userLng, limit);
+        return ResponseEntity.ok(toilets);
     }
 }

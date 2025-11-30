@@ -125,4 +125,15 @@ public class ToiletService {
 		return dao.deleteAll();
 	}
 
+	// 지도 경계 내 화장실 조회
+	public List<Toilet> findToiletsInBounds(Double northEastLat, Double northEastLng, Double southWestLat,
+			Double southWestLng) {
+		return dao.findInBounds(northEastLat, northEastLng, southWestLat, southWestLng);
+	}
+
+	//사용자 위치 기준 가장 가까운 N개 화장실 조회
+	public List<Toilet> findNearestToilets(Double userLat, Double userLng, Integer limit) {
+		return dao.findNearest(userLat, userLng, limit);
+	}
+
 }

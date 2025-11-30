@@ -89,4 +89,24 @@
           address = EXCLUDED.address
   </insert>
 
+  <select id="findInBounds" parameterType="map" resultMap="ToiletResultMap">
+    SELECT id, name, lat, lng, address
+    FROM toilets
+    WHERE lat BETWEEN #{southWestLat} AND #{northEastLat}
+      AND lng BETWEEN #{southWestLng} AND #{northEastLng}
+    ORDER BY name ASC
+  </select>
+
+  <select id="findNearest" parameterType="map" resultMap="ToiletResultMap">
+    SELECT id, name, address, lat, lng,
+            (6371 * acos(
+                cos(radians(#{lat})) * cos(radians(lat)) * 
+                cos(radians(lng) - radians(#{lng})) + 
+                sin(radians(#{lat})) * sin(radians(lat))
+            )) AS distance
+        FROM toilet
+        ORDER BY distance
+        LIMIT #{limit}
+  </select>
+
 </mapper>
