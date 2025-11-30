@@ -1,5 +1,6 @@
 package com.example.demo.supporter.map.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,13 +27,30 @@ public class ToiletService {
 	 * 데이터를 전체 삭제하고 다시 전체 API로 채움
 	 */
 	public void refreshToiletData() throws Exception {
-		// 1. 기존 데이터 삭제
-		dao.deleteAll();
+		log.info("Toilet 데이터 갱신 시작");
 
-		// 2. API로 전체 데이터 조회
+		// 1. API로 전체 데이터 조회
 		String jsonData = apiClient.fetchAllData();
 
+		// 2. API 데이터 검증
+		if (jsonData == null || jsonData.isEmpty()) {
+			throw new Exception("Toilet API 데이터 조회 실패");
+		}
+
+		// 3. 파싱 가능한지 검증
+		int rowStart = jsonData.indexOf("\"row\":[");
+		int rowEnd = jsonData.lastIndexOf("]");
+		if (rowStart == -1 || rowEnd == -1) {
+			throw new Exception("Toilet API 데이터 파싱 실패");
+		}
+
+		// 4. 검증 성공 후 기존 데이터 삭제
+		log.info("기존 Toilet 데이터 삭제");
+		dao.deleteAll();
+
+		// 5. 새 데이터 저장
 		parseAndSaveToilets(jsonData);
+		log.info("Toilet 데이터 갱신 완료");
 	}
 
 	private void parseAndSaveToilets(String response) {
@@ -45,18 +63,25 @@ public class ToiletService {
 			String[] items = rowData.split("\\},\\{");
 
 			long startTime = System.currentTimeMillis();
-			int count = 0;
+			List<Toilet> toilets = new ArrayList<>();
 
 			for (String item : items) {
 				item = item.replace("{", "").replace("}", "");
-				Map<String, String> toilet = extractToiletData(item);
+				Map<String, String> toiletData = extractToiletData(item);
 
-				if (saveToiletToDB(toilet)) {
-					count++;
-				}
+				Toilet dbToilet = new Toilet();
+				dbToilet.setAddress(toiletData.get("ADDR_NEW"));
+				dbToilet.setLat(Double.parseDouble(toiletData.get("COORD_Y")));
+				dbToilet.setLng(Double.parseDouble(toiletData.get("COORD_X")));
+				dbToilet.setName(toiletData.get("CONTS_NAME"));
+
+				toilets.add(dbToilet);
 			}
+
+			dao.insertBatch(toilets);
+
 			long endTime = System.currentTimeMillis();
-			System.out.println(count + "개 데이터 저장 완료 (" + (endTime - startTime) + "ms)");
+			log.info("Toilet 데이터 저장 완료. 소요 시간: {} ms", (endTime - startTime));
 		}
 	}
 
@@ -92,42 +117,6 @@ public class ToiletService {
 		// 문자열 값인 경우 (따옴표 있음)
 		int endIndex = data.indexOf("\"", startIndex + key.length() + 4);
 		return data.substring(startIndex + key.length() + 4, endIndex);
-	}
-
-	private boolean saveToiletToDB(Map<String, String> toilet) {
-		try {
-			// db에 저장
-			Toilet dbToilet = new Toilet();
-			dbToilet.setAddress(toilet.get("ADDR_NEW"));
-			dbToilet.setLat(Double.parseDouble(toilet.get("COORD_Y")));
-			dbToilet.setLng(Double.parseDouble(toilet.get("COORD_X")));
-			dbToilet.setName(toilet.get("CONTS_NAME"));
-			
-			dao.insert(dbToilet);
-			return true;
-		} catch (Exception e) {
-			System.err.println("DB 저장 오류: " + e.getMessage());
-			return false;
-		}
-	}
-
-	public Toilet get(Long id) {
-		return dao.selectById(id);
-	}
-
-	public List<Toilet> getAll() {
-		return dao.selectAll();
-	}
-
-	@Transactional
-	public Long create(Toilet t) {
-		dao.insert(t);
-		return t.getId();
-	}
-
-	@Transactional
-	public int update(Toilet t) {
-		return dao.update(t);
 	}
 
 	// 기존 데이터 모두 삭제

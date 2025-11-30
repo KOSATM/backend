@@ -54,11 +54,11 @@
   </insert>
 
   <!-- 배치 INSERT -->
-  <insert id="batchInsert" parameterType="list">
-    INSERT INTO toilets (name, lat, lng, address)
+  <insert id="insertBatch" parameterType="list">
+    INSERT INTO toilets (name, address, lat, lng)
     VALUES
-    <foreach collection="list" item="t" separator=",">
-      (#{t.name}, #{t.lat}, #{t.lng}, #{t.address})
+    <foreach collection="list" item="toilet" separator=",">
+      (#{toilet.name}, #{toilet.address}, #{toilet.lat}, #{toilet.lng})
     </foreach>
   </insert>
 

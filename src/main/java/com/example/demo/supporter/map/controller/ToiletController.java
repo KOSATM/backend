@@ -23,29 +23,15 @@ import lombok.RequiredArgsConstructor;
 public class ToiletController {
     private final ToiletService service;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Toilet> get(@PathVariable Long id) {
-        return ResponseEntity.ok(service.get(id));
+    //테스트용, 데이터 갱신 API
+    @PostMapping()
+    public ResponseEntity<Integer> create() throws Exception {
+        service.refreshToiletData();
+        return ResponseEntity.ok().build();
     }
 
-    @GetMapping
-    public ResponseEntity<List<Toilet>> list() {
-        return ResponseEntity.ok(service.getAll());
-    }
-
-    @PostMapping
-    public ResponseEntity<Long> create(@RequestBody Toilet t) {
-        return ResponseEntity.ok(service.create(t));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Integer> update(@PathVariable Long id, @RequestBody Toilet t) {
-        t.setId(id);
-        return ResponseEntity.ok(service.update(t));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Integer> delete(@PathVariable Long id) {
+    @DeleteMapping()
+    public ResponseEntity<Integer> delete() {
         return ResponseEntity.ok(service.deleteAll());
     }
 }
