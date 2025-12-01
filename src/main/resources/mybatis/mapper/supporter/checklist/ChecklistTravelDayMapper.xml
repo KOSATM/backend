@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.demo.supporter.checklist.dao.ChecklistTravelDayDao">
+
+    <resultMap id="TravelDayMap" type="com.example.demo.supporter.checklist.dto.response.TravelDayResponse">
+        <id column="day_id" property="dayId" />
+        <result column="plan_id" property="planId" />
+        <result column="day_index" property="dayIndex" />
+        <result column="day_title" property="dayTitle" />
+        <result column="plan_date" property="planDate" />
+        <collection property="places" ofType="com.example.demo.supporter.checklist.dto.response.TravelDayResponse$PlaceDto">
+            <id column="place_id" property="placeId" />
+            <result column="place_title" property="placeTitle" />
+            <result column="start_at" property="startAt" />
+            <result column="end_at" property="endAt" />
+            <result column="place_name" property="placeName" />
+            <result column="address" property="address" />
+            <result column="lat" property="lat" />
+            <result column="lng" property="lng" />
+            <result column="expected_cost" property="expectedCost" />
+        </collection>
+    </resultMap>
+
+    <select id="getTravelDay" resultMap="TravelDayMap">
+        SELECT
+            d.id           AS day_id,
+            d.plan_id,
+            d.day_index,
+            d.title        AS day_title,
+            d.plan_date,
+            p.id           AS place_id,
+            p.title        AS place_title,
+            p.start_at,
+            p.end_at,
+            p.place_name,
+            p.address,
+            p.lat,
+            p.lng,
+            p.expected_cost
+        FROM plan_days d
+        LEFT JOIN plan_places p ON p.day_id = d.id
+        WHERE d.plan_id = #{planId} AND d.day_index = #{dayIndex}
+        ORDER BY p.start_at, p.id
+    </select>
+
+</mapper>
