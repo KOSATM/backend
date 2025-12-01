@@ -14,29 +14,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TrendSearchAgent {
   private ChatClient chatClient;
-  private String searchEndpoint;
-  private String apiKey;
-  private String engineId;
-  private WebClient webClient;
-  private ObjectMapper objectMapper = new ObjectMapper();
   private InternetSearchTool internetSearchTool;
 
   public TrendSearchAgent(
       ChatClient.Builder chatClientBuilder,
-      @Value("${google.search.endpoint}") String endpoint,
-      @Value("${google.search.apiKey}") String apiKey,
-      @Value("${google.search.engineId}") String engineId,
-      WebClient.Builder webClientBuilder,
     InternetSearchTool internetSearchTool) {
     chatClient = chatClientBuilder.build();
-    this.searchEndpoint = endpoint;
-    this.apiKey = apiKey;
-    this.engineId = engineId;
     this.internetSearchTool = internetSearchTool;
-    this.webClient = webClientBuilder
-        .baseUrl(searchEndpoint)
-        .defaultHeader("Accept", "application/json")
-        .build();
   }
 
   public String generateTrend(String question) {
