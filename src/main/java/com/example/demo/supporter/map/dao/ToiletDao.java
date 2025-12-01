@@ -6,10 +6,9 @@ import java.util.List;
 
 @Mapper
 public interface ToiletDao {
-    Toilet selectById(Long id);
-    List<Toilet> selectAll();
     int insert(Toilet toilet);
-    int update(Toilet toilet);
+    int insertBatch(List<Toilet> toilets);
     int deleteAll();
-//    int deleteById(Long id);
+    List<Toilet> findInBounds(Double northEastLat, Double northEastLng, Double southWestLat, Double southWestLng);
+    List<Toilet> findNearest(Double userLat, Double userLng, Integer limit);
 }
