@@ -20,33 +20,36 @@ public class ImageSearchController {
     @PostMapping
     public void recommendPlacesByImage(
             @RequestParam("placeType") String placeType,
-            @RequestParam("image") MultipartFile image) throws Exception {
-        service.processImageForPlaceRecommendation(placeType, image);
+            @RequestParam("image") MultipartFile image,
+            @RequestParam(value = "userLat", required = false, defaultValue = "0") double userLat,
+            @RequestParam(value = "userLng", required = false, defaultValue = "0") double userLng) throws Exception {
+        service.processImageForPlaceRecommendation(placeType, image, userLat, userLng);
     }
-    
+
     // @GetMapping("/{id}")
     // public ResponseEntity<ImageSearchCandidate> get(@PathVariable Long id) {
-    //     return ResponseEntity.ok(service.get(id));
+    // return ResponseEntity.ok(service.get(id));
     // }
 
     // @GetMapping
     // public ResponseEntity<List<ImageSearchCandidate>> list() {
-    //     return ResponseEntity.ok(service.getAll());
+    // return ResponseEntity.ok(service.getAll());
     // }
 
     // @PostMapping
     // public ResponseEntity<Long> create(@RequestBody ImageSearchCandidate r) {
-    //     return ResponseEntity.ok(service.create(r));
+    // return ResponseEntity.ok(service.create(r));
     // }
 
     // @PutMapping("/{id}")
-    // public ResponseEntity<Integer> update(@PathVariable Long id, @RequestBody ImageSearchCandidate r) {
-    //     r.setId(id);
-    //     return ResponseEntity.ok(service.update(r));
+    // public ResponseEntity<Integer> update(@PathVariable Long id, @RequestBody
+    // ImageSearchCandidate r) {
+    // r.setId(id);
+    // return ResponseEntity.ok(service.update(r));
     // }
 
     // @DeleteMapping("/{id}")
     // public ResponseEntity<Integer> delete(@PathVariable Long id) {
-    //     return ResponseEntity.ok(service.delete(id));
+    // return ResponseEntity.ok(service.delete(id));
     // }
 }
