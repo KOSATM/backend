@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.common.global.agent.SampleAiAgent;
+import com.example.demo.planner.travel.agent.TravelPlannerAgent;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 public enum IntentType {
 
     // -------------------- PLANNER --------------------
-    TRAVEL_PLAN("travel_plan", CategoryType.PLANNER, "/planner", "여행 일정 추천", null),
+    TRAVEL_PLAN("travel_plan", CategoryType.PLANNER, "/planner", "여행 일정 추천", TravelPlannerAgent.class),
     PLAN_ADD("plan_add", CategoryType.PLANNER, "/planner", "일정에 장소 추가", null),
     PLAN_DELETE("plan_delete", CategoryType.PLANNER, "/planner", "일정에서 장소 삭제", null),
     PLAN_MODIFY("plan_modify", CategoryType.PLANNER, "/planner", "일정 수정", null),
@@ -43,7 +44,6 @@ public enum IntentType {
     private final String requiredUrl;
     private final String humanReadable;
     private final Class<? extends AiAgent> agentClass;
-
 
     public static IntentType fromValue(String value) {
         for (IntentType t : values()) {
@@ -75,6 +75,5 @@ public enum IntentType {
         }
         return sb.toString();
     }
-
 
 }

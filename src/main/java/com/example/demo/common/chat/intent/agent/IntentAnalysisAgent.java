@@ -1,4 +1,4 @@
-package com.example.demo.common.chat.intent;
+package com.example.demo.common.chat.intent.agent;
 
 import java.util.List;
 import java.util.Map;
@@ -8,6 +8,8 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.stereotype.Component;
 
+import com.example.demo.common.chat.intent.CategoryType;
+import com.example.demo.common.chat.intent.IntentType;
 import com.example.demo.common.chat.intent.dto.IntentItem;
 import com.example.demo.common.chat.intent.dto.request.IntentRequest;
 import com.example.demo.common.chat.intent.dto.response.IntentResponse;
@@ -58,10 +60,13 @@ public class IntentAnalysisAgent {
             # ✔ arguments 규칙
             - Intent 수행에 필요한 정보만 key-value 형태로 추출한다.
             - 명확하게 파악되지 않는 값은 만들지 않는다.
+            - 값의 형식을 강제하지 않습니다.(숫자/정규화/전처리 등 하지 않음)
+
             - 예시:
-                - plan_add → { "date": "내일", "place": "롯데타워" }
-                - plan_modify → { "oldPlace": "롯데타워", "newPlace": "코엑스", "day": "1일차" }
-                - attraction_recommend → { "location": "부산" }
+                - travel_plan → { "location": "...", "duration": "..." }
+                - plan_add → { "date": "...", "place": "..." }
+                - plan_modify → { "oldPlace": "...", "newPlace": "...", "day": "..." }
+                - attraction_recommend → { "location": "..." }
                 - currency_exchange → { "from": "USD", "to": "KRW" }
 
             ---
@@ -101,14 +106,14 @@ public class IntentAnalysisAgent {
             오직 JSON만 출력한다.
 
         """.formatted(CategoryType.buildCategoryList(), IntentType.buildIntentList());
-
+    // log.info(systemPrompt);
     String userPrompt = """
         USER_MESSAGE: "%s"
         CURRENT_URL: "%s"
 
         ※ CURRENT_URL은 참고용 맥락 정보이며, Intent 분류에는 절대 사용하지 마십시오.
         """.formatted(intentRequest.getUserMessage(), intentRequest.getCurrentUrl());
-
+    log.info(userPrompt);
     // String responseJSON = chatClient.prompt()
     // .system(systemPrompt)
     // .user(userPrompt)

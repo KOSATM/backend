@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@NoArgsConstructor
 public class TravelPlace {
     private Long id;
     private Long dayId;

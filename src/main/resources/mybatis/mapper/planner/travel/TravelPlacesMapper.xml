@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.planner.travel.dao.TravelDao">
+
+  <resultMap id="TravelPlacesMap" type="com.example.demo.planner.travel.dto.entity.TravelPlaces">
+      <id column="id" property="id"/>
+      <result column="content_id" property="contentId"/>
+      <result column="title" property="title"/>
+      <result column="address" property="address"/>
+      <result column="tel" property="tel"/>
+      <result column="first_image" property="firstImage"/>
+      <result column="first_image2" property="firstImage2"/>
+      <result column="lat" property="lat"/>
+      <result column="lng" property="lng"/>
+      <result column="category_code" property="categoryCode"/>
+      <result column="description" property="description"/>
+      <result column="tags" property="tags" typeHandler="com.example.demo.common.global.typehandler.JsonListTypeHandler"/>
+      <result column="detail_info" property="detailInfo"/>
+      <result column="normalized_category" property="normalizedCategory"/>
+  </resultMap>
+
+  <!-- 기본 컬럼 매핑 -->
+  <resultMap id="TravelPlaceSearchResultMap" type="com.example.demo.planner.travel.dto.response.TravelPlaceSearchResult">
+
+    <!-- score 직접 매핑 -->
+    <result column="score" property="score"/>
+
+    <!-- TravelPlaces 내부 매핑 -->
+    <association property="travelPlaces" javaType="com.example.demo.planner.travel.dto.entity.TravelPlaces">
+        <id column="id" property="id" />
+        <result column="content_id" property="contentId" />
+        <result column="title" property="title" />
+        <result column="address" property="address" />
+        <result column="tel" property="tel" />
+        <result column="first_image" property="firstImage" />
+        <result column="first_image2" property="firstImage2" />
+        <result column="lat" property="lat" />
+        <result column="lng" property="lng" />
+        <result column="category_code" property="categoryCode" />
+        <result column="description" property="description" />
+        <result column="tags" property="tags" typeHandler="com.example.demo.common.global.typehandler.JsonListTypeHandler" />
+        <!-- embedding은 생략 -->
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="detail_info" property="detailInfo"/>
+        <result column="normalized_category" property="normalizedCategory"/>
+    </association>
+</resultMap>
+
+  <!-- id로 조회 -->
+  <select id="findById" resultMap="TravelPlacesMap">
+        SELECT *
+        FROM travel_places
+        WHERE id = #{id}
+  </select>
+
+  <!-- 전체 조회 -->
+  <select id="findAll" resultMap="TravelPlacesMap">
+        SELECT *
+        FROM travel_places
+        ORDER BY id
+        LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <!-- 백터 검색 -->
+  <select id="searchByVector" resultMap="TravelPlaceSearchResultMap">
+      <![CDATA[ 
+      SELECT 
+      id,
+      title,
+      category_code,
+      description,
+      tags,
+      detail_info,
+      normalized_category,
+      1 - (embedding <=> #{embedding, typeHandler=com.example.demo.common.global.typehandler.VectorTypeHandler}) AS score
+        FROM travel_places
+        WHERE embedding IS NOT NULL
+        ORDER BY score DESC
+        LIMIT #{limit}
+      ]]>
+  </select>
+  
+  
+</mapper>
