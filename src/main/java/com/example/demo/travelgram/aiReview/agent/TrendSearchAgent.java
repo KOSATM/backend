@@ -40,8 +40,9 @@ public class TrendSearchAgent {
 
     - "site:instagram.com 서울 {keyword} 2025"
     - "서울 {keyword} 인스타"
-    - "서울여행 {keyword} 핫플"
+    - "서울 {keyword} 핫플"
     - "서울 {keyword} 감성"
+    - "서울 {keyword} 여행"
     - "SEOUL {keyword} instagram"
     
     ## Output
