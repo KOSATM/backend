@@ -26,7 +26,7 @@ public class AiReviewController {
     private final TrendSearchAgent trendSearchAgent;
 
     @GetMapping("/trend")
-    public String getTrend(@RequestParam String keyword) {
+    public String getTrend(@RequestParam("keyword") String keyword) {
         return trendSearchAgent.generateTrend(keyword);
     }
 
