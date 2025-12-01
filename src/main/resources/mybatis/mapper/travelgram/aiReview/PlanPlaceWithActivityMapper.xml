@@ -6,14 +6,14 @@
 
 <select id="findPlanById"
         parameterType="long"
-        resultType="TravelPlan">
+        resultType="Plan">
     SELECT * FROM plans WHERE id = #{planId}
 </select>
 
 
 <select id="findDaysByPlanId"
         parameterType="long"
-        resultType="TravelDay">
+        resultType="PlanDay">
     SELECT * FROM plan_days WHERE plan_id = #{planId} ORDER BY day_index
 </select>
 

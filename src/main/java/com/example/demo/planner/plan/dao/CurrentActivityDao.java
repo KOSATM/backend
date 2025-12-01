@@ -8,9 +8,11 @@ public interface CurrentActivityDao {
 
     void insertCurrentActivity(CurrentActivity currentActivity);
 
-    CurrentActivity selectCurrentActivityById(Long planPlaceId);
+    void updateCurrentActivity(CurrentActivity currentActivity);
 
-    List<CurrentActivity> selectCurrentActivitiesByPlanId(Long planPlaceId);
+    CurrentActivity selectCurrentActivityById(Long id);
+
+    // List<CurrentActivity> selectCurrentActivitiesByPlanId(Long planPlaceId);
     
-    int deleteCurrentActivity(Long id);
+    void deleteCurrentActivity(Long id);
 }

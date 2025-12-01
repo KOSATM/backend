@@ -11,11 +11,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RequiredArgsConstructor
-public class TravelService {
-  private final PlanDao travelPlanDao;
-  private final PlanDayDao travelDayDao;
-  private final PlanPlaceDao travelPlaceDao;
-  private final PlanSnapshotDao travelPlanSnapshotDao;
+public class PlanService {
+  private final PlanDao planDao;
+  private final PlanDayDao planDayDao;
+  private final PlanPlaceDao planPlaceDao;
+  private final PlanSnapshotDao planSnapshotDao;
 
   private final InternetSearchAgent internetSearchAgent;
 

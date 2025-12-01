@@ -12,25 +12,25 @@ public interface PlanDao {
     /**
      * ID로 여행 계획을 조회합니다.
      */
-    Plan selectTravelPlanById(Long id);
+    Plan selectPlanById(Long id);
     
     /**
      * 사용자의 모든 여행 계획을 조회합니다.
      */
-    List<Plan> selectTravelPlansByUserId(Long userId);
+    List<Plan> selectPlansByUserId(Long userId);
     
     /**
      * 여행 계획을 생성합니다.
      */
-    int insertTravelPlan(Plan travelPlan);
+    int insertPlan(Plan Plan);
     
     /**
      * 여행 계획을 수정합니다.
      */
-    int updateTravelPlan(Plan travelPlan);
+    int updatePlan(Plan Plan);
     
     /**
      * 여행 계획을 삭제합니다.
      */
-    int deleteTravelPlan(Long id);
+    int deletePlan(Long id);
 }

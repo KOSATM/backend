@@ -9,20 +9,20 @@ import java.util.List;
 @Mapper
 public interface PlanSnapshotDao {
     // ID로 개별 스냅샷 조회
-    PlanSnapshot selectTravelPlanSnapshotById(Long id);
+    PlanSnapshot selectPlanSnapshotById(Long id);
 
     // 사용자의 모든 스냅샷 조회
-    List<PlanSnapshot> selectTravelPlanSnapshotsByUserId(Long userId);
+    List<PlanSnapshot> selectPlanSnapshotsByUserId(Long userId);
 
     // 사용자의 최신 스냅샷 조회
-    PlanSnapshot selectLatestTravelPlanSnapshotByUserId(Long userId);
+    PlanSnapshot selectLatestPlanSnapshotByUserId(Long userId);
 
     // 스냅샷 저장
-    int insertTravelPlanSnapshot(PlanSnapshot travelPlanSnapshot);
+    int insertPlanSnapshot(PlanSnapshot PlanSnapshot);
 
     // 특정 스냅샷 삭제
-    int deleteTravelPlanSnapshot(Long id);
+    int deletePlanSnapshot(Long id);
 
     // 사용자의 모든 스냅샷 삭제
-    int deleteTravelPlanSnapshotsByUserId(Long userId);
+    int deletePlanSnapshotsByUserId(Long userId);
 }

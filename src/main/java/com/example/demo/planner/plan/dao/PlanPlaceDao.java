@@ -12,37 +12,37 @@ public interface PlanPlaceDao {
     /**
      * ID로 여행 장소를 조회합니다.
      */
-    PlanPlace selectTravelPlaceById(Long id);
+    PlanPlace selectPlaceById(Long id);
     
     /**
      * 여행 날짜의 모든 장소를 조회합니다.
      * 시간 순서대로 정렬됩니다.
      */
-    List<PlanPlace> selectTravelPlacesByDayId(Long dayId);
+    List<PlanPlace> selectPlacesByDayId(Long dayId);
     
     /**
      * 여행 계획의 모든 장소를 조회합니다.
      * 날짜와 시간 순서대로 정렬됩니다.
      */
-    List<PlanPlace> selectTravelPlacesByPlanId(Long travelPlanId);
+    List<PlanPlace> selectPlacesByPlanId(Long planId);
     
     /**
      * 여행 장소를 생성합니다.
      */
-    int insertTravelPlace(PlanPlace travelPlace);
+    int insertPlace(PlanPlace place);
     
     /**
      * 여행 장소를 수정합니다.
      */
-    int updateTravelPlace(PlanPlace travelPlace);
+    int updatePlace(PlanPlace place);
     
     /**
      * 여행 장소를 삭제합니다.
      */
-    int deleteTravelPlace(Long id);
+    int deletePlace(Long id);
     
     /**
      * 여행 날짜의 모든 장소를 삭제합니다.
      */
-    int deleteTravelPlacesByDayId(Long dayId);
+    int deletePlacesByDayId(Long dayId);
 }

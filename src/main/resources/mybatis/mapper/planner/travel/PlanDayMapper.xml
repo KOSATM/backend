@@ -4,25 +4,25 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.planner.travel.dao.PlanDayDao">
 
-  <select id="selectPlanDayById" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.PlanDay">
+  <select id="selectPlanDayById" parameterType="long" resultType="PlanDay">
     SELECT id, plan_id, day_index, title, plan_date
     FROM plan_days
     WHERE id = #{id}
   </select>
 
-  <select id="selectPlanDaysByPlanId" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.PlanDay">
+  <select id="selectPlanDaysByPlanId" parameterType="long" resultType="PlanDay">
     SELECT id, plan_id, day_index, title, plan_date
     FROM plan_days
     WHERE plan_id = #{planId}
     ORDER BY day_index ASC
   </select>
 
-  <insert id="insertPlanDay" parameterType="com.example.demo.planner.travel.dto.entity.PlanDay" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertPlanDay" parameterType="PlanDay" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO plan_days (plan_id, day_index, title, plan_date)
     VALUES (#{planId}, #{dayIndex}, #{title}, #{planDate})
   </insert>
 
-  <update id="updatePlanDay" parameterType="com.example.demo.planner.travel.dto.entity.PlanDay">
+  <update id="updatePlanDay" parameterType="PlanDay">
     UPDATE plan_days
     SET plan_id = #{planId},
         day_index = #{dayIndex},

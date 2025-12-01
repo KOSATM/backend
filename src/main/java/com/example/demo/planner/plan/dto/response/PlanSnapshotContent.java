@@ -7,22 +7,22 @@ import java.util.List;
 import lombok.Data;
 
 @Data
-public class TravelPlanSnapshotContent {
+public class PlanSnapshotContent {
   private Long userId;
   private Double budget;
   private String startDate;
   private String endDate;
-  private List<TravelDay> days;
+  private List<PlanDay> days;
 
   @Data
-  public static class TravelDay {
+  public static class PlanDay {
     private String date;
     private String title;
-    private List<TravelItem> schedules;
+    private List<PlanDayItem> schedules;
   }
 
   @Data
-  public static class TravelItem {
+  public static class PlanDayItem {
     private String title;
     private String startAt; 
     private String endAt; 

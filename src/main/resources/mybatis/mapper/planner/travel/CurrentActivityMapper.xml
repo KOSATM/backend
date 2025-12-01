@@ -2,26 +2,26 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.planner.plan.dao.CurrentActivityMapper">
+<mapper namespace="com.example.demo.planner.plan.dao.CurrentActivityDao">
 
-  <select id="selectCurrentActivityById" resultType="com.example.demo.dto.place.CurrentActivityDto">
+  <select id="selectCurrentActivityById" resultType="CurrentActivity">
     SELECT id, plan_place_id, actual_cost, memo, ended_at
-    FROM current_activity WHERE id = #{id}
+    FROM current_activities WHERE id = #{id}
   </select>
 
-  <insert id="insertCurrentActivity" parameterType="com.example.demo.dto.place.CurrentActivityDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO current_activity (plan_place_id, actual_cost, memo, ended_at)
+  <insert id="insertCurrentActivity" parameterType="CurrentActivity" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO current_activities (plan_place_id, actual_cost, memo, ended_at)
     VALUES (#{planPlaceId}, #{actualCost}, #{memo}, #{endedAt})
   </insert>
 
-  <update id="updateCurrentActivity" parameterType="com.example.demo.dto.place.CurrentActivityDto">
-    UPDATE current_activity
+  <update id="updateCurrentActivity" parameterType="CurrentActivity">
+    UPDATE current_activities
     SET plan_place_id = #{planPlaceId}, actual_cost = #{actualCost}, memo = #{memo}, ended_at = #{endedAt}
     WHERE id = #{id}
   </update>
 
   <delete id="deleteCurrentActivityById" parameterType="long">
-    DELETE FROM current_activity WHERE id = #{id}
+    DELETE FROM current_activities WHERE id = #{id}
   </delete>
 
 </mapper>

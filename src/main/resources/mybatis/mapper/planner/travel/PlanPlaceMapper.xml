@@ -4,20 +4,20 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.planner.travel.dao.PlaceDao">
 
-  <select id="selectPlaceById" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.Place">
+  <select id="selectPlanPlaceById" parameterType="long" resultType="PlanPlace">
     SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost
     FROM plan_places
     WHERE id = #{id}
   </select>
 
-  <select id="selectPlacesByDayId" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.Place">
+  <select id="selectPlanPlaceByDayId" parameterType="long" resultType="PlanPlace">
     SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost
     FROM plan_places
     WHERE day_id = #{dayId}
     ORDER BY start_at ASC
   </select>
 
-  <select id="selectPlacesByPlanId" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.Place">
+  <select id="selectPlanPlaceByPlanId" parameterType="long" resultType="PlanPlace">
     SELECT tp.id, tp.day_id, tp.title, tp.start_at, tp.end_at, tp.place_name, tp.address, tp.lat, tp.lng, tp.expected_cost
     FROM plan_places tp
     INNER JOIN plan_days td ON tp.day_id = td.id
@@ -25,12 +25,12 @@
     ORDER BY td.day_index ASC, tp.start_at ASC
   </select>
 
-  <insert id="insertPlace" parameterType="com.example.demo.planner.travel.dto.entity.Place" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertPlace" parameterType="PlanPlace" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO plan_places (day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost)
     VALUES (#{dayId}, #{title}, #{startAt}, #{endAt}, #{placeName}, #{address}, #{lat}, #{lng}, #{expectedCost})
   </insert>
 
-  <update id="updatePlace" parameterType="com.example.demo.planner.travel.dto.entity.Place">
+  <update id="updatePlace" parameterType="PlanPlace">
     UPDATE plan_places
     SET day_id = #{dayId},
         title = #{title},
@@ -49,7 +49,7 @@
     WHERE id = #{id}
   </delete>
 
-  <delete id="deletePlacesByDayId" parameterType="long">
+  <delete id="deletePlanPlaceByDayId" parameterType="long">
     DELETE FROM plan_places
     WHERE day_id = #{dayId}
   </delete>
