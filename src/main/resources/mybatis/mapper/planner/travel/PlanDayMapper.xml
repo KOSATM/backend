@@ -2,43 +2,43 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.planner.travel.dao.TravelDayDao">
+<mapper namespace="com.example.demo.planner.travel.dao.PlanDayDao">
 
-  <select id="selectTravelDayById" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.TravelDay">
-    SELECT id, travel_plan_id, day_index, title, plan_date
+  <select id="selectPlanDayById" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.PlanDay">
+    SELECT id, plan_id, day_index, title, plan_date
     FROM plan_days
     WHERE id = #{id}
   </select>
 
-  <select id="selectTravelDaysByPlanId" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.TravelDay">
-    SELECT id, travel_plan_id, day_index, title, plan_date
+  <select id="selectPlanDaysByPlanId" parameterType="long" resultType="com.example.demo.planner.travel.dto.entity.PlanDay">
+    SELECT id, plan_id, day_index, title, plan_date
     FROM plan_days
-    WHERE travel_plan_id = #{travelPlanId}
+    WHERE plan_id = #{planId}
     ORDER BY day_index ASC
   </select>
 
-  <insert id="insertTravelDay" parameterType="com.example.demo.planner.travel.dto.entity.TravelDay" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO plan_days (travel_plan_id, day_index, title, plan_date)
-    VALUES (#{travelPlanId}, #{dayIndex}, #{title}, #{planDate})
+  <insert id="insertPlanDay" parameterType="com.example.demo.planner.travel.dto.entity.PlanDay" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO plan_days (plan_id, day_index, title, plan_date)
+    VALUES (#{planId}, #{dayIndex}, #{title}, #{planDate})
   </insert>
 
-  <update id="updateTravelDay" parameterType="com.example.demo.planner.travel.dto.entity.TravelDay">
+  <update id="updatePlanDay" parameterType="com.example.demo.planner.travel.dto.entity.PlanDay">
     UPDATE plan_days
-    SET travel_plan_id = #{travelPlanId},
+    SET plan_id = #{planId},
         day_index = #{dayIndex},
         title = #{title},
         plan_date = #{planDate}
     WHERE id = #{id}
   </update>
 
-  <delete id="deleteTravelDay" parameterType="long">
+  <delete id="deletePlanDay" parameterType="long">
     DELETE FROM plan_days
     WHERE id = #{id}
   </delete>
 
-  <delete id="deleteTravelDaysByPlanId" parameterType="long">
+  <delete id="deletePlanDaysByPlanId" parameterType="long">
     DELETE FROM plan_days
-    WHERE travel_plan_id = #{travelPlanId}
+    WHERE plan_id = #{planId}
   </delete>
 
 </mapper>
