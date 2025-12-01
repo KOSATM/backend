@@ -21,9 +21,8 @@ public class ImageSearchController {
     public void recommendPlacesByImage(
             @RequestParam("placeType") String placeType,
             @RequestParam("image") MultipartFile image,
-            @RequestParam(value = "userLat", required = false, defaultValue = "0") double userLat,
-            @RequestParam(value = "userLng", required = false, defaultValue = "0") double userLng) throws Exception {
-        service.processImageForPlaceRecommendation(placeType, image, userLat, userLng);
+            @RequestParam("address") String address) throws Exception {
+        service.processImageForPlaceRecommendation(placeType, image, address);
     }
 
     // @GetMapping("/{id}")

@@ -15,9 +15,9 @@ public class ImageSearchService {
     private final ImageSearchAgent agent;
 
     @Transactional
-    public Long processImageForPlaceRecommendation(String placeType, MultipartFile image, double userLat, double userLng) throws Exception {
+    public Long processImageForPlaceRecommendation(String placeType, MultipartFile image, String address) throws Exception {
 
-        agent.searchImagePlace(placeType, image.getBytes(), image.getContentType(), userLat, userLng);
+        agent.searchImagePlace(placeType, image.getBytes(), image.getContentType(), address);
         return null;
     }
 

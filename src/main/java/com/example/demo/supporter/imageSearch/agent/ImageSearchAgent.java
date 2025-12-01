@@ -19,7 +19,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.lang.Collections;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
@@ -47,14 +46,13 @@ public class ImageSearchAgent {
   }
 
   // 메인 함수
-  public void searchImagePlace(String placeType, byte[] bytes, String contentType, double userLat, double userLng) {
-    Flux<String> response = analyzeImage(placeType, contentType, bytes);
-    generateCandidates(response.toString(), placeType, userLat, userLng);
-
+  public void searchImagePlace(String placeType, byte[] bytes, String contentType, String address) {
+    String response = analyzeImage(placeType, contentType, bytes);
+    generateCandidates(response.toString(), placeType, address);
   }
 
   // 1단계: 이미지 분석
-  public Flux<String> analyzeImage(String placeType, String contentType, byte[] bytes) {
+  public String analyzeImage(String placeType, String contentType, byte[] bytes) {
     // vision 분석 틀
     SystemMessage systemMessage = SystemMessage.builder()
         .text("""
@@ -101,7 +99,7 @@ public class ImageSearchAgent {
 
     log.info("1단계 AI 응답: {}", response);
 
-    return Flux.just(response);
+    return response;
 
     // List<ImageFeature> imageFeatures = parseJsonToList(response, new
     // TypeReference<List<ImageFeature>>() {
@@ -111,8 +109,7 @@ public class ImageSearchAgent {
   }
 
   // 2단계: 후보 5개 생성
-  public Flux<List<PlaceCandidate>> generateCandidates(String placeFeatures, String placeType, double userLat,
-      double userLng) {
+  public Flux<List<PlaceCandidate>> generateCandidates(String placeFeatures, String placeType, String address) {
 
     // 시스템 입력
     String systemText = """
@@ -130,11 +127,14 @@ public class ImageSearchAgent {
             "tool": "googleSearch",
             "query": "<검색어>"
           }
+        - 서울 안에 있는 장소들만을 추천해줘야 합니다.
 
         ## 검색 규칙
-        - 검색어는 “요소명 + 지역명(서울 또는 사용자의 GPS 근처 지역)”으로 구성합니다.
+        - 검색어는 “요소명 + 지역명(사용자의 GPS 근처 지역)”으로 구성합니다.
         - POI로 판단되면 서울 중심 지역 기준으로 검색합니다.
-        - Category로 판단되면 사용자 GPS 주변으로 검색합니다.
+        - Category로 판단되면 다음 절차에 따라 사용자 주소 주변으로 검색합니다.
+          1. 사용자 주소와 STEP1과의 요소명을 조합하여 최종 검색어를 만드세요. (예: query="변환된 지역명 + 떡볶이")
+          2. 최종 검색어로 다시 googleSearch 도구를 호출하여 장소 후보를 찾으세요.
 
         ## 최종 출력 규칙
         - googleSearch 도구 호출 → 검색 결과 분석 후 → 최종 JSON 출력
@@ -144,6 +144,7 @@ public class ImageSearchAgent {
         ## 최종 출력 형식(JSON 배열)
         [
           {
+            "address" : "주소", // Category 검색 시에만 포함
             "name": "장소명",
             "type": "poi | category",
             "location": "주소 또는 지역",
@@ -156,7 +157,7 @@ public class ImageSearchAgent {
         아래는 사용자 입력입니다.
         - step1Result: %s
         - placeType: %s
-        - userGps: {"lat": %f, "lng": %f}
+        - address: "%s"
 
         위 정보를 사용하여 필요한 만큼 googleSearch 도구를 호출한 후,
         모든 검색 결과를 분석하여 최종 JSON 5개만 출력하세요.
@@ -167,10 +168,10 @@ public class ImageSearchAgent {
         {
           "step1Result" : %s,
           "placeType" : %s,
-          "userGps" : {"lat" : %f, "lng" : %f},
+          "address" : "%s",
           "instruction": "반드시 googleSearch 도구를 사용해서 실제 장소만 추천하세요."
         }
-          """, placeFeatures, placeType, userLat, userLng);
+          """, placeFeatures, placeType, address);
 
     String response = chatClient.prompt()
         .system(systemText)
