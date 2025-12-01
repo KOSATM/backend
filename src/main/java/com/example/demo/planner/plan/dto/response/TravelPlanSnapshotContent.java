@@ -1,4 +1,4 @@
-package com.example.demo.planner.travel.dto.response;
+package com.example.demo.planner.plan.dto.response;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;

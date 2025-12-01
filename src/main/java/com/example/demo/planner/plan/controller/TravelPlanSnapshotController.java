@@ -1,4 +1,4 @@
-package com.example.demo.planner.travel.controller;
+package com.example.demo.planner.plan.controller;
 
 import java.util.List;
 
@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.demo.planner.travel.dto.entity.TravelPlanSnapshot;
-import com.example.demo.planner.travel.service.TravelPlanSnapshotService;
+import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
+import com.example.demo.planner.plan.service.TravelPlanSnapshotService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,9 +39,9 @@ public class TravelPlanSnapshotController {
      * @return 여행 계획 스냅샷
      */
     @GetMapping("/{id}")
-    public ResponseEntity<TravelPlanSnapshot> getTravelPlanSnapshot(@PathVariable Long id) {
+    public ResponseEntity<PlanSnapshot> getTravelPlanSnapshot(@PathVariable Long id) {
         log.info("GET /api/travel/snapshots/{}", id);
-        TravelPlanSnapshot snapshot = travelPlanSnapshotService.getTravelPlanSnapshotById(id);
+        PlanSnapshot snapshot = travelPlanSnapshotService.getTravelPlanSnapshotById(id);
         if (snapshot == null) {
             log.warn("Travel plan snapshot not found: {}", id);
             return ResponseEntity.notFound().build();
@@ -56,9 +56,9 @@ public class TravelPlanSnapshotController {
      * @return 여행 계획 스냅샷 목록
      */
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<TravelPlanSnapshot>> getTravelPlanSnapshotsByUser(@PathVariable Long userId) {
+    public ResponseEntity<List<PlanSnapshot>> getTravelPlanSnapshotsByUser(@PathVariable Long userId) {
         log.info("GET /api/travel/snapshots/user/{}", userId);
-        List<TravelPlanSnapshot> snapshots = travelPlanSnapshotService.getTravelPlanSnapshotsByUserId(userId);
+        List<PlanSnapshot> snapshots = travelPlanSnapshotService.getTravelPlanSnapshotsByUserId(userId);
         return ResponseEntity.ok(snapshots);
     }
 
@@ -69,9 +69,9 @@ public class TravelPlanSnapshotController {
      * @return 최신 여행 계획 스냅샷
      */
     @GetMapping("/user/{userId}/latest")
-    public ResponseEntity<TravelPlanSnapshot> getLatestTravelPlanSnapshot(@PathVariable Long userId) {
+    public ResponseEntity<PlanSnapshot> getLatestTravelPlanSnapshot(@PathVariable Long userId) {
         log.info("GET /api/travel/snapshots/user/{}/latest", userId);
-        TravelPlanSnapshot snapshot = travelPlanSnapshotService.getLatestTravelPlanSnapshot(userId);
+        PlanSnapshot snapshot = travelPlanSnapshotService.getLatestTravelPlanSnapshot(userId);
         if (snapshot == null) {
             log.warn("Latest travel plan snapshot not found for user: {}", userId);
             return ResponseEntity.notFound().build();
@@ -86,10 +86,10 @@ public class TravelPlanSnapshotController {
      * @return 생성된 여행 계획 스냅샷 (ID 포함)
      */
     @PostMapping("/create")
-    public ResponseEntity<TravelPlanSnapshot> createTravelPlanSnapshot(@RequestBody TravelPlanSnapshot travelPlanSnapshot) {
+    public ResponseEntity<PlanSnapshot> createTravelPlanSnapshot(@RequestBody PlanSnapshot travelPlanSnapshot) {
         log.info("POST /api/travel/snapshots - Creating snapshot for user: {}", travelPlanSnapshot.getUserId());
         try {
-            TravelPlanSnapshot saved = travelPlanSnapshotService.saveTravelPlanSnapshot(travelPlanSnapshot);
+            PlanSnapshot saved = travelPlanSnapshotService.saveTravelPlanSnapshot(travelPlanSnapshot);
             log.info("Travel plan snapshot created with id: {}", saved.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(saved);
         } catch (Exception e) {
@@ -108,7 +108,7 @@ public class TravelPlanSnapshotController {
     public ResponseEntity<Void> deleteTravelPlanSnapshot(@PathVariable Long id) {
         log.info("DELETE /api/travel/snapshots/{}", id);
         try {
-            TravelPlanSnapshot snapshot = travelPlanSnapshotService.getTravelPlanSnapshotById(id);
+            PlanSnapshot snapshot = travelPlanSnapshotService.getTravelPlanSnapshotById(id);
             if (snapshot == null) {
                 log.warn("Travel plan snapshot not found: {}", id);
                 return ResponseEntity.notFound().build();

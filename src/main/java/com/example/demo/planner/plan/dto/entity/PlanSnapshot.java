@@ -1,11 +1,11 @@
-package com.example.demo.planner.travel.dto.entity;
+package com.example.demo.planner.plan.dto.entity;
 
 import java.time.OffsetDateTime;
 
 import lombok.Data;
 
 @Data
-public class TravelPlanSnapshot {
+public class PlanSnapshot {
     private Long id;
     private Long userId;
     private Integer versionNo;

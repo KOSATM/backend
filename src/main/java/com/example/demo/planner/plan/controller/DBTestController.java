@@ -1,9 +1,9 @@
-package com.example.demo.planner.travel.controller;
+package com.example.demo.planner.plan.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.demo.planner.travel.agent.DBSearchAgent;
+import com.example.demo.planner.plan.agent.DBSearchAgent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

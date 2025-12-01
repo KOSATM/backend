@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.planner.plan.dao.CurrentActivityMapper">
+
+  <select id="selectCurrentActivityById" resultType="com.example.demo.dto.place.CurrentActivityDto">
+    SELECT id, plan_place_id, actual_cost, memo, ended_at
+    FROM current_activity WHERE id = #{id}
+  </select>
+
+  <insert id="insertCurrentActivity" parameterType="com.example.demo.dto.place.CurrentActivityDto" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO current_activity (plan_place_id, actual_cost, memo, ended_at)
+    VALUES (#{planPlaceId}, #{actualCost}, #{memo}, #{endedAt})
+  </insert>
+
+  <update id="updateCurrentActivity" parameterType="com.example.demo.dto.place.CurrentActivityDto">
+    UPDATE current_activity
+    SET plan_place_id = #{planPlaceId}, actual_cost = #{actualCost}, memo = #{memo}, ended_at = #{endedAt}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteCurrentActivityById" parameterType="long">
+    DELETE FROM current_activity WHERE id = #{id}
+  </delete>
+
+</mapper>

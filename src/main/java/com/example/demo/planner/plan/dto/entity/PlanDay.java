@@ -1,13 +1,13 @@
-package com.example.demo.planner.travel.dto.entity;
+package com.example.demo.planner.plan.dto.entity;
 
 import java.time.LocalDate;
 
 import lombok.Getter;
 
 @Getter
-public class TravelDay {
+public class PlanDay {
     private Long id;
-    private Long travelPlanId;
+    private Long planId;
     private Integer dayIndex; // 날짜 미정(5일 여행할거야) -> 날짜 매핑(비행기 표 끊은 시점)
     private String title; // 하루에 대한 요약 제목
     private LocalDate planDate; // 여행계획일자는 한국기준이기 때문에, KST 기준으로 진행

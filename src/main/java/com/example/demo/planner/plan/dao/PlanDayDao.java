@@ -1,7 +1,9 @@
-package com.example.demo.planner.travel.dao;
+package com.example.demo.planner.plan.dao;
 
 import org.apache.ibatis.annotations.Mapper;
-import com.example.demo.planner.travel.dto.entity.TravelDay;
+
+import com.example.demo.planner.plan.dto.entity.PlanDay;
+
 import java.util.List;
 
 /**
@@ -13,28 +15,28 @@ import java.util.List;
  * - 날짜 순서 관리
  */
 @Mapper
-public interface TravelDayDao {
+public interface PlanDayDao {
     
     /**
      * ID로 여행 날짜를 조회합니다.
      */
-    TravelDay selectTravelDayById(Long id);
+    PlanDay selectTravelDayById(Long id);
     
     /**
      * 여행 계획의 모든 날짜를 조회합니다.
      * 날짜 순서대로 정렬됩니다.
      */
-    List<TravelDay> selectTravelDaysByPlanId(Long travelPlanId);
+    List<PlanDay> selectTravelDaysByPlanId(Long travelPlanId);
     
     /**
      * 여행 날짜를 생성합니다.
      */
-    int insertTravelDay(TravelDay travelDay);
+    int insertTravelDay(PlanDay travelDay);
     
     /**
      * 여행 날짜를 수정합니다.
      */
-    int updateTravelDay(TravelDay travelDay);
+    int updateTravelDay(PlanDay travelDay);
     
     /**
      * 여행 날짜를 삭제합니다.

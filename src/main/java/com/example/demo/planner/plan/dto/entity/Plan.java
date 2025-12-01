@@ -1,4 +1,4 @@
-package com.example.demo.planner.travel.dto.entity;
+package com.example.demo.planner.plan.dto.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -6,7 +6,7 @@ import java.time.OffsetDateTime;
 import lombok.Getter;
 
 @Getter
-public class TravelPlan {
+public class Plan {
     private Long id;
     private Long userId;
     private BigDecimal budget;
@@ -15,4 +15,5 @@ public class TravelPlan {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private Boolean isEnded;
+    private String title; // 여행 제목 끝날 때 생성
 }

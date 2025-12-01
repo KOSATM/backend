@@ -1,4 +1,4 @@
-package com.example.demo.planner.travel.dto.entity;
+package com.example.demo.planner.plan.dto.entity;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -6,7 +6,7 @@ import java.time.OffsetDateTime;
 import lombok.Getter;
 
 @Getter
-public class TravelPlace {
+public class PlanPlace {
     private Long id;
     private Long dayId;
     private String title;

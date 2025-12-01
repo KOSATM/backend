@@ -1,11 +1,11 @@
-package com.example.demo.planner.travel.service;
+package com.example.demo.planner.plan.service;
 
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.example.demo.planner.travel.dao.TravelPlanSnapshotDao;
-import com.example.demo.planner.travel.dto.entity.TravelPlanSnapshot;
+import com.example.demo.planner.plan.dao.PlanSnapshotDao;
+import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,29 +19,29 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class TravelPlanSnapshotService {
-    private final TravelPlanSnapshotDao travelPlanSnapshotDao;
+    private final PlanSnapshotDao travelPlanSnapshotDao;
 
     // ### 단순 CRUD ###
     // ID로 개별 스냅샷 조회
-    public TravelPlanSnapshot getTravelPlanSnapshotById(Long id) {
+    public PlanSnapshot getTravelPlanSnapshotById(Long id) {
         log.info("Getting travel plan snapshot by id: {}", id);
         return travelPlanSnapshotDao.selectTravelPlanSnapshotById(id);
     }
 
     // 사용자의 모든 스냅샷 조회
-    public List<TravelPlanSnapshot> getTravelPlanSnapshotsByUserId(Long userId) {
+    public List<PlanSnapshot> getTravelPlanSnapshotsByUserId(Long userId) {
         log.info("Getting all travel plan snapshots for user: {}", userId);
         return travelPlanSnapshotDao.selectTravelPlanSnapshotsByUserId(userId);
     }
 
     // 사용자의 최신 스냅샷 조회
-    public TravelPlanSnapshot getLatestTravelPlanSnapshot(Long userId) {
+    public PlanSnapshot getLatestTravelPlanSnapshot(Long userId) {
         log.info("Getting latest travel plan snapshot for user: {}", userId);
         return travelPlanSnapshotDao.selectLatestTravelPlanSnapshotByUserId(userId);
     }
 
     // 스냅샷 저장
-    public TravelPlanSnapshot saveTravelPlanSnapshot(TravelPlanSnapshot travelPlanSnapshot) {
+    public PlanSnapshot saveTravelPlanSnapshot(PlanSnapshot travelPlanSnapshot) {
         log.info("Saving travel plan snapshot for user: {}", travelPlanSnapshot.getUserId());
         travelPlanSnapshotDao.insertTravelPlanSnapshot(travelPlanSnapshot);
         return travelPlanSnapshot;
