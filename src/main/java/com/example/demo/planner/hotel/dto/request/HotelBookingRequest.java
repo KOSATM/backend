@@ -35,4 +35,20 @@ public class HotelBookingRequest {
     private String providerBookingMeta;
     private OffsetDateTime bookedAt;
     private OffsetDateTime cancelledAt;
+    
+    // 호텔 정보
+    private String hotelName;
+    private String neighborhood;
+    private String roomTypeName;
+    private String ratePlanName;
+    
+    // 호텔 편의시설
+    private Boolean hasFreeWifi;
+    private Boolean hasParking;
+    private Boolean isPetFriendly;
+    private Boolean isFamilyFriendly;
+    private Boolean has24hFrontdesk;
+    private Boolean nearMetro;
+    private String metroStationName;
+    private BigDecimal airportDistanceKm;
 }

@@ -7,14 +7,14 @@
     VALUES (NOW(), #{reviewPostId} ) </insert>
 
   <insert id="insertReviewPhoto" parameterType="ReviewPhoto" useGeneratedKeys="true"
-    keyProperty="id" keyColumn="id"> INSERT INTO review_photos ( group_id, file_url, order_index,
-    created_at ) VALUES ( #{groupId}, #{fileUrl}, #{orderIndex}, now() ); </insert>
+    keyProperty="id" keyColumn="id"> INSERT INTO review_photos ( photo_group_id, file_url, order_index,
+    created_at ) VALUES ( #{photoGroupId}, #{fileUrl}, #{orderIndex}, now() ); </insert>
 
   <select id="selectReviewPhotoById" resultType="ReviewPhoto"> SELECT id, file_url, order_index,
-    created_at, group_id FROM review_photos WHERE id = #{id} </select>
+    created_at, photo_group_id FROM review_photos WHERE id = #{id} </select>
 
   <update id="updatePhotoOrder"> UPDATE review_photos SET order_index = #{orderIndex} WHERE id =
-    #{photoId} AND group_id = #{groupId} </update>
+    #{photoId} AND photo_group_id = #{photoGroupId} </update>
 
 
   <delete id="delete" parameterType="long"> DELETE FROM review_photos WHERE id = #{id} </delete>

@@ -9,10 +9,16 @@ import lombok.Getter;
 @Getter
 public class ReviewPost {
     private Long id;
-    private String content;
+    private String caption;
+    
+    private Long planId;
+    private Long photoGroupId;
+    private Long HashtagGroupId;
+    
+    private Long reviewStyleId;
+    
     private Boolean isPosted;
     private String reviewPostUrl;
+
     private OffsetDateTime createdAt;
-    private Long travelPlanId;
-    private Long reviewStyleId;
 }

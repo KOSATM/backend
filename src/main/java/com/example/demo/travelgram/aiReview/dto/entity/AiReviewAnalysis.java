@@ -9,7 +9,6 @@ import lombok.Getter;
 @Getter
 public class AiReviewAnalysis {
     private Long id;
-    private String promptText;
     private String inputJson;
     private String outputJson;
     private OffsetDateTime createdAt;

@@ -8,20 +8,16 @@ import java.util.Optional;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.demo.travelgram.aiReview.dto.request.ReviewContentUpdateRequest;
-import com.example.demo.travelgram.aiReview.dto.request.ReviewStyleSelectRequest;
-import com.example.demo.travelgram.aiReview.dto.response.AiReviewStyleResponse;
+import com.example.demo.common.global.annotation.NoWrap;
 import com.example.demo.travelgram.review.dto.request.*;
 import com.example.demo.travelgram.review.dto.response.*;
 import com.example.demo.travelgram.review.service.ReviewService;
@@ -34,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/review")
+@RequestMapping("/reviews")
 public class ReviewController {
     private final ReviewService reviewService;
     private final ObjectMapper objectMapper; // ObjectMapper 주입
@@ -48,7 +44,7 @@ public class ReviewController {
     public ResponseEntity<ReviewCreateResponse> createReview(
             @RequestBody ReviewCreateRequest request) {
 
-        ReviewCreateResponse result = reviewService.createReview(request.getTravelPlanId());
+        ReviewCreateResponse result = reviewService.createReview(request.getPlanId());
 
         return ResponseEntity.ok(result);
     }
@@ -56,6 +52,7 @@ public class ReviewController {
     // ======================================
     // 2) 사진 업로드/순서 영역
     // ======================================
+    @NoWrap
     @PostMapping(value = "/photos/upload", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<?> uploadReviewPhoto(
             @RequestPart("dataListJson") String dataListJsonString,
@@ -80,7 +77,7 @@ public class ReviewController {
             ReviewPhotoUploadRequest dto = new ReviewPhotoUploadRequest();
 
             // Use Optional to check for null and throw a descriptive exception if missing
-            Number groupIdNumber = Optional.ofNullable(map.get("groupId"))
+            Number photoGroupIdNumber = Optional.ofNullable(map.get("photoGroupId"))
                     .map(obj -> (Number) obj)
                     .orElseThrow(() -> new IllegalArgumentException("Missing required parameter: 'groupId'"));
 
@@ -88,7 +85,7 @@ public class ReviewController {
                     .map(obj -> (Number) obj)
                     .orElseThrow(() -> new IllegalArgumentException("Missing required parameter: 'orderIndex'"));
 
-            dto.setGroupId(groupIdNumber.longValue());
+            dto.setPhotoGroupId(photoGroupIdNumber.longValue());
             dto.setFileName((String) map.get("fileName"));
             dto.setOrderIndex(orderIndexNumber.intValue());
 
@@ -118,61 +115,6 @@ public class ReviewController {
     public ResponseEntity<?> updatePhotoOrder(@RequestBody ReviewPhotoOrderUpdateRequest request) {
         reviewService.updatePhotoOrder(request);
         return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/photo/delete/{id}")
-    public ResponseEntity<?> deletePhoto(@PathVariable ("id") Long id){
-        reviewService.deletePhoto(id);
-        return ResponseEntity.noContent().build();
-    }
-
-
-    // ======================================
-    // 3) review_posts update, style 부터
-    // ======================================
-
-    // 2) 스타일 선택 적용 (AI 캡션까지 자동 반영)
-    // @PutMapping("/{postId}/style")
-    // public ResponseEntity<ReviewPostResponse> applyStyle(
-    //         @PathVariable Long postId,
-    //         @RequestBody ReviewStyleSelectRequest request
-    // ) {
-    //     return ResponseEntity.ok(reviewService.applyStyle(postId, request));
-    // }
-
-    // 3) 해시태그 선택 저장, 여기서 해시태그 그룹 아이디 인서트 먼저 일어나야함
-    // @PutMapping("/{postId}/hashtags")
-    // public ResponseEntity<Void> updateHashtags(
-    //         @PathVariable Long postId,
-    //         @RequestBody ReviewHashtagUpdateRequest request
-    // ) {
-    //     reviewService.updateHashtags(postId, request);
-    //     return ResponseEntity.ok().build();
-    // }
-
-    // 4) 캡션 수정, 마지막 업데이트
-    @PutMapping("/{postId}/content")
-    public ResponseEntity<ReviewPostResponse> updateContent(
-            @PathVariable Long postId,
-            @RequestBody ReviewContentUpdateRequest request
-    ) {
-        return ResponseEntity.ok(reviewService.updateContent(postId, request));
-    }
-
-    // 5) 프리뷰 조회
-    // @GetMapping("/{postId}")
-    // public ResponseEntity<ReviewPreviewResponse> getPreview(
-    //         @PathVariable Long postId
-    // ) {
-    //     return ResponseEntity.ok(reviewService.getPreview(postId));
-    // }
-
-    // 6) 게시하기
-    @PutMapping("/{postId}/publish")
-    public ResponseEntity<ReviewPostResponse> publish(
-            @PathVariable Long postId
-    ) {
-        return ResponseEntity.ok(reviewService.publish(postId));
     }
     
 }

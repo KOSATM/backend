@@ -11,6 +11,7 @@ import lombok.Data;
 
 @Data
 public class TripPlanRequest {
+    // 여행 정보 json을 받아오는 request dto 차후 입력 데이터 구조가 바뀌면 수정 필요
 
     private Long userId;
     private BigDecimal budget;
@@ -20,6 +21,8 @@ public class TripPlanRequest {
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate endDate;
+    
+    private String preferences;  // 사용자 요청사항
 
     private List<TripDayRequest> days;
 

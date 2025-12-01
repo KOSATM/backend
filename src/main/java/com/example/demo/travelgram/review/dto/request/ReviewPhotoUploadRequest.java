@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class ReviewPhotoUploadRequest {
-    private Long groupId;
+    private Long photoGroupId;
     private String fileName;
     private Integer orderIndex;
 }

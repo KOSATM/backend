@@ -8,9 +8,9 @@ import com.example.demo.travelgram.aiReview.dto.entity.AiReviewStyle;
 @Mapper
 public interface AiReviewDao {
 
-    void insertAiReview(AiReviewAnalysis analysis);
+    void insertAiReviewAnalysis(AiReviewAnalysis analysis);
     void insertAiReviewStyle(AiReviewStyle style);
     void insertAiReviewHashtag(AiReviewHashtag tag);
-    AiReviewStyle findStyleById(Long id);
+    AiReviewStyle findStyleByAnalysisId(Long id);
 }
 

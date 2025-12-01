@@ -4,9 +4,9 @@ import lombok.Data;
 
 
 @Data
-public class ReviewContentUpdateRequest {
+public class ReviewAiCaptionUpdateRequest {
     private Long postId;
-    private String content;
+    private String caption;
 
 }
 
