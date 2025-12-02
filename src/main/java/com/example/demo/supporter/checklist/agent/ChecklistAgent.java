@@ -36,7 +36,34 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ChecklistAgent {
     
+    // ========================================
+    // 상수 정의
+    // ========================================
+    /**
+     * 시스템 프롬프트
+     * LLM의 역할과 응답 형식을 정의합니다.
+     * 변경 없이 모든 요청에 동일하게 사용됩니다.
+     */
+    private static final String CHECKLIST_SYSTEM_PROMPT = """
+        당신은 여행 정보 전문가입니다.
+        infoSearch 도구를 반드시 사용해서 각 장소의 최신 정보를 검색하세요.
+        
+        반환 형식: 반드시 JSON만 응답하세요 (한국어 내용, 영어 키)
+        {
+          "title": "Must-Know Travel Tips",
+          "items": [
+            "장소명: 팁",
+            "장소명: 팁",
+            "장소명: 팁",
+            "장소명: 팁",
+            "장소명: 팁"
+          ]
+        }
+        """;
+    
+    // ========================================
     // 의존성 주입
+    // ========================================
     private final ChatClient.Builder chatClientBuilder;          // LLM 호출을 위한 ChatClient 빌더
     private final ChecklistTravelDayDao checklistTravelDayDao;   // DB에서 여행 일정 조회
     private final ObjectMapper objectMapper;                     // JSON 직렬화/역직렬화
@@ -71,8 +98,110 @@ public class ChecklistAgent {
         // STEP 2: 장소 상세 정보 로깅 (디버깅용)
         // ========================================
         log.debug("STEP 2: 방문 장소 상세 정보 출력");
+        logPlaceDetails(travelDay.getPlaces());
+        
+        // ========================================
+        // STEP 3: LLM 호출 - 체크리스트 생성
+        // ========================================
+        log.debug("STEP 3: LLM 호출 시작");
+        log.info("🤖 인터넷 검색 Tool과 함께 LLM 호출 중...");
+        
+        ChatClient chatClient = chatClientBuilder.build();
+        
+        try {
+            // LLM 호출: 시스템 프롬프트 + 동적 유저 프롬프트
+            String llmResponse = chatClient.prompt()
+                .system(CHECKLIST_SYSTEM_PROMPT)
+                .user(buildUserPrompt(travelDay))
+                .tools(new ChecklistTools())  // infoSearch Tool 등록
+                .call()
+                .content();
+            
+            log.info("✅ LLM 호출 완료 - 응답 길이: {} 문자", llmResponse.length());
+            log.debug("📄 전체 응답: {}", llmResponse);
+            
+            // ========================================
+            // STEP 4: JSON 응답 파싱
+            // ========================================
+            log.debug("STEP 4: JSON 응답 파싱 중...");
+            return parseJsonResponse(llmResponse);
+            
+        } catch (Exception e) {
+            log.error("❌ LLM 호출 실패 - 에러: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    /**
+     * 유저 프롬프트 생성 메서드
+     * 
+     * 동적으로 여행 일정 정보를 포함한 프롬프트를 생성합니다.
+     * 각 여행마다 다른 장소와 일정이 포함되므로 동적 생성이 필요합니다.
+     * 
+     * @param travelDay 여행 일정 정보
+     * @return 생성된 유저 프롬프트
+     */
+    private String buildUserPrompt(TravelDayResponse travelDay) {
+        // 장소 리스트 생성 (예: "- 경복궁\n- 명동")
+        String placeList = travelDay.getPlaces().stream()
+            .map(p -> "- " + p.getPlaceName())
+            .collect(Collectors.joining("\n"));
+        
+        return """
+            방문 날짜: %s
+            여행 일정: %s
+            
+            방문 장소:
+            %s
+            
+            중요: infoSearch 도구를 반드시 사용해서 각 장소를 검색하세요.
+            
+            각 장소마다:
+            1. "[장소명] 입장료 할인 무료 조건" 검색
+            2. "[장소명] 당일 방문 팁" 검색
+            3. "[장소명] 현재 운영 규칙" 검색
+            4. "[장소명] 촬영 규칙" 검색
+            5. "[장소명] 준비물" 검색
+            
+            검색 결과를 바탕으로 정확히 5개의 팁을 생성하세요.
+            
+            팁 작성 기준:
+            - 검색에서 확인된 정보만 사용 (LLM의 학습 데이터 사용 금지)
+            - 할인/무료 조건이 우선순위
+            - 당일에 실제로 활용 가능한 내용만
+            - 추측이나 일반적인 조언 제외
+            - 교통/숙박 정보 제외
+            
+            예시:
+            {
+              "title": "Must-Know Travel Tips",
+              "items": [
+                "경복궁: 한복 입으면 입장료 무료, 일반인 3,000원",
+                "N서울타워: 저녁 6시 일몰+야경 동시 감상, 맑은 날씨 필수",
+                "한강공원: 돗자리 깔고 앉을 수 있음, 모기 방충제 필수",
+                "박물관: 목요일 야간 개방(20시까지), 현장 구매 10% 할인",
+                "명동: 신용카드 결제 시 할인, 오후 2-3시 피크 타임"
+              ]
+            }
+            
+            지금 infoSearch 도구를 사용해서 각 장소를 검색한 후 답변하세요.
+            """.formatted(
+                travelDay.getPlanDate(),
+                travelDay.getDayTitle(),
+                placeList
+            );
+    }
+    
+    /**
+     * 장소 상세정보 로깅 메서드
+     * 
+     * 디버깅 목적으로 방문할 각 장소의 상세 정보를 로그에 출력합니다.
+     * 
+     * @param places 여행 장소 리스트
+     */
+    private void logPlaceDetails(java.util.List<TravelDayResponse.PlaceDto> places) {
         StringBuilder placeDetails = new StringBuilder();
-        for (TravelDayResponse.PlaceDto place : travelDay.getPlaces()) {
+        for (TravelDayResponse.PlaceDto place : places) {
             placeDetails.append("\n[").append(place.getPlaceName()).append("]")
                 .append("\n  활동명: ").append(place.getPlaceTitle())
                 .append("\n  주소: ").append(place.getAddress())
@@ -81,111 +210,6 @@ public class ChecklistAgent {
                 .append("\n  예상비용: ").append(place.getExpectedCost()).append("\n");
         }
         log.info("📋 장소 상세정보:{}", placeDetails.toString());
-        
-        // ========================================
-        // STEP 3: LLM 호출을 위한 장소명 추출
-        // ========================================
-        log.debug("STEP 3: 장소명 추출");
-        String placeNames = travelDay.getPlaces().stream()
-            .map(place -> {
-                log.debug("  - 장소: {}", place.getPlaceName());
-                return place.getPlaceName();
-            })
-            .collect(Collectors.joining(", "));
-        
-        log.info("🏙️ 추출된 장소명: {}", placeNames);
-        
-        // ========================================
-        // STEP 4: LLM 호출 - 체크리스트 생성
-        // ========================================
-        log.debug("STEP 4: LLM 호출 시작");
-        log.info("🤖 인터넷 검색 Tool과 함께 LLM 호출 중...");
-        
-        ChatClient chatClient = chatClientBuilder.build();
-        
-        try {
-            /**
-             * LLM 호출 과정:
-             * 1. .system() : LLM의 역할 정의 (여행 정보 전문가)
-             * 2. .user() : 실제 요청사항 (장소 정보, 검색 방법, 팁 기준)
-             * 3. .tools() : LLM이 사용할 수 있는 도구 등록 (infoSearch Tool)
-             * 4. .call().content() : LLM 호출 및 응답 받기
-             */
-            String llmResponse = chatClient.prompt()
-                .system("""
-                    당신은 여행 정보 전문가입니다.
-                    infoSearch 도구를 반드시 사용해서 각 장소의 최신 정보를 검색하세요.
-                    
-                    반환 형식: 반드시 JSON만 응답하세요 (한국어 내용, 영어 키)
-                    {
-                      "title": "Must-Know Travel Tips",
-                      "items": [
-                        "장소명: 팁",
-                        "장소명: 팁",
-                        "장소명: 팁",
-                        "장소명: 팁",
-                        "장소명: 팁"
-                      ]
-                    }
-                    """)
-                .user("""
-                    방문 날짜: """ + travelDay.getPlanDate() + """
-                    여행 일정: """ + travelDay.getDayTitle() + """
-                    
-                    방문 장소:
-                    """ + travelDay.getPlaces().stream()
-                        .map(p -> "- " + p.getPlaceName())
-                        .collect(Collectors.joining("\n")) + """
-                    
-                    중요: infoSearch 도구를 반드시 사용해서 각 장소를 검색하세요.
-                    
-                    각 장소마다:
-                    1. "[장소명] 입장료 할인 무료 조건" 검색
-                    2. "[장소명] 당일 방문 팁" 검색
-                    3. "[장소명] 현재 운영 규칙" 검색
-                    4. "[장소명] 촬영 규칙" 검색
-                    5. "[장소명] 준비물" 검색
-                    
-                    검색 결과를 바탕으로 정확히 5개의 팁을 생성하세요.
-                    
-                    팁 작성 기준:
-                    - 검색에서 확인된 정보만 사용 (LLM의 학습 데이터 사용 금지)
-                    - 할인/무료 조건이 우선순위
-                    - 당일에 실제로 활용 가능한 내용만
-                    - 추측이나 일반적인 조언 제외
-                    - 교통/숙박 정보 제외
-                    
-                    예시:
-                    {
-                      "title": "Must-Know Travel Tips",
-                      "items": [
-                        "경복궁: 한복 입으면 입장료 무료, 일반인 3,000원",
-                        "N서울타워: 저녁 6시 일몰+야경 동시 감상, 맑은 날씨 필수",
-                        "한강공원: 돗자리 깔고 앉을 수 있음, 모기 방충제 필수",
-                        "박물관: 목요일 야간 개방(20시까지), 현장 구매 10% 할인",
-                        "명동: 신용카드 결제 시 할인, 오후 2-3시 피크 타임"
-                      ]
-                    }
-                    
-                    지금 infoSearch 도구를 사용해서 각 장소를 검색한 후 답변하세요.
-                    """)
-                .tools(new ChecklistTools())  // infoSearch Tool 등록 - LLM이 호출 가능
-                .call()                        // LLM 호출 실행
-                .content();                    // 응답 내용 추출
-            
-            log.info("✅ LLM 호출 완료 - 응답 길이: {} 문자", llmResponse.length());
-            log.debug("📄 전체 응답: {}", llmResponse);
-            
-            // ========================================
-            // STEP 5: JSON 응답 파싱
-            // ========================================
-            log.debug("STEP 5: JSON 응답 파싱 중...");
-            return parseJsonResponse(llmResponse);
-            
-        } catch (Exception e) {
-            log.error("❌ LLM 호출 실패 - 에러: {}", e.getMessage(), e);
-            return null;
-        }
     }
     
     /**
