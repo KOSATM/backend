@@ -1,4 +1,4 @@
-package com.example.demo.travelgram.aiReview.dto.request;
+package com.example.demo.travelgram.review.ai.dto.request;
 
 import lombok.Data;
 

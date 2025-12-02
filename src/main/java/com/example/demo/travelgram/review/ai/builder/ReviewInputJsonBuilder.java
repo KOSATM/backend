@@ -1,4 +1,4 @@
-package com.example.demo.travelgram.aiReview.builder;
+package com.example.demo.travelgram.review.ai.builder;
 import java.util.List;
 import java.util.Map;
 
@@ -14,12 +14,12 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Component
-public class PlanInputJsonBuilder {
+public class ReviewInputJsonBuilder {
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final CurrentActivityDao activityDao;
 
-    public PlanInputJsonBuilder(CurrentActivityDao activityDao) {
+    public ReviewInputJsonBuilder(CurrentActivityDao activityDao) {
         this.activityDao = activityDao;
     }
 

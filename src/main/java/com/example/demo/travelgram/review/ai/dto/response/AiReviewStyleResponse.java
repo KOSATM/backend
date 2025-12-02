@@ -1,8 +1,8 @@
-package com.example.demo.travelgram.aiReview.dto.response;
+package com.example.demo.travelgram.review.ai.dto.response;
 
 import java.util.List;
 
-import com.example.demo.travelgram.aiReview.dto.entity.AiReviewStyle;
+import com.example.demo.travelgram.review.ai.dto.entity.AiReviewStyle;
 import com.example.demo.travelgram.review.dto.entity.ReviewHashtag;
 
 import lombok.AllArgsConstructor;
