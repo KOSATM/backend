@@ -72,6 +72,9 @@ dependencies {
 
 	// JdbcTemplate
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+
+	// Validation
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
 }
 
 dependencyManagement {

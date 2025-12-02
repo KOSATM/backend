@@ -16,3 +16,4 @@ public class ImagePlace {
     private String externalImageUrl;
     private ImageStatusEnum imageStatus;
 }
+    
