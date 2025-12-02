@@ -3,9 +3,12 @@ package com.example.demo.planner.plan.dto.entity;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 
-@Data
+
+@Builder
+@Getter
 public class CurrentActivity {
     private Long id;
     private Long planPlaceId;
