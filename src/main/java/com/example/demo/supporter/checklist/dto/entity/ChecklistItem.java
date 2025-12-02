@@ -11,4 +11,10 @@ public class ChecklistItem {
     private String category; //"location", "general", "weather"
     private Boolean isChecked;
     private OffsetDateTime createdAt;
+
+    public enum Category {
+        LOCATION,
+        GENERAL,
+        WEATHER
+    }
 }
