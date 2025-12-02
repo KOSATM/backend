@@ -5,16 +5,17 @@ import org.springframework.stereotype.Component;
 
 import com.example.demo.common.tools.InternetSearchTool;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
 public class TrendSearchAgent {
-  private ChatClient chatClient;
-  private InternetSearchTool internetSearchTool;
+  private final ChatClient chatClient;
+  private final InternetSearchTool internetSearchTool;
 
   public TrendSearchAgent(
-      ChatClient.Builder chatClientBuilder,
+    ChatClient.Builder chatClientBuilder,
     InternetSearchTool internetSearchTool) {
     chatClient = chatClientBuilder.build();
     this.internetSearchTool = internetSearchTool;
