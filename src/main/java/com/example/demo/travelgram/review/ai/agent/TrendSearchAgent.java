@@ -1,4 +1,4 @@
-package com.example.demo.travelgram.agent;
+package com.example.demo.travelgram.review.ai.agent;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;

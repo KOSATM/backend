@@ -1,4 +1,4 @@
-package com.example.demo.travelgram.aiReview.controller;
+package com.example.demo.travelgram.review.ai.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.demo.travelgram.agent.TrendSearchAgent;
-import com.example.demo.travelgram.aiReview.service.AiReviewService;
+import com.example.demo.travelgram.review.ai.agent.TrendSearchAgent;
+import com.example.demo.travelgram.review.ai.service.AiReviewService;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import lombok.RequiredArgsConstructor;

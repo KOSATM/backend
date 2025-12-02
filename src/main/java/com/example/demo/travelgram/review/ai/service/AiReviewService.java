@@ -1,4 +1,4 @@
-package com.example.demo.travelgram.aiReview.service;
+package com.example.demo.travelgram.review.ai.service;
 
 import java.util.HashMap;
 import java.util.List;
@@ -12,8 +12,8 @@ import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
-import com.example.demo.travelgram.aiReview.builder.PlanInputJsonBuilder;
-import com.example.demo.travelgram.aiReview.dao.AiReviewDao;
+import com.example.demo.travelgram.review.ai.builder.ReviewInputJsonBuilder;
+import com.example.demo.travelgram.review.ai.dao.AiReviewDao;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ public class AiReviewService {
     private final PlanDao planDao;
     private final PlanDayDao dayDao;
     private final PlanPlaceDao placeDao;
-    private final PlanInputJsonBuilder builder;
+    private final ReviewInputJsonBuilder builder;
 
     private final AiReviewDao aiReviewDao;
 

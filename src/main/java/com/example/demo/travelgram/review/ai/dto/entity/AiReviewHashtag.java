@@ -1,4 +1,4 @@
-package com.example.demo.travelgram.aiReview.dto.entity;
+package com.example.demo.travelgram.review.ai.dto.entity;
 
 import java.time.OffsetDateTime;
 
