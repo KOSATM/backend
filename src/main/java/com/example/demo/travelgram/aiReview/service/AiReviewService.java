@@ -1,9 +1,20 @@
 package com.example.demo.travelgram.aiReview.service;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.stereotype.Service;
 
+import com.example.demo.planner.plan.dao.PlanDao;
+import com.example.demo.planner.plan.dao.PlanDayDao;
+import com.example.demo.planner.plan.dao.PlanPlaceDao;
+import com.example.demo.planner.plan.dto.entity.Plan;
+import com.example.demo.planner.plan.dto.entity.PlanDay;
+import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.travelgram.aiReview.builder.PlanInputJsonBuilder;
 import com.example.demo.travelgram.aiReview.dao.AiReviewDao;
-
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,44 +23,30 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Service
 public class AiReviewService {
+    private final PlanDao planDao;
+    private final PlanDayDao dayDao;
+    private final PlanPlaceDao placeDao;
+    private final PlanInputJsonBuilder builder;
+
     private final AiReviewDao aiReviewDao;
 
-    // // 1) AI 스타일 생성
-    // public List<AiReviewStyleResponse> generateAiStyles(Long postId) {
+    public ObjectNode createPlanInputJson(Long planId){
+        // 🟦 1) plan 전체 조회
+        Plan plan = planDao.selectPlanById(planId);
 
-    //     // AI 호출 → AiReviewAnalysis, AiReviewStyle(4개), AiReviewHashtag(각 3개) 저장
-    //     AiReviewAnalysis analysis = new AiReviewAnalysis(postId);
-    //     aiReviewDao.insertAiReview(analysis);
+        // 🟦 2) days 조회
+        List<PlanDay> planDays = dayDao.selectPlanDaysByPlanId(planId);
 
-    //     List<AiReviewStyleResponse> styles = new ArrayList<>();
+        // 🟦 3) map<Long, List<PlanPlace>> 형태로 정리
+        Map<Long, List<PlanPlace>> placesByDayId = new HashMap<>();
 
-    //     for (int i = 0; i < 4; i++) {
-    //         AiReviewStyle style = aiReviewAgent.generateStyle(analysis.getId());
-    //         aiReviewDao.insertAiReviewStyle(style);
+        for (PlanDay day : planDays) {
+            List<PlanPlace> places = placeDao.selectPlanPlacesByPlanDayId(day.getId());
+            placesByDayId.put(day.getId(), places);
+        }
 
-    //         // 태그 3개 생성/저장 >> 대표 태그를 3개 보여주기만 하고 나머지 태그도 그거랑 비슷한거로 10~20개 추천해주면 되지 않나?
-    //         List<String> tags = aiReviewAgent.generateHashtags(style.getId());
-    //         for (String tag : tags) {
-    //             aiReviewDao.insertAiReviewHashtag(new AiReviewHashtag(style.getId(), tag));
-    //         }
-
-    //         styles.add(new AiReviewStyleResponse(style, tags));
-    //     }
-
-    //     return styles;
-    // }
-
-    // // 2) 스타일 선택 + AI 캡션 기본 입력
-    // public ReviewPostResponse applyStyle(Long postId, ReviewStyleSelectRequest req) {
-
-    //     ReviewPost post = reviewPostDao.findById(postId);
-
-    //     AiReviewStyle style = aiReviewDao.findStyleById(req.getStyleId());
-    //     post.setStyleId(req.getStyleId());
-    //     post.setContent(style.getGeneratedCaption()); // AI 캡션 바로 세팅
-
-    //     reviewPostDao.update(post);
-
-    //     return new ReviewPostResponse(postId, generatePostUrl(postId));
-    // }
+        // 🟦 4) builder 호출해서 JsonNode 생성
+        return builder.build(plan, planDays, placesByDayId);
+        
+    }
 }

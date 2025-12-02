@@ -2,8 +2,10 @@ package com.example.demo.planner.plan.dto.entity;
 
 import java.time.LocalDate;
 
+import lombok.Builder;
 import lombok.Getter;
 
+@Builder
 @Getter
 public class PlanDay {
     private Long id;

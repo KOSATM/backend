@@ -2,27 +2,27 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.planner.travel.dao.PlanDao">
+<mapper namespace="com.example.demo.planner.plan.dao.PlanDao">
 
-  <select id="selectplanById" parameterType="long" resultType="Plan">
+  <select id="selectPlanById" parameterType="long" resultType="Plan">
     SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title
     FROM plans
     WHERE id = #{id}
   </select>
 
-  <select id="selectplansByUserId" parameterType="long" resultType="Plan">
+  <select id="selectPlansByUserId" parameterType="long" resultType="Plan">
     SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title
     FROM plans
     WHERE user_id = #{userId}
     ORDER BY created_at DESC
   </select>
 
-  <insert id="insertplan" parameterType="Plan" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+  <insert id="insertPlan" parameterType="Plan" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO plans (user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title)
     VALUES (#{userId}, #{budget}, #{startDate}, #{endDate}, now(), null, #{isEnded}, #{title})
   </insert>
 
-  <update id="updateplan" parameterType="Plan">
+  <update id="updatePlan" parameterType="Plan">
     UPDATE plans
     SET user_id = #{userId},
         budget = #{budget},

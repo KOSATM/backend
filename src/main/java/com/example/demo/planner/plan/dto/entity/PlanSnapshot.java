@@ -2,9 +2,12 @@ package com.example.demo.planner.plan.dto.entity;
 
 import java.time.OffsetDateTime;
 
+import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 
-@Data
+@Builder
+@Getter
 public class PlanSnapshot {
     private Long id;
     private Long userId;

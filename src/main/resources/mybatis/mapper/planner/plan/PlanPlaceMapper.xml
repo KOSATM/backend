@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.planner.travel.dao.PlaceDao">
+<mapper namespace="com.example.demo.planner.plan.dao.PlanPlaceDao">
 
   <select id="selectPlanPlaceById" parameterType="long" resultType="PlanPlace">
     SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost
@@ -10,7 +10,7 @@
     WHERE id = #{id}
   </select>
 
-  <select id="selectPlanPlaceByDayId" parameterType="long" resultType="PlanPlace">
+  <select id="selectPlanPlacesByPlanDayId" parameterType="long" resultType="PlanPlace">
     SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost
     FROM plan_places
     WHERE day_id = #{dayId}

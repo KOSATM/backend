@@ -3,8 +3,11 @@ package com.example.demo.planner.plan.dto.entity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+
+import lombok.Builder;
 import lombok.Getter;
 
+@Builder
 @Getter
 public class Plan {
     private Long id;
