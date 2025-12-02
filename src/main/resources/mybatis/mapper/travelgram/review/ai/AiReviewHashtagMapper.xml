@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.travelgram.aiReview.dao.AiReviewHashtagDao">
+<mapper namespace="com.example.demo.travelgram.review.ai.dao.AiReviewHashtagDao">
 
   <insert id="insertAiReviewHashtag" parameterType="AiReviewHashtag" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO ai_review_hashtags (name, created_at, review_style_id, review_analysis_id)

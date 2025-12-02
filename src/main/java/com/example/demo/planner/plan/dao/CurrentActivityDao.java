@@ -1,9 +1,10 @@
 package com.example.demo.planner.plan.dao;
 
-import java.util.List;
+import org.apache.ibatis.annotations.Mapper;
 
 import com.example.demo.planner.plan.dto.entity.CurrentActivity;
 
+@Mapper
 public interface CurrentActivityDao {
 
     void insertCurrentActivity(CurrentActivity currentActivity);
@@ -11,6 +12,7 @@ public interface CurrentActivityDao {
     void updateCurrentActivity(CurrentActivity currentActivity);
 
     CurrentActivity selectCurrentActivityById(Long id);
+    CurrentActivity selectCurrentActivityByPlanPlaceId(Long placeId);
 
     // List<CurrentActivity> selectCurrentActivitiesByPlanId(Long planPlaceId);
     

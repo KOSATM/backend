@@ -5,8 +5,13 @@
 <mapper namespace="com.example.demo.planner.plan.dao.CurrentActivityDao">
 
   <select id="selectCurrentActivityById" resultType="CurrentActivity">
-    SELECT id, plan_place_id, actual_cost, memo, ended_at
+    SELECT plan_place_id, actual_cost, memo, ended_at
     FROM current_activities WHERE id = #{id}
+  </select>
+
+    <select id="selectCurrentActivityByPlanPlaceId" resultType="CurrentActivity">
+    SELECT id, actual_cost, memo, ended_at
+    FROM current_activities WHERE plan_place_id = #{planPlaceId}
   </select>
 
   <insert id="insertCurrentActivity" parameterType="CurrentActivity" useGeneratedKeys="true" keyProperty="id" keyColumn="id">

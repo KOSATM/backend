@@ -33,7 +33,7 @@ public class InternetSearchAgent {
         3. 추가 설명이나 주석은 포함하지 마세요 - JSON만 반환하세요
         4. 모든 날짜는 "YYYY-MM-DD" 형식을 사용하고, 시간은 "HH:MM:SS" 형식을 사용하세요
         5. startDate에서 endDate까지의 날 수가 사용자의 요청 기간과 정확히 일치해야 합니다
-        6. 각 day마다 2-3개의 구체적인 일정(schedules)을 포함하세요
+        6. 각 day마다 6-9개의 구체적인 일정(schedules)을 포함하세요
         7. 위도와 경도는 실제 위치의 좌표를 사용하세요 (예: 서울 시청 37.5665, 126.9780)
         
         ## startDate 계산 규칙 (매우 중요!):
@@ -45,7 +45,7 @@ public class InternetSearchAgent {
         3. "3일 뒤" → startDate = 2025-11-27 (오늘 + 3일)
         4. "다음 주" → startDate = 2025-12-01 (다음 주 월요일)
         5. "내일" → startDate = 2025-11-25
-        6. 시간 언급이 없으면 → startDate = 오늘 날짜 (2025-11-24) 또는 사용자가 원하는 가장 가까운 날짜
+        6. 시간 언급이 없으면 → startDate = 오늘 날짜 또는 사용자가 원하는 가장 가까운 날짜
         
         기간 해석 규칙:
         - "3일 여행" → 3일간 (startDate ~ endDate, 총 3일)

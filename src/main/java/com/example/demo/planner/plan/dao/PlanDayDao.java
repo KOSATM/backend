@@ -21,6 +21,7 @@ public interface PlanDayDao {
      * ID로 여행 날짜를 조회합니다.
      */
     PlanDay selectPlanDayById(Long id);
+    PlanDay selectPlanDayByPlanId(Long id);
     
     /**
      * 여행 계획의 모든 날짜를 조회합니다.

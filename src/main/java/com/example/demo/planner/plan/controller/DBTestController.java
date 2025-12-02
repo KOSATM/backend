@@ -19,7 +19,7 @@ public class DBTestController {
 
   @PostMapping("/dbsearch")
   public String postMethodName(@RequestParam("question") String question) {
-    String response = dbSearchAgent.ragChat(question);
+    String response = dbSearchAgent.getPlacesFromDB(question);
 
     return response;
   }

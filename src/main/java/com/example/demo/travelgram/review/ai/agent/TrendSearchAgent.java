@@ -1,42 +1,24 @@
-package com.example.demo.travelgram.aiReview.agent;
+package com.example.demo.travelgram.review.ai.agent;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.example.demo.common.tools.InternetSearchTool;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
 public class TrendSearchAgent {
-  private ChatClient chatClient;
-  private String searchEndpoint;
-  private String apiKey;
-  private String engineId;
-  private WebClient webClient;
-  private ObjectMapper objectMapper = new ObjectMapper();
-  private InternetSearchTool internetSearchTool;
+  private final ChatClient chatClient;
+  private final InternetSearchTool internetSearchTool;
 
   public TrendSearchAgent(
-      ChatClient.Builder chatClientBuilder,
-      @Value("${google.search.endpoint}") String endpoint,
-      @Value("${google.search.apiKey}") String apiKey,
-      @Value("${google.search.engineId}") String engineId,
-      WebClient.Builder webClientBuilder,
+    ChatClient.Builder chatClientBuilder,
     InternetSearchTool internetSearchTool) {
     chatClient = chatClientBuilder.build();
-    this.searchEndpoint = endpoint;
-    this.apiKey = apiKey;
-    this.engineId = engineId;
     this.internetSearchTool = internetSearchTool;
-    this.webClient = webClientBuilder
-        .baseUrl(searchEndpoint)
-        .defaultHeader("Accept", "application/json")
-        .build();
   }
 
   public String generateTrend(String question) {
@@ -56,8 +38,9 @@ public class TrendSearchAgent {
 
     - "site:instagram.com 서울 {keyword} 2025"
     - "서울 {keyword} 인스타"
-    - "서울여행 {keyword} 핫플"
+    - "서울 {keyword} 핫플"
     - "서울 {keyword} 감성"
+    - "서울 {keyword} 여행"
     - "SEOUL {keyword} instagram"
     
     ## Output
