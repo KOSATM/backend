@@ -19,6 +19,10 @@ public class PlanInputJsonBuilder {
     private final ObjectMapper mapper = new ObjectMapper();
     private final CurrentActivityDao activityDao;
 
+    public PlanInputJsonBuilder(CurrentActivityDao activityDao) {
+        this.activityDao = activityDao;
+    }
+
     public ObjectNode build(Plan plan,
                             List<PlanDay> planDays,
                             Map<Long, List<PlanPlace>> placesByDayId) {
@@ -27,6 +31,7 @@ public class PlanInputJsonBuilder {
 
         // 기본 정보
         root.put("trip_title", plan.getTitle());
+        root.put("budget", plan.getBudget());
         root.put("start_date", plan.getStartDate().toString());
         root.put("end_date", plan.getEndDate().toString());
 
@@ -37,21 +42,22 @@ public class PlanInputJsonBuilder {
 
             ObjectNode dayNode = mapper.createObjectNode();
             dayNode.put("day", day.getDayIndex());
+            dayNode.put("date", day.getPlanDate().toString());
 
-            // places 배열
-            ArrayNode placeArray = mapper.createArrayNode();
-
+            
             List<PlanPlace> places = placesByDayId.get(day.getId());
-
+            ArrayNode placeArray = mapper.createArrayNode();
+            
             if (places != null) {
                 for (PlanPlace place : places) {
                     ObjectNode placeNode = mapper.createObjectNode();
                     placeNode.put("place_name", place.getTitle());
 
-                    CurrentActivity activity = activityDao.selectByPlaceId(place.getId());
+                    CurrentActivity activity = activityDao.selectCurrentActivityByPlanPlaceId(place.getId());
                     if (activity != null) {
                         placeNode.put("memo", activity.getMemo() == null ? "" : activity.getMemo());
-                        placeNode.put("actual_cost", activity.getActualCost() == null ? 0 : activity.getActualCost());
+                        placeNode.put("actual_cost", activity.getActualCost() == null ? 0
+                                                                 : activity.getActualCost().doubleValue());
                     } else {
                         placeNode.put("memo", "");
                         placeNode.put("actual_cost", 0);

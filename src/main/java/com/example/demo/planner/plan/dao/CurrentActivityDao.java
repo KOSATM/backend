@@ -1,7 +1,5 @@
 package com.example.demo.planner.plan.dao;
 
-import java.util.List;
-
 import com.example.demo.planner.plan.dto.entity.CurrentActivity;
 
 public interface CurrentActivityDao {
@@ -11,6 +9,7 @@ public interface CurrentActivityDao {
     void updateCurrentActivity(CurrentActivity currentActivity);
 
     CurrentActivity selectCurrentActivityById(Long id);
+    CurrentActivity selectCurrentActivityByPlanPlaceId(Long placeId);
 
     // List<CurrentActivity> selectCurrentActivitiesByPlanId(Long planPlaceId);
     

@@ -7,7 +7,6 @@ import org.apache.ibatis.annotations.Mapper;
 import com.example.demo.travelgram.aiReview.dto.entity.AiReviewAnalysis;
 import com.example.demo.travelgram.aiReview.dto.entity.AiReviewHashtag;
 import com.example.demo.travelgram.aiReview.dto.entity.AiReviewStyle;
-import com.example.demo.travelgram.aiReview.dto.entity.PlanPlaceWithActivity;
 @Mapper
 public interface AiReviewDao {
 
@@ -16,6 +15,5 @@ public interface AiReviewDao {
     void insertAiReviewHashtag(AiReviewHashtag tag);
     AiReviewStyle findStyleByAnalysisId(Long id);
 
-    List<PlanPlaceWithActivity> findPlacesWithActivitiesByPlanId(Long planId);
 }
 
