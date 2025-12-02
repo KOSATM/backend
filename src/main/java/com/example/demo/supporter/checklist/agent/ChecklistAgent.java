@@ -16,171 +16,294 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 여행 체크리스트 생성 에이전트
+ * 
+ * 역할:
+ * - LLM(Large Language Model)을 활용하여 여행지별 실용적인 팁 생성
+ * - Google Custom Search를 통한 최신 정보 검색 및 반영
+ * - 당일 활용 가능한 할인/무료 조건, 규칙 등의 정보 제공
+ * 
+ * 동작 원리:
+ * 1. 여행 일정에서 방문 장소 정보 조회
+ * 2. LLM에게 인터넷 검색 Tool 제공
+ * 3. LLM이 각 장소별로 검색 쿼리 생성 및 Tool 호출
+ * 4. 검색 결과를 기반으로 5개의 팁 생성
+ * 5. JSON 응답 파싱 및 반환
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class ChecklistAgent {
     
-    private final ChatClient.Builder chatClientBuilder;
-    private final ChecklistTravelDayDao checklistTravelDayDao;
-    private final ObjectMapper objectMapper;
-    private final InternetSearchTool internetSearchTool;
+    // 의존성 주입
+    private final ChatClient.Builder chatClientBuilder;          // LLM 호출을 위한 ChatClient 빌더
+    private final ChecklistTravelDayDao checklistTravelDayDao;   // DB에서 여행 일정 조회
+    private final ObjectMapper objectMapper;                     // JSON 직렬화/역직렬화
+    private final InternetSearchTool internetSearchTool;         // Google Custom Search API 호출
     
+    /**
+     * 여행 체크리스트 생성 메인 메서드
+     * 
+     * @param planId 여행 계획 ID
+     * @param dayIndex 여행 일차 (1부터 시작)
+     * @return 생성된 체크리스트 (5개의 팁 포함)
+     */
     public ChecklistItemResponse generateChecklist(Long planId, Integer dayIndex) {
-        log.info("📋 Generating checklist for planId: {}, dayIndex: {}", planId, dayIndex);
+        log.info("📋 체크리스트 생성 시작 - planId: {}, dayIndex: {}", planId, dayIndex);
         
-        // 1) 여행 일정과 장소 조회
+        // ========================================
+        // STEP 1: 여행 일정과 장소 정보 조회
+        // ========================================
+        log.debug("STEP 1: DB에서 여행 일정 조회 중...");
         TravelDayResponse travelDay = checklistTravelDayDao.getTravelDay(planId, dayIndex);
         
+        // 유효성 검사: 여행 일정이나 장소가 없으면 null 반환
         if (travelDay == null || travelDay.getPlaces() == null || travelDay.getPlaces().isEmpty()) {
-            log.warn("⚠️ No places found for planId: {}, dayIndex: {}", planId, dayIndex);
+            log.warn("⚠️ 장소를 찾을 수 없음 - planId: {}, dayIndex: {}", planId, dayIndex);
             return null;
         }
         
-        log.info("📊 Travel day info - title: {}, date: {}", travelDay.getDayTitle(), travelDay.getPlanDate());
-        log.info("📍 Total places: {}", travelDay.getPlaces().size());
+        log.info("📊 여행 일정 정보 - 제목: {}, 날짜: {}", travelDay.getDayTitle(), travelDay.getPlanDate());
+        log.info("📍 총 방문 장소 수: {}", travelDay.getPlaces().size());
         
-        // 2) 장소 정보 상세 로깅
+        // ========================================
+        // STEP 2: 장소 상세 정보 로깅 (디버깅용)
+        // ========================================
+        log.debug("STEP 2: 방문 장소 상세 정보 출력");
         StringBuilder placeDetails = new StringBuilder();
         for (TravelDayResponse.PlaceDto place : travelDay.getPlaces()) {
             placeDetails.append("\n[").append(place.getPlaceName()).append("]")
-                .append("\n  제목: ").append(place.getPlaceTitle())
+                .append("\n  활동명: ").append(place.getPlaceTitle())
                 .append("\n  주소: ").append(place.getAddress())
-                .append("\n  시간: ").append(place.getStartAt()).append(" ~ ").append(place.getEndAt())
-                .append("\n  위치: ").append(place.getLat()).append(", ").append(place.getLng())
+                .append("\n  방문시간: ").append(place.getStartAt()).append(" ~ ").append(place.getEndAt())
+                .append("\n  좌표: ").append(place.getLat()).append(", ").append(place.getLng())
                 .append("\n  예상비용: ").append(place.getExpectedCost()).append("\n");
         }
-        log.info("📋 Place Details:{}", placeDetails.toString());
+        log.info("📋 장소 상세정보:{}", placeDetails.toString());
         
-        // 2) 장소명 추출
+        // ========================================
+        // STEP 3: LLM 호출을 위한 장소명 추출
+        // ========================================
+        log.debug("STEP 3: 장소명 추출");
         String placeNames = travelDay.getPlaces().stream()
             .map(place -> {
-                log.debug("  - Place: {}", place.getPlaceName());
+                log.debug("  - 장소: {}", place.getPlaceName());
                 return place.getPlaceName();
             })
             .collect(Collectors.joining(", "));
         
-        log.info("🏙️ Extracted place names: {}", placeNames);
+        log.info("🏙️ 추출된 장소명: {}", placeNames);
         
-        // 3) LLM 호출 + InternetSearchTool 연동
+        // ========================================
+        // STEP 4: LLM 호출 - 체크리스트 생성
+        // ========================================
+        log.debug("STEP 4: LLM 호출 시작");
+        log.info("🤖 인터넷 검색 Tool과 함께 LLM 호출 중...");
+        
         ChatClient chatClient = chatClientBuilder.build();
-        String llmResponse = chatClient.prompt()
-            .system("""
-                당신은 여행 정보 전문가입니다.
-                infoSearch 도구를 반드시 사용해서 각 장소의 최신 정보를 검색하고,
-                검색 결과만을 기반으로 팁을 생성하세요.
-                
-                반환 형식: 반드시 JSON 형식으로만 응답하세요
-                {
-                  "title": "꼭 알아야 할 여행 팁",
-                  "items": [
-                    "장소명: 구체적인 팁",
-                    ...
-                  ]
-                }
-                
-                규칙:
-                1. 정확히 5개의 항목만 생성
-                2. 각 항목은 "장소명: 팁" 형식 (예: "경복궁: 한복 입으면 입장료 무료")
-                3. 마크다운, 이모지 절대 금지
-                4. JSON 외의 다른 텍스트는 포함하지 마세요
-                """)
-            .user("""
-                방문 날짜: """ + travelDay.getPlanDate() + """
-                여행 일정: """ + travelDay.getDayTitle() + """
-                
-                방문 장소들:
-                """ + travelDay.getPlaces().stream()
-                    .map(p -> p.getPlaceName())
-                    .collect(Collectors.joining(", ")) + """
-                
-                ⚠️ 중요 지시사항:
-                
-                1. 각 장소마다 반드시 infoSearch 도구로 검색하세요:
-                   - "[장소명] 입장료 할인 무료 조건"
-                   - "[장소명] 당일 방문 팁"
-                   - "[장소명] 현재 운영 규칙"
-                   - "[장소명] 촬영 규칙 제한"
-                
-                2. 검색 결과를 바탕으로만 팁을 생성하세요
-                   (LLM의 추측이 아닌 실제 정보만 사용)
-                
-                3. 당일에 실제로 활용 가능한 정보만 포함:
-                   ✅ 할인/무료 조건 (검색 확인)
-                   ✅ 규칙/주의사항 (검색 확인)
-                   ✅ 준비물 (검색 확인)
-                   ✅ 오픈 시간/최적 방문 시간 (검색 확인)
-                   ✅ 예약 요구사항 (검색 확인)
-                
-                4. 절대 포함하면 안 되는 것:
-                   ❌ "아마도", "~일 것 같습니다" 같은 추측
-                   ❌ 검색하지 않은 정보
-                   ❌ 계절별 정보 (당일과 맞지 않으면)
-                   ❌ 교통/숙박 정보
-                   ❌ 일반적인 조언
-                
-                5. 응답 형식:
-                   - JSON만 응답 (다른 텍스트 금지)
-                   - 정확히 5개 항목
-                   - 각 항목은 "장소명: 구체적인 팁" 형식
-                
-                예시 (이 수준으로 작성):
-                {
-                  "title": "꼭 알아야 할 여행 팁",
-                  "items": [
-                    "경복궁: 한복 입으면 입장료 무료, 일반인 3,000원",
-                    "N서울타워: 날씨 맑은 날 가야 야경 잘 보임, 저녁 6시 일몰+야경 동시 감상",
-                    "한강공원: 돗자리 깔고 앉을 수 있음, 모기 방충제 필수",
-                    "박물관: 목요일 야간 개방(20시까지), 현장 구매 시 10% 할인"
-                  ]
-                }
-                
-                지금 당신의 차례입니다. 필수: infoSearch 도구를 사용해서 각 장소 정보를 검색한 후 답변하세요.
-                """)
-            .tools(new ChecklistTools())
-            .call()
-            .content();
         
-        log.info("🤖 LLM generated response (length: {})", llmResponse.length());
-        log.debug("📄 Full response: {}", llmResponse);
-        
-        // 4) JSON 파싱
         try {
-            String cleanJson = llmResponse
-                .replaceAll("```json\\s*", "")
-                .replaceAll("```\\s*", "")
-                .replaceAll("```", "")
-                .trim();
+            /**
+             * LLM 호출 과정:
+             * 1. .system() : LLM의 역할 정의 (여행 정보 전문가)
+             * 2. .user() : 실제 요청사항 (장소 정보, 검색 방법, 팁 기준)
+             * 3. .tools() : LLM이 사용할 수 있는 도구 등록 (infoSearch Tool)
+             * 4. .call().content() : LLM 호출 및 응답 받기
+             */
+            String llmResponse = chatClient.prompt()
+                .system("""
+                    당신은 여행 정보 전문가입니다.
+                    infoSearch 도구를 반드시 사용해서 각 장소의 최신 정보를 검색하세요.
+                    
+                    반환 형식: 반드시 JSON만 응답하세요 (한국어 내용, 영어 키)
+                    {
+                      "title": "Must-Know Travel Tips",
+                      "items": [
+                        "장소명: 팁",
+                        "장소명: 팁",
+                        "장소명: 팁",
+                        "장소명: 팁",
+                        "장소명: 팁"
+                      ]
+                    }
+                    """)
+                .user("""
+                    방문 날짜: """ + travelDay.getPlanDate() + """
+                    여행 일정: """ + travelDay.getDayTitle() + """
+                    
+                    방문 장소:
+                    """ + travelDay.getPlaces().stream()
+                        .map(p -> "- " + p.getPlaceName())
+                        .collect(Collectors.joining("\n")) + """
+                    
+                    중요: infoSearch 도구를 반드시 사용해서 각 장소를 검색하세요.
+                    
+                    각 장소마다:
+                    1. "[장소명] 입장료 할인 무료 조건" 검색
+                    2. "[장소명] 당일 방문 팁" 검색
+                    3. "[장소명] 현재 운영 규칙" 검색
+                    4. "[장소명] 촬영 규칙" 검색
+                    5. "[장소명] 준비물" 검색
+                    
+                    검색 결과를 바탕으로 정확히 5개의 팁을 생성하세요.
+                    
+                    팁 작성 기준:
+                    - 검색에서 확인된 정보만 사용 (LLM의 학습 데이터 사용 금지)
+                    - 할인/무료 조건이 우선순위
+                    - 당일에 실제로 활용 가능한 내용만
+                    - 추측이나 일반적인 조언 제외
+                    - 교통/숙박 정보 제외
+                    
+                    예시:
+                    {
+                      "title": "Must-Know Travel Tips",
+                      "items": [
+                        "경복궁: 한복 입으면 입장료 무료, 일반인 3,000원",
+                        "N서울타워: 저녁 6시 일몰+야경 동시 감상, 맑은 날씨 필수",
+                        "한강공원: 돗자리 깔고 앉을 수 있음, 모기 방충제 필수",
+                        "박물관: 목요일 야간 개방(20시까지), 현장 구매 10% 할인",
+                        "명동: 신용카드 결제 시 할인, 오후 2-3시 피크 타임"
+                      ]
+                    }
+                    
+                    지금 infoSearch 도구를 사용해서 각 장소를 검색한 후 답변하세요.
+                    """)
+                .tools(new ChecklistTools())  // infoSearch Tool 등록 - LLM이 호출 가능
+                .call()                        // LLM 호출 실행
+                .content();                    // 응답 내용 추출
             
-            int startIdx = cleanJson.indexOf('{');
-            int endIdx = cleanJson.lastIndexOf('}');
+            log.info("✅ LLM 호출 완료 - 응답 길이: {} 문자", llmResponse.length());
+            log.debug("📄 전체 응답: {}", llmResponse);
             
-            if (startIdx >= 0 && endIdx > startIdx) {
-                cleanJson = cleanJson.substring(startIdx, endIdx + 1);
-            }
-            
-            log.info("🧹 Cleaned JSON: {}", cleanJson);
-            
-            ChecklistItemResponse result = objectMapper.readValue(cleanJson, ChecklistItemResponse.class);
-            
-            log.info("✅ Generated {} checklist items", 
-                result.getItems() != null ? result.getItems().size() : 0);
-            
-            return result;
+            // ========================================
+            // STEP 5: JSON 응답 파싱
+            // ========================================
+            log.debug("STEP 5: JSON 응답 파싱 중...");
+            return parseJsonResponse(llmResponse);
             
         } catch (Exception e) {
-            log.error("❌ Error parsing LLM response", e);
+            log.error("❌ LLM 호출 실패 - 에러: {}", e.getMessage(), e);
             return null;
         }
     }
     
-    // Tool 클래스 - LLM이 호출 가능
+    /**
+     * JSON 응답 파싱 메서드
+     * 
+     * LLM 응답의 JSON을 추출하고 파싱하는 작업을 담당합니다.
+     * 마크다운 코드블록(```json ... ```)이 포함될 수 있으므로 처리해줍니다.
+     * 
+     * @param llmResponse LLM에서 받은 원본 응답 문자열
+     * @return 파싱된 체크리스트 응답 객체
+     */
+    private ChecklistItemResponse parseJsonResponse(String llmResponse) {
+        log.info("🔍 JSON 응답 파싱 중...");
+        
+        try {
+            // ========================================
+            // 1단계: 응답 유효성 검사
+            // ========================================
+            if (llmResponse == null || llmResponse.trim().isEmpty()) {
+                log.error("❌ LLM 응답이 비어있음");
+                return null;
+            }
+            
+            log.info("📝 원본 응답: {}", llmResponse);
+            
+            // ========================================
+            // 2단계: JSON 추출 (마크다운 코드블록 제거)
+            // ========================================
+            // LLM이 ```json ... ``` 형식으로 감싸서 응답할 수 있으므로 제거
+            String cleanJson = llmResponse
+                .replaceAll("```json\\s*", "")  // ```json 제거
+                .replaceAll("```\\s*", "")      // ``` 제거
+                .replaceAll("```", "")          // 남은 ``` 제거
+                .trim();
+            
+            log.info("📝 정제된 응답: {}", cleanJson);
+            
+            // ========================================
+            // 3단계: JSON 범위 찾기
+            // ========================================
+            // 응답에 다른 텍스트가 포함될 수 있으므로 { }를 찾아서 추출
+            int startIdx = cleanJson.indexOf('{');     // 첫 번째 { 찾기
+            int endIdx = cleanJson.lastIndexOf('}');   // 마지막 } 찾기
+            
+            if (startIdx < 0 || endIdx <= startIdx) {
+                log.error("❌ 유효한 JSON 구조를 찾을 수 없음");
+                return null;
+            }
+            
+            // 실제 JSON 부분만 추출
+            cleanJson = cleanJson.substring(startIdx, endIdx + 1);
+            log.info("🧹 최종 JSON: {}", cleanJson);
+            
+            // ========================================
+            // 4단계: JSON 직렬화
+            // ========================================
+            // JSON 문자열을 ChecklistItemResponse 객체로 변환
+            ChecklistItemResponse result = objectMapper.readValue(cleanJson, ChecklistItemResponse.class);
+            
+            if (result == null) {
+                log.error("❌ JSON 파싱 실패");
+                return null;
+            }
+            
+            // ========================================
+            // 5단계: 결과 검증
+            // ========================================
+            int itemCount = result.getItems() != null ? result.getItems().size() : 0;
+            log.info("✅ 성공적으로 {} 개 항목 파싱됨", itemCount);
+            
+            if (itemCount == 0) {
+                log.warn("⚠️ 응답에 항목이 없음");
+            }
+            
+            return result;
+            
+        } catch (Exception e) {
+            log.error("❌ JSON 파싱 에러: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    // ========================================
+    // Tool 클래스 - LLM이 호출 가능한 도구
+    // ========================================
+    /**
+     * ChecklistTools 클래스
+     * 
+     * LLM(ChatGPT, Claude 등)이 호출할 수 있는 Tool을 정의합니다.
+     * 
+     * 역할:
+     * - infoSearch() 메서드: 여행지 정보를 Google Custom Search로 검색
+     * - LLM은 필요할 때 이 메서드를 자동으로 호출
+     * 
+     * 예시:
+     * 1. LLM: "경복궁 입장료 정보를 검색해야겠다"
+     * 2. LLM이 infoSearch("경복궁 입장료 할인") 자동 호출
+     * 3. Google Search API에서 결과 받음
+     * 4. 검색 결과를 기반으로 팁 생성
+     */
     public class ChecklistTools {
+        /**
+         * 인터넷 검색 Tool
+         * 
+         * @param query 검색 쿼리 (예: "경복궁 입장료 할인")
+         * @return Google Custom Search 결과 (상위 3개 결과)
+         * 
+         * 동작 원리:
+         * 1. LLM이 자동으로 이 메서드를 호출
+         * 2. InternetSearchTool.googleSearch()를 통해 Google Custom Search API 호출
+         * 3. 검색 결과를 텍스트로 반환
+         * 4. LLM이 결과를 분석해서 팁 작성
+         */
         @Tool(description = "여행지 정보를 인터넷에서 검색합니다")
         public String infoSearch(@ToolParam(description = "검색 쿼리") String query) {
-            log.info("🔍 Searching for: {}", query);
+            log.info("🔍 검색 중: {}", query);
             String result = internetSearchTool.googleSearch(query);
-            log.info("📊 Search result received");
+            log.info("📊 검색 결과 수신 완료");
             return result;
         }
     }
