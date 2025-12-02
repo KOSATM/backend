@@ -4,21 +4,21 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.travelgram.aiReview.dao.AiReviewDao">
 
-<select id="findPlanById"
+<select id="selectPlanById"
         parameterType="long"
         resultType="Plan">
     SELECT * FROM plans WHERE id = #{planId}
 </select>
 
 
-<select id="findDaysByPlanId"
+<select id="selectDaysByPlanId"
         parameterType="long"
         resultType="PlanDay">
     SELECT * FROM plan_days WHERE plan_id = #{planId} ORDER BY day_index
 </select>
 
 
-<select id="findPlacesWithActivitiesByPlanId"
+<select id="selectPlacesWithActivitiesByPlanId"
         parameterType="long"
         resultType="CurrentActivity">
 
