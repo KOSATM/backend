@@ -12,6 +12,7 @@ import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.travelgram.review.ai.agent.PlanTitleGenerateAgent;
 import com.example.demo.travelgram.review.ai.builder.ReviewInputJsonBuilder;
 import com.example.demo.travelgram.review.ai.dao.AiReviewDao;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -27,6 +28,9 @@ public class AiReviewService {
     private final PlanDayDao dayDao;
     private final PlanPlaceDao placeDao;
     private final ReviewInputJsonBuilder builder;
+
+
+    private final PlanTitleGenerateAgent planTitleGenerateAgent;
 
     private final AiReviewDao aiReviewDao;
 
@@ -49,4 +53,16 @@ public class AiReviewService {
         return builder.build(plan, planDays, placesByDayId);
         
     }
+
+    public String generatePlanTitle(Long planId) {
+        ObjectNode inputJson = createPlanInputJson(planId);
+        
+        // LLM에게 보내기 쉽게 String으로 변환
+        String inputJsonString = inputJson.toPrettyString();
+        // Title을 agent 통해 생성
+        String title = planTitleGenerateAgent.generatePlanTitle(inputJsonString);
+        
+        return title;
+    }
 }
+
