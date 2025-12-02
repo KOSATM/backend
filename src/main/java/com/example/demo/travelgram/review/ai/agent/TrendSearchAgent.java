@@ -1,23 +1,21 @@
 package com.example.demo.travelgram.review.ai.agent;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.example.demo.common.tools.InternetSearchTool;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
 public class TrendSearchAgent {
-  private ChatClient chatClient;
-  private InternetSearchTool internetSearchTool;
+  private final ChatClient chatClient;
+  private final InternetSearchTool internetSearchTool;
 
   public TrendSearchAgent(
-      ChatClient.Builder chatClientBuilder,
+    ChatClient.Builder chatClientBuilder,
     InternetSearchTool internetSearchTool) {
     chatClient = chatClientBuilder.build();
     this.internetSearchTool = internetSearchTool;
