@@ -1,1248 +1,376 @@
-<!DOCTYPE html><!DOCTYPE html><!DOCTYPE html>
-
-<html lang="ko">
-
-<head><html lang="ko"><html lang="en">
-
-    <meta charset="UTF-8">
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"><head>  <head>
-
-    <title>Travel Planner Chat</title>
-
-    <style>    <meta charset="UTF-8">    <meta charset="UTF-8" />
-
-        * {
-
-            margin: 0;    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-            padding: 0;
-
-            box-sizing: border-box;    <title>Travel Planner Chat</title>    <title>Travel Chat</title>
-
-        }
-
-    <style>    <style>
-
-        body {
-
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;        * {      * {
-
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-
-            height: 100vh;            margin: 0;        margin: 0;
-
-            display: flex;
-
-            justify-content: center;            padding: 0;        padding: 0;
-
-            align-items: center;
-
-            padding: 20px;            box-sizing: border-box;        box-sizing: border-box;
-
-        }
-
-        }      }
-
-        .chat-container {
-
-            background: white;
-
-            border-radius: 20px;
-
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);        body {      body {
-
-            width: 100%;
-
-            max-width: 800px;            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-
-            height: 90vh;
-
-            display: flex;            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);          "Helvetica Neue", Arial, sans-serif;
-
-            flex-direction: column;
-
-            overflow: hidden;            height: 100vh;        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-
-        }
-
-            display: flex;        height: 100vh;
-
-        .chat-header {
-
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);            justify-content: center;        display: flex;
-
-            color: white;
-
-            padding: 20px;            align-items: center;        justify-content: center;
-
-            text-align: center;
-
-            border-radius: 20px 20px 0 0;            padding: 20px;        align-items: center;
-
-        }
-
-        }        padding: 20px;
-
-        .chat-header h1 {
-
-            font-size: 24px;      }
-
-            margin-bottom: 5px;
-
-        }        .chat-container {
-
-
-
-        .chat-header p {            background: white;      .chat-container {
-
-            font-size: 14px;
-
-            opacity: 0.9;            border-radius: 20px;        background: white;
-
-        }
-
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);        border-radius: 20px;
-
-        .user-id-container {
-
-            padding: 15px 20px;            width: 100%;        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-
-            background: #f8f9fa;
-
-            border-bottom: 1px solid #e9ecef;            max-width: 800px;        width: 100%;
-
-            display: flex;
-
-            align-items: center;            height: 90vh;        max-width: 800px;
-
-            gap: 10px;
-
-        }            display: flex;        height: 90vh;
-
-
-
-        .user-id-container label {            flex-direction: column;        display: flex;
-
-            font-weight: 600;
-
-            color: #495057;            overflow: hidden;        flex-direction: column;
-
-        }
-
-        }        overflow: hidden;
-
-        .user-id-container input {
-
-            flex: 1;      }
-
-            padding: 8px 12px;
-
-            border: 2px solid #dee2e6;        .chat-header {
-
-            border-radius: 8px;
-
-            font-size: 14px;            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);      .chat-header {
-
-            transition: border-color 0.3s;
-
-        }            color: white;        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-
-
-
-        .user-id-container input:focus {            padding: 20px;        color: white;
-
-            outline: none;
-
-            border-color: #667eea;            text-align: center;        padding: 20px;
-
-        }
-
-            border-radius: 20px 20px 0 0;        text-align: center;
-
-        .chat-messages {
-
-            flex: 1;        }        font-size: 24px;
-
-            overflow-y: auto;
-
-            padding: 20px;        font-weight: bold;
-
-            background: #f8f9fa;
-
-        }        .chat-header h1 {      }
-
-
-
-        .message {            font-size: 24px;
-
-            margin-bottom: 15px;
-
-            display: flex;            margin-bottom: 5px;      .user-selector {
-
-            animation: slideIn 0.3s ease;
-
-        }        }        background: #f8f9fa;
-
-
-
-        @keyframes slideIn {        padding: 15px 20px;
-
-            from {
-
-                opacity: 0;        .chat-header p {        border-bottom: 1px solid #e0e0e0;
-
-                transform: translateY(10px);
-
-            }            font-size: 14px;        display: flex;
-
-            to {
-
-                opacity: 1;            opacity: 0.9;        align-items: center;
-
-                transform: translateY(0);
-
-            }        }        gap: 15px;
-
-        }
-
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Travel Chat</title>
+    <style>
+      * {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
       }
 
-        .message.user {
-
-            justify-content: flex-end;        .user-id-container {
-
-        }
-
-            padding: 15px 20px;      .user-selector label {
-
-        .message.assistant {
-
-            justify-content: flex-start;            background: #f8f9fa;        font-weight: 600;
-
-        }
-
-            border-bottom: 1px solid #e9ecef;        color: #333;
-
-        .message-content {
-
-            max-width: 70%;            display: flex;      }
-
-            padding: 12px 16px;
-
-            border-radius: 18px;            align-items: center;
-
-            word-wrap: break-word;
-
-            white-space: pre-wrap;            gap: 10px;      .user-selector select {
-
-        }
-
-        }        padding: 8px 15px;
-
-        .message.user .message-content {
-
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);        border: 2px solid #667eea;
-
-            color: white;
-
-            border-bottom-right-radius: 4px;        .user-id-container label {        border-radius: 8px;
-
-        }
-
-            font-weight: 600;        font-size: 14px;
-
-        .message.assistant .message-content {
-
-            background: white;            color: #495057;        outline: none;
-
-            color: #333;
-
-            border: 1px solid #e9ecef;        }        cursor: pointer;
-
-            border-bottom-left-radius: 4px;
-
-        }        background: white;
-
-
-
-        .message-time {        .user-id-container input {      }
-
-            font-size: 11px;
-
-            color: #999;            flex: 1;
-
-            margin-top: 5px;
-
-            text-align: right;            padding: 8px 12px;      .chat-messages {
-
-        }
-
-            border: 2px solid #dee2e6;        flex: 1;
-
-        .chat-input-container {
-
-            padding: 20px;            border-radius: 8px;        overflow-y: auto;
-
-            background: white;
-
-            border-top: 1px solid #e9ecef;            font-size: 14px;        padding: 20px;
-
-            display: flex;
-
-            gap: 10px;            transition: border-color 0.3s;        background: #f5f5f5;
-
-        }
-
-        }      }
-
-        .chat-input {
-
-            flex: 1;
-
-            padding: 12px 16px;
-
-            border: 2px solid #dee2e6;        .user-id-container input:focus {      .message {
-
-            border-radius: 25px;
-
-            font-size: 14px;            outline: none;        margin-bottom: 15px;
-
-            transition: border-color 0.3s;
-
-            resize: none;            border-color: #667eea;        display: flex;
-
-            font-family: inherit;
-
-            min-height: 44px;        }        animation: slideIn 0.3s ease;
-
-            max-height: 120px;
-
-        }      }
-
-
-
-        .chat-input:focus {        .chat-messages {
-
-            outline: none;
-
-            border-color: #667eea;            flex: 1;      @keyframes slideIn {
-
-        }
-
-            overflow-y: auto;        from {
-
-        .send-button {
-
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);            padding: 20px;          opacity: 0;
-
-            color: white;
-
-            border: none;            background: #f8f9fa;          transform: translateY(10px);
-
-            border-radius: 25px;
-
-            padding: 12px 24px;        }        }
-
-            font-size: 14px;
-
-            font-weight: 600;        to {
-
-            cursor: pointer;
-
-            transition: transform 0.2s, box-shadow 0.2s;        .message {          opacity: 1;
-
-            white-space: nowrap;
-
-        }            margin-bottom: 15px;          transform: translateY(0);
-
-
-
-        .send-button:hover:not(:disabled) {            display: flex;        }
-
-            transform: translateY(-2px);
-
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);            animation: slideIn 0.3s ease;      }
-
-        }
-
-        }
-
-        .send-button:active:not(:disabled) {
-
-            transform: translateY(0);      .message.user {
-
-        }
-
-        @keyframes slideIn {        justify-content: flex-end;
-
-        .send-button:disabled {
-
-            opacity: 0.5;            from {      }
-
-            cursor: not-allowed;
-
-        }                opacity: 0;
-
-
-
-        .loading {                transform: translateY(10px);      .message-bubble {
-
-            display: flex;
-
-            gap: 5px;            }        max-width: 70%;
-
-            padding: 10px;
-
-        }            to {        padding: 12px 18px;
-
-
-
-        .loading-dot {                opacity: 1;        border-radius: 18px;
-
-            width: 8px;
-
-            height: 8px;                transform: translateY(0);        word-wrap: break-word;
-
-            border-radius: 50%;
-
-            background: #667eea;            }        white-space: pre-wrap;
-
-            animation: bounce 1.4s infinite ease-in-out;
-
-        }        }      }
-
-
-
-        .loading-dot:nth-child(1) {
-
-            animation-delay: -0.32s;
-
-        }        .message.user {      .message.user .message-bubble {
-
-
-
-        .loading-dot:nth-child(2) {            justify-content: flex-end;        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-
-            animation-delay: -0.16s;
-
-        }        }        color: white;
-
-
-
-        @keyframes bounce {        border-bottom-right-radius: 4px;
-
-            0%, 80%, 100% {
-
-                transform: scale(0);        .message.assistant {      }
-
-            }
-
-            40% {            justify-content: flex-start;
-
-                transform: scale(1);
-
-            }        }      .message.bot .message-bubble {
-
-        }
-
-        background: white;
-
-        .error-message {
-
-            background: #fff3cd;        .message-content {        color: #333;
-
-            border: 1px solid #ffc107;
-
-            color: #856404;            max-width: 70%;        border: 1px solid #e0e0e0;
-
-            padding: 12px;
-
-            border-radius: 8px;            padding: 12px 16px;        border-bottom-left-radius: 4px;
-
-            margin: 10px 0;
-
-            text-align: center;            border-radius: 18px;      }
-
-        }
-
-            word-wrap: break-word;
-
-        .chat-messages::-webkit-scrollbar {
-
-            width: 8px;            white-space: pre-wrap;      .chat-input-container {
-
-        }
-
-        }        padding: 20px;
-
-        .chat-messages::-webkit-scrollbar-track {
-
-            background: #f1f1f1;        background: white;
-
-        }
-
-        .message.user .message-content {        border-top: 1px solid #e0e0e0;
-
-        .chat-messages::-webkit-scrollbar-thumb {
-
-            background: #888;            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);      }
-
-            border-radius: 4px;
-
-        }            color: white;
-
-
-
-        .chat-messages::-webkit-scrollbar-thumb:hover {            border-bottom-right-radius: 4px;      .chat-input-wrapper {
-
-            background: #555;
-
-        }        }        display: flex;
-
+      body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+	  "Helvetica Neue", Arial, sans-serif;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	height: 100vh;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 20px;
+      }
+
+      .chat-container {
+	background: white;
+	border-radius: 20px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+	width: 100%;
+	max-width: 800px;
+	height: 90vh;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+      }
+
+      .chat-header {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	padding: 20px;
+	text-align: center;
+	font-size: 24px;
+	font-weight: bold;
+      }
+
+      .user-selector {
+	background: #f8f9fa;
+	padding: 15px 20px;
+	border-bottom: 1px solid #e0e0e0;
+	display: flex;
+	align-items: center;
+	gap: 15px;
+      }
+
+      .user-selector label {
+	font-weight: 600;
+	color: #333;
+      }
+
+      .user-selector select {
+	padding: 8px 15px;
+	border: 2px solid #667eea;
+	border-radius: 8px;
+	font-size: 14px;
+	outline: none;
+	cursor: pointer;
+	background: white;
+      }
+
+      .chat-messages {
+	flex: 1;
+	overflow-y: auto;
+	padding: 20px;
+	background: #f5f5f5;
+      }
+
+      .message {
+	margin-bottom: 15px;
+	display: flex;
+	animation: slideIn 0.3s ease;
+      }
+
+      @keyframes slideIn {
+	from {
+	  opacity: 0;
+	  transform: translateY(10px);
+	}
+	to {
+	  opacity: 1;
+	  transform: translateY(0);
+	}
+      }
+
+      .message.user {
+	justify-content: flex-end;
+      }
+
+      .message-bubble {
+	max-width: 70%;
+	padding: 12px 18px;
+	border-radius: 18px;
+	word-wrap: break-word;
+	white-space: pre-wrap;
+      }
+
+      .message.user .message-bubble {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	border-bottom-right-radius: 4px;
+      }
+
+      .message.bot .message-bubble {
+	background: white;
+	color: #333;
+	border: 1px solid #e0e0e0;
+	border-bottom-left-radius: 4px;
+      }
+
+      .chat-input-container {
+	padding: 20px;
+	background: white;
+	border-top: 1px solid #e0e0e0;
+      }
+
+      .chat-input-wrapper {
+	display: flex;
+	gap: 10px;
+      }
+
+      .chat-input {
+	flex: 1;
+	padding: 12px 20px;
+	border: 2px solid #e0e0e0;
+	border-radius: 25px;
+	font-size: 15px;
+	outline: none;
+	transition: border-color 0.3s;
+      }
+
+      .chat-input:focus {
+	border-color: #667eea;
+      }
+
+      .send-button {
+	padding: 12px 30px;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	border: none;
+	border-radius: 25px;
+	font-size: 15px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .send-button:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .send-button:active {
+	transform: translateY(0);
+      }
+
+      .quick-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 10px;
+	flex-wrap: wrap;
+      }
+
+      .quick-btn {
+	padding: 6px 12px;
+	background: #f0f0f0;
+	border: 1px solid #d0d0d0;
+	border-radius: 15px;
+	font-size: 12px;
+	cursor: pointer;
+	transition: all 0.2s;
+      }
+
+      .quick-btn:hover {
+	background: #667eea;
+	color: white;
+	border-color: #667eea;
+      }
+
+      .system-message {
+	text-align: center;
+	color: #999;
+	font-size: 13px;
+	margin: 15px 0;
+	font-style: italic;
+      }
     </style>
+  </head>
+  <body>
+    <div class="chat-container">
+      <div class="chat-header">🌏 Travel Chat</div>
 
-</head>        gap: 10px;
+      <div class="user-selector">
+	<label>User:</label>
+	<select id="userSelect">
+	  <option value="">Loading users...</option>
+	</select>
+	<span style="color: #999; font-size: 14px" id="userInfo"></span>
+      </div>
 
-<body>
+      <div class="chat-messages" id="chatMessages">
+	<div class="system-message">
+	  Welcome! Start chatting to plan your trip 🎒
+	</div>
+      </div>
 
-    <div class="chat-container">        .message.assistant .message-content {      }
-
-        <div class="chat-header">
-
-            <h1>🗺️ Travel Planner Agent</h1>            background: white;
-
-            <p>서울 여행 계획을 도와드립니다</p>
-
-        </div>            color: #333;      .chat-input {
-
-
-
-        <div class="user-id-container">            border: 1px solid #e9ecef;        flex: 1;
-
-            <label for="userId">User ID:</label>
-
-            <input type="number" id="userId" value="1" min="1" placeholder="사용자 ID를 입력하세요">            border-bottom-left-radius: 4px;        padding: 12px 20px;
-
-        </div>
-
-        }        border: 2px solid #e0e0e0;
-
-        <div class="chat-messages" id="chatMessages">
-
-            <div class="message assistant">        border-radius: 25px;
-
-                <div class="message-content">
-
-                    안녕하세요! 서울 여행 계획을 도와드리는 AI 에이전트입니다. 😊<br><br>        .message-time {        font-size: 15px;
-
-                    다음과 같은 것들을 도와드릴 수 있어요:<br>
-
-                    • 여행 계획 생성 (예: "3일 여행 계획 만들어줘")<br>            font-size: 11px;        outline: none;
-
-                    • 여행 계획 조회 (예: "내 여행 계획 보여줘")<br>
-
-                    • 예산 설정 (예: "예산 50만원으로 2일 계획")<br><br>            color: #999;        transition: border-color 0.3s;
-
-                    무엇을 도와드릴까요?
-
-                </div>            margin-top: 5px;      }
-
-            </div>
-
-        </div>            text-align: right;
-
-
-
-        <div class="chat-input-container">        }      .chat-input:focus {
-
-            <textarea 
-
-                class="chat-input"         border-color: #667eea;
-
-                id="messageInput" 
-
-                placeholder="메시지를 입력하세요..."        .chat-input-container {      }
-
-                rows="1"
-
-            ></textarea>            padding: 20px;
-
-            <button class="send-button" id="sendButton" onclick="sendMessage()">전송</button>
-
-        </div>            background: white;      .send-button {
-
+      <div class="chat-input-container">
+	<div class="chat-input-wrapper">
+	  <input
+	    type="text"
+	    class="chat-input"
+	    id="messageInput"
+	    placeholder="Type your message here..."
+	    onkeypress="if(event.key==='Enter') sendMessage()"
+	  />
+	  <button class="send-button" onclick="sendMessage()">Send</button>
+	</div>
+	<div class="quick-actions">
+	  <button
+	    class="quick-btn"
+	    onclick="quickSend('create 3 day plan with 500000 budget')"
+	  >
+	    📅 Create Plan
+	  </button>
+	  <button class="quick-btn" onclick="quickSend('show my plan')">
+	    👀 Show Plan
+	  </button>
+	  <button
+	    class="quick-btn"
+	    onclick="quickSend('complete current plan')"
+	  >
+	    ✅ Complete
+	  </button>
+	</div>
+      </div>
     </div>
-
-            border-top: 1px solid #e9ecef;        padding: 12px 30px;
 
     <script>
-
-        const chatMessages = document.getElementById('chatMessages');            display: flex;        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-
-        const messageInput = document.getElementById('messageInput');
-
-        const sendButton = document.getElementById('sendButton');            gap: 10px;        color: white;
-
-        const userIdInput = document.getElementById('userId');
-
-        }        border: none;
-
-        messageInput.addEventListener('input', function() {
-
-            this.style.height = 'auto';        border-radius: 25px;
-
-            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-
-        });        .chat-input {        font-size: 15px;
-
-
-
-        messageInput.addEventListener('keydown', function(e) {            flex: 1;        font-weight: 600;
-
-            if (e.key === 'Enter' && !e.shiftKey) {
-
-                e.preventDefault();            padding: 12px 16px;        cursor: pointer;
-
-                sendMessage();
-
-            }            border: 2px solid #dee2e6;        transition: transform 0.2s, box-shadow 0.2s;
-
-        });
-
-            border-radius: 25px;      }
-
-        function addMessage(content, isUser) {
-
-            const messageDiv = document.createElement('div');            font-size: 14px;
-
-            messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
-
-                        transition: border-color 0.3s;      .send-button:hover {
-
-            const contentDiv = document.createElement('div');
-
-            contentDiv.className = 'message-content';            resize: none;        transform: translateY(-2px);
-
-            contentDiv.textContent = content;
-
-                        font-family: inherit;        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-
-            messageDiv.appendChild(contentDiv);
-
-            chatMessages.appendChild(messageDiv);            min-height: 44px;      }
-
-            
-
-            chatMessages.scrollTop = chatMessages.scrollHeight;            max-height: 120px;
-
-        }
-
-        }      .send-button:active {
-
-        function addLoadingIndicator() {
-
-            const messageDiv = document.createElement('div');        transform: translateY(0);
-
-            messageDiv.className = 'message assistant';
-
-            messageDiv.id = 'loadingIndicator';        .chat-input:focus {      }
-
-            
-
-            const contentDiv = document.createElement('div');            outline: none;
-
-            contentDiv.className = 'message-content';
-
-                        border-color: #667eea;      .quick-actions {
-
-            const loadingDiv = document.createElement('div');
-
-            loadingDiv.className = 'loading';        }        display: flex;
-
-            loadingDiv.innerHTML = `
-
-                <div class="loading-dot"></div>        gap: 8px;
-
-                <div class="loading-dot"></div>
-
-                <div class="loading-dot"></div>        .send-button {        margin-top: 10px;
-
-            `;
-
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);        flex-wrap: wrap;
-
-            contentDiv.appendChild(loadingDiv);
-
-            messageDiv.appendChild(contentDiv);            color: white;      }
-
-            chatMessages.appendChild(messageDiv);
-
-                        border: none;
-
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-
-        }            border-radius: 25px;      .quick-btn {
-
-
-
-        function removeLoadingIndicator() {            padding: 12px 24px;        padding: 6px 12px;
-
-            const loading = document.getElementById('loadingIndicator');
-
-            if (loading) {            font-size: 14px;        background: #f0f0f0;
-
-                loading.remove();
-
-            }            font-weight: 600;        border: 1px solid #d0d0d0;
-
-        }
-
-            cursor: pointer;        border-radius: 15px;
-
-        function showError(message) {
-
-            const errorDiv = document.createElement('div');            transition: transform 0.2s, box-shadow 0.2s;        font-size: 12px;
-
-            errorDiv.className = 'error-message';
-
-            errorDiv.textContent = message;            white-space: nowrap;        cursor: pointer;
-
-            chatMessages.appendChild(errorDiv);
-
-            chatMessages.scrollTop = chatMessages.scrollHeight;        }        transition: all 0.2s;
-
-            
-
-            setTimeout(() => {      }
-
-                errorDiv.remove();
-
-            }, 5000);        .send-button:hover:not(:disabled) {
-
-        }
-
-            transform: translateY(-2px);      .quick-btn:hover {
-
-        async function sendMessage() {
-
-            const message = messageInput.value.trim();            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);        background: #667eea;
-
-            const userId = userIdInput.value;
-
-                    }        color: white;
-
-            if (!message) return;
-
-            if (!userId || userId < 1) {        border-color: #667eea;
-
-                showError('올바른 User ID를 입력해주세요.');
-
-                return;        .send-button:active:not(:disabled) {      }
-
-            }
-
-                        transform: translateY(0);
-
-            addMessage(message, true);
-
-            messageInput.value = '';        }      .system-message {
-
-            messageInput.style.height = 'auto';
-
-                    text-align: center;
-
-            sendButton.disabled = true;
-
-            messageInput.disabled = true;        .send-button:disabled {        color: #999;
-
-            
-
-            addLoadingIndicator();            opacity: 0.5;        font-size: 13px;
-
-            
-
-            try {            cursor: not-allowed;        margin: 15px 0;
-
-                const response = await fetch('/api/chat', {
-
-                    method: 'POST',        }        font-style: italic;
-
-                    headers: {
-
-                        'Content-Type': 'application/json',      }
-
-                    },
-
-                    body: JSON.stringify({        .loading {    </style>
-
-                        userId: parseInt(userId),
-
-                        message: message            display: flex;  </head>
-
-                    })
-
-                });            gap: 5px;  <body>
-
-                
-
-                removeLoadingIndicator();            padding: 10px;    <div class="chat-container">
-
-                
-
-                if (!response.ok) {        }      <div class="chat-header">🌏 Travel Chat</div>
-
-                    throw new Error(`HTTP error! status: ${response.status}`);
-
-                }
-
-                
-
-                const data = await response.json();        .loading-dot {      <div class="user-selector">
-
-                
-
-                if (data.success) {            width: 8px;        <label>User:</label>
-
-                    addMessage(data.message || data.data, false);
-
-                } else {            height: 8px;        <select id="userSelect">
-
-                    showError(data.message || '오류가 발생했습니다.');
-
-                    addMessage('죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.', false);            border-radius: 50%;          <option value="">Loading users...</option>
-
-                }
-
-            } catch (error) {            background: #667eea;        </select>
-
-                removeLoadingIndicator();
-
-                console.error('Error:', error);            animation: bounce 1.4s infinite ease-in-out;        <span style="color: #999; font-size: 14px" id="userInfo"></span>
-
-                showError('서버와의 통신 중 오류가 발생했습니다.');
-
-                addMessage('죄송합니다. 서버와의 연결에 문제가 있습니다.', false);        }      </div>
-
-            } finally {
-
-                sendButton.disabled = false;
-
-                messageInput.disabled = false;
-
-                messageInput.focus();        .loading-dot:nth-child(1) {      <div class="chat-messages" id="chatMessages">
-
-            }
-
-        }            animation-delay: -0.32s;        <div class="system-message">
-
-
-
-        window.addEventListener('load', () => {        }          Welcome! Start chatting to plan your trip 🎒
-
-            messageInput.focus();
-
-        });        </div>
-
-    </script>
-
-</body>        .loading-dot:nth-child(2) {      </div>
-
-</html>
-
-            animation-delay: -0.16s;
-
-        }      <div class="chat-input-container">
-
-        <div class="chat-input-wrapper">
-
-        @keyframes bounce {          <input
-
-            0%, 80%, 100% {            type="text"
-
-                transform: scale(0);            class="chat-input"
-
-            }            id="messageInput"
-
-            40% {            placeholder="Type your message here..."
-
-                transform: scale(1);            onkeypress="if(event.key==='Enter') sendMessage()"
-
-            }          />
-
-        }          <button class="send-button" onclick="sendMessage()">Send</button>
-
-        </div>
-
-        .error-message {        <div class="quick-actions">
-
-            background: #fff3cd;          <button
-
-            border: 1px solid #ffc107;            class="quick-btn"
-
-            color: #856404;            onclick="quickSend('create 3 day plan with 500000 budget')"
-
-            padding: 12px;          >
-
-            border-radius: 8px;            📅 Create Plan
-
-            margin: 10px 0;          </button>
-
-            text-align: center;          <button class="quick-btn" onclick="quickSend('show my plan')">
-
-        }            👀 Show Plan
-
-          </button>
-
-        /* 스크롤바 스타일 */          <button
-
-        .chat-messages::-webkit-scrollbar {            class="quick-btn"
-
-            width: 8px;            onclick="quickSend('complete current plan')"
-
-        }          >
-
-            ✅ Complete
-
-        .chat-messages::-webkit-scrollbar-track {          </button>
-
-            background: #f1f1f1;        </div>
-
-        }      </div>
-
-    </div>
-
-        .chat-messages::-webkit-scrollbar-thumb {
-
-            background: #888;    <script>
-
-            border-radius: 4px;      const chatMessages = document.getElementById("chatMessages");
-
-        }      const messageInput = document.getElementById("messageInput");
-
+      const chatMessages = document.getElementById("chatMessages");
+      const messageInput = document.getElementById("messageInput");
       const userSelect = document.getElementById("userSelect");
-
-        .chat-messages::-webkit-scrollbar-thumb:hover {      const userInfo = document.getElementById("userInfo");
-
-            background: #555;
-
-        }      // 페이지 로드 시 유저 목록 가져오기
-
-    </style>      async function loadUsers() {
-
-</head>        try {
-
-<body>          const response = await fetch("/api/users");
-
-    <div class="chat-container">          const users = await response.json();
-
-        <div class="chat-header">
-
-            <h1>🗺️ Travel Planner Agent</h1>          userSelect.innerHTML = "";
-
-            <p>서울 여행 계획을 도와드립니다</p>
-
-        </div>          if (users.length === 0) {
-
-            userSelect.innerHTML = '<option value="">No users found</option>';
-
-        <div class="user-id-container">            userInfo.textContent = "No users in database";
-
-            <label for="userId">User ID:</label>            return;
-
-            <input type="number" id="userId" value="1" min="1" placeholder="사용자 ID를 입력하세요">          }
-
-        </div>
-
-          // ID 순서대로 정렬
-
-        <div class="chat-messages" id="chatMessages">          users.sort((a, b) => a.id - b.id);
-
-            <div class="message assistant">
-
-                <div class="message-content">          users.forEach((user) => {
-
-                    안녕하세요! 서울 여행 계획을 도와드리는 AI 에이전트입니다. 😊<br><br>            const option = document.createElement("option");
-
-                    다음과 같은 것들을 도와드릴 수 있어요:<br>            option.value = user.id;
-
-                    • 여행 계획 생성 (예: "3일 여행 계획 만들어줘")<br>            option.textContent = `${user.name || "User " + user.id} (ID: ${
-
-                    • 여행 계획 조회 (예: "내 여행 계획 보여줘")<br>              user.id
-
-                    • 예산 설정 (예: "예산 50만원으로 2일 계획")<br><br>            })`;
-
-                    무엇을 도와드릴까요?            userSelect.appendChild(option);
-
-                </div>          });
-
-            </div>
-
-        </div>          updateUserInfo();
-
-          addSystemMessage(`Loaded ${users.length} users from database`);
-
-        <div class="chat-input-container">        } catch (error) {
-
-            <textarea           console.error("Error loading users:", error);
-
-                class="chat-input"           userSelect.innerHTML = '<option value="1">User 1 (Fallback)</option>';
-
-                id="messageInput"           userInfo.textContent = "Failed to load users";
-
-                placeholder="메시지를 입력하세요..."        }
-
-                rows="1"      }
-
-            ></textarea>
-
-            <button class="send-button" id="sendButton" onclick="sendMessage()">전송</button>      function updateUserInfo() {
-
-        </div>        const selectedUser = userSelect.options[userSelect.selectedIndex];
-
-    </div>        if (selectedUser) {
-
-          userInfo.textContent = `Selected: ${selectedUser.textContent}`;
-
-    <script>        }
-
-        const chatMessages = document.getElementById('chatMessages');      }
-
-        const messageInput = document.getElementById('messageInput');
-
-        const sendButton = document.getElementById('sendButton');      function addMessage(text, isUser) {
-
-        const userIdInput = document.getElementById('userId');        // 텍스트가 undefined이거나 null인 경우 처리
-
-        if (text === undefined || text === null) {
-
-        // 자동 높이 조절          text = "No message received";
-
-        messageInput.addEventListener('input', function() {        }
-
-            this.style.height = 'auto';
-
-            this.style.height = Math.min(this.scrollHeight, 120) + 'px';        // 텍스트가 문자열이 아닌 경우 문자열로 변환
-
-        });        text = String(text);
-
-
-
-        // Enter 키로 전송 (Shift+Enter는 줄바꿈)        const messageDiv = document.createElement("div");
-
-        messageInput.addEventListener('keydown', function(e) {        messageDiv.className = `message ${isUser ? "user" : "bot"}`;
-
-            if (e.key === 'Enter' && !e.shiftKey) {
-
-                e.preventDefault();        const bubble = document.createElement("div");
-
-                sendMessage();        bubble.className = "message-bubble";
-
-            }
-
-        });        // Bot 메시지에 포맷팅 적용
-
-        if (!isUser) {
-
-        function addMessage(content, isUser) {          // 줄바꿈 처리
-
-            const messageDiv = document.createElement('div');          let formattedText = text.replace(/\n/g, "<br>");
-
-            messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
-
-                      // **굵게** 처리
-
-            const contentDiv = document.createElement('div');          formattedText = formattedText.replace(
-
-            contentDiv.className = 'message-content';            /\*\*(.*?)\*\*/g,
-
-            contentDiv.textContent = content;            "<strong>$1</strong>"
-
-                      );
-
-            messageDiv.appendChild(contentDiv);
-
-            chatMessages.appendChild(messageDiv);          // 이모지 강조
-
-                      formattedText = formattedText.replace(
-
-            // 스크롤을 맨 아래로            /([\u{1F300}-\u{1F9FF}])/gu,
-
-            chatMessages.scrollTop = chatMessages.scrollHeight;            '<span style="font-size: 1.2em;">$1</span>'
-
-        }          );
-
-
-
-        function addLoadingIndicator() {          bubble.innerHTML = formattedText;
-
-            const messageDiv = document.createElement('div');        } else {
-
-            messageDiv.className = 'message assistant';          bubble.textContent = text;
-
-            messageDiv.id = 'loadingIndicator';        }
-
-
-
-            const contentDiv = document.createElement('div');        messageDiv.appendChild(bubble);
-
-            contentDiv.className = 'message-content';        chatMessages.appendChild(messageDiv);
-
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-
-            const loadingDiv = document.createElement('div');      }
-
-            loadingDiv.className = 'loading';
-
-            loadingDiv.innerHTML = `      function addSystemMessage(text) {
-
-                <div class="loading-dot"></div>        const div = document.createElement("div");
-
-                <div class="loading-dot"></div>        div.className = "system-message";
-
-                <div class="loading-dot"></div>        div.textContent = text;
-
-            `;        chatMessages.appendChild(div);
-
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-
-            contentDiv.appendChild(loadingDiv);      }
-
-            messageDiv.appendChild(contentDiv);
-
-            chatMessages.appendChild(messageDiv);      async function sendMessage() {
-
-                    const message = messageInput.value.trim();
-
-            chatMessages.scrollTop = chatMessages.scrollHeight;        if (!message) return;
-
-        }
-
-        addMessage(message, true);
-
-        function removeLoadingIndicator() {        messageInput.value = "";
-
-            const loading = document.getElementById('loadingIndicator');
-
-            if (loading) {        try {
-
-                loading.remove();          const response = await fetch("/api/chat", {
-
-            }            method: "POST",
-
-        }            headers: { "Content-Type": "application/json" },
-
-            body: JSON.stringify({
-
-        function showError(message) {              message: message,
-
-            const errorDiv = document.createElement('div');              planId: null,
-
-            errorDiv.className = 'error-message';              userId: parseInt(userSelect.value),
-
-            errorDiv.textContent = message;            }),
-
-            chatMessages.appendChild(errorDiv);          });
-
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-
-                      const data = await response.json();
-
-            setTimeout(() => {          // API 응답 구조: {success: true, data: {response: "..."}}
-
-                errorDiv.remove();          const messageText =
-
-            }, 5000);            data.data?.response || data.response || "No response received";
-
-        }          addMessage(messageText, false);
-
-        } catch (error) {
-
-        async function sendMessage() {          addMessage("❌ Error: " + error.message, false);
-
-            const message = messageInput.value.trim();        }
-
-            const userId = userIdInput.value;      }
-
-
-
-            if (!message) return;      function quickSend(message) {
-
-            if (!userId || userId < 1) {        messageInput.value = message;
-
-                showError('올바른 User ID를 입력해주세요.');        sendMessage();
-
-                return;      }
-
-            }
-
-                  userSelect.addEventListener("change", function () {
-
-            // 사용자 메시지 표시        updateUserInfo();
-
-            addMessage(message, true);        const selectedUser = userSelect.options[userSelect.selectedIndex];
-
-            messageInput.value = '';        addSystemMessage(`Switched to ${selectedUser.textContent}`);
-
-            messageInput.style.height = 'auto';      });
-
-
-
-            // 버튼 비활성화      // 페이지 로드 시 유저 목록 가져오기
-
-            sendButton.disabled = true;      loadUsers();
-
-            messageInput.disabled = true;    </script>
-
-              </body>
-
-            // 로딩 표시</html>
-
-            addLoadingIndicator();
-
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        userId: parseInt(userId),
-                        message: message
-                    })
-                });
-
-                removeLoadingIndicator();
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                if (data.success) {
-                    addMessage(data.message || data.data, false);
-                } else {
-                    showError(data.message || '오류가 발생했습니다.');
-                    addMessage('죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.', false);
-                }
-            } catch (error) {
-                removeLoadingIndicator();
-                console.error('Error:', error);
-                showError('서버와의 통신 중 오류가 발생했습니다.');
-                addMessage('죄송합니다. 서버와의 연결에 문제가 있습니다.', false);
-            } finally {
-                // 버튼 활성화
-                sendButton.disabled = false;
-                messageInput.disabled = false;
-                messageInput.focus();
-            }
-        }
-
-        // 페이지 로드 시 포커스
-        window.addEventListener('load', () => {
-            messageInput.focus();
-        });
+      const userInfo = document.getElementById("userInfo");
+
+      // 페이지 로드 시 유저 목록 가져오기
+      async function loadUsers() {
+	try {
+	  const response = await fetch("/users");
+	  const users = await response.json();
+
+	  userSelect.innerHTML = "";
+
+	  if (users.length === 0) {
+	    userSelect.innerHTML = '<option value="">No users found</option>';
+	    userInfo.textContent = "No users in database";
+	    return;
+	  }
+
+	  // ID 순서대로 정렬
+	  users.sort((a, b) => a.id - b.id);
+
+	  users.forEach((user) => {
+	    const option = document.createElement("option");
+	    option.value = user.id;
+	    option.textContent = `${user.name || "User " + user.id} (ID: ${
+      user.id
+    })`;
+	    userSelect.appendChild(option);
+	  });
+
+	  updateUserInfo();
+	  addSystemMessage(`Loaded ${users.length} users from database`);
+	} catch (error) {
+	  console.error("Error loading users:", error);
+	  userSelect.innerHTML = '<option value="1">User 1 (Fallback)</option>';
+	  userInfo.textContent = "Failed to load users";
+	}
+      }
+
+      function updateUserInfo() {
+	const selectedUser = userSelect.options[userSelect.selectedIndex];
+	if (selectedUser) {
+	  userInfo.textContent = `Selected: ${selectedUser.textContent}`;
+	}
+      }
+
+      function addMessage(text, isUser) {
+	const messageDiv = document.createElement("div");
+	messageDiv.className = `message ${isUser ? "user" : "bot"}`;
+
+	const bubble = document.createElement("div");
+	bubble.className = "message-bubble";
+
+	// Bot 메시지에 포맷팅 적용
+	if (!isUser) {
+	  // 줄바꿈 처리
+	  let formattedText = text.replace(/\n/g, "<br>");
+
+	  // **굵게** 처리
+	  formattedText = formattedText.replace(
+    /\*\*(.*?)\*\*/g,
+    "<strong>$1</strong>"
+  );
+
+	  // 이모지 강조
+	  formattedText = formattedText.replace(
+    /([\u{1F300}-\u{1F9FF}])/gu,
+    '<span style="font-size: 1.2em;">$1</span>'
+  );
+
+	  bubble.innerHTML = formattedText;
+	} else {
+	  bubble.textContent = text;
+	}
+
+	messageDiv.appendChild(bubble);
+	chatMessages.appendChild(messageDiv);
+	chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      function addSystemMessage(text) {
+	const div = document.createElement("div");
+	div.className = "system-message";
+	div.textContent = text;
+	chatMessages.appendChild(div);
+	chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      async function sendMessage() {
+	const message = messageInput.value.trim();
+	if (!message) return;
+
+	addMessage(message, true);
+	messageInput.value = "";
+
+	try {
+	  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: message,
+      planId: null,
+      userId: parseInt(userSelect.value),
+    }),
+  });
+
+	  const data = await response.json();
+	  addMessage(data.response, false);
+	} catch (error) {
+	  addMessage("❌ Error: " + error.message, false);
+	}
+      }
+
+      function quickSend(message) {
+	messageInput.value = message;
+	sendMessage();
+      }
+
+      userSelect.addEventListener("change", function () {
+	updateUserInfo();
+	const selectedUser = userSelect.options[userSelect.selectedIndex];
+	addSystemMessage(`Switched to ${selectedUser.textContent}`);
+      });
+
+      // 페이지 로드 시 유저 목록 가져오기
+      loadUsers();
     </script>
-</body>
+  </body>
 </html>

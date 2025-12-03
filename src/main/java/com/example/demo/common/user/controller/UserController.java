@@ -20,14 +20,26 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
-@RequestMapping("/api/users")
 @RequiredArgsConstructor
 @Slf4j
 public class UserController {
     
     private final UserService userService;
     
-    @PostMapping
+    // For chat.html - simple /users endpoint
+    @GetMapping("/users")
+    public ResponseEntity<List<User>> getUsers() {
+        try {
+            List<User> users = userService.getAllUsers();
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            log.error("사용자 목록 조회 실패", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    // REST API endpoints
+    @PostMapping("/api/users")
     public ResponseEntity<User> createUser(@RequestBody User user) {
         try {
             log.info("사용자 생성 요청: email={}", user.getEmail());
@@ -39,7 +51,7 @@ public class UserController {
         }
     }
     
-    @GetMapping("/{id}")
+    @GetMapping("/api/users/{id}")
     public ResponseEntity<User> getUser(@PathVariable Long id) {
         try {
             User user = userService.getUserById(id);
@@ -53,7 +65,7 @@ public class UserController {
         }
     }
     
-    @GetMapping
+    @GetMapping("/api/users")
     public ResponseEntity<List<User>> getAllUsers() {
         try {
             List<User> users = userService.getAllUsers();
@@ -64,7 +76,7 @@ public class UserController {
         }
     }
     
-    @PutMapping("/{id}")
+    @PutMapping("/api/users/{id}")
     public ResponseEntity<Void> updateUser(@PathVariable Long id, @RequestBody User user) {
         try {
             boolean updated = userService.updateUserById(id, user);
@@ -78,7 +90,7 @@ public class UserController {
         }
     }
     
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/api/users/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         try {
             boolean deleted = userService.deleteUserById(id);
