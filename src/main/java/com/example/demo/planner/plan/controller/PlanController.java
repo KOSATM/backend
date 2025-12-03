@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.demo.common.chat.intent.dto.IntentCommand;
 import com.example.demo.common.chat.intent.dto.request.IntentRequest;
 import com.example.demo.common.chat.pipeline.DefaultChatPipeline;
 import com.example.demo.planner.plan.agent.PlaceSuggestAgent;
@@ -47,7 +46,7 @@ public class PlanController {
   // }
 
   @PostMapping("/test")
-  public String test(String question) {
+  public String test(@RequestParam("question") String question) {
     IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").userMessage(question).build();
 
     return defaultChatPipeline.execute(intentRequest).getMainResponse().getMessage().toString();

@@ -83,19 +83,42 @@ public class PlaceSuggestAgent implements AiAgent {
           LIMIT 10
           """;
       List<Map<String, Object>> res = jdbcTemplate.queryForList(sql, strVector, strVector);
+
       for (Map<String, Object> map : res) {
         String title = (String) map.get("title");
         Double distance = (Double) map.get("distance");
         log.info("장소: {}, 거리: {}", title, distance);
       }
+
       double minDistance = (Double) res.get(0).get("distance");
+
       if (minDistance > 0.7) {
         return "해당 키워드와 관련된 검색 결과가 없습니다.";
       }
-      // log.info("res: {}", res.toString());
+
+      StringBuilder sb = new StringBuilder();
+
+      for (Map<String, Object> map : res) {
+        String title = (String) map.get("title");
+        String address = (String) map.get("address");
+        String tel = ((String) map.get("tel")).trim().isEmpty() ? (String) map.get("tel") : "미제공";
+        String description = (String) map.get("description");
+        String detailInfo = (String) map.get("detail_info");
+
+        sb.append("[장소]" + "\t" + title + "\n");
+        sb.append("[주소]" + "\t" + address + "\n");
+        sb.append("[전화번호]" + "\t" + tel + "\n");
+        sb.append("[설명]\n");
+        sb.append(description + "\n");
+        sb.append("[기타정보]\n");
+        sb.append(detailInfo + "\n\n");
+      }
+
+      String output = sb.toString();
+      log.info(output);
       long end = System.nanoTime();
       log.info("실행시간: {}", (end - start) / 1000000);
-      return res;
+      return output;
     }
 
     private float[] getQueryVector(String query) {
