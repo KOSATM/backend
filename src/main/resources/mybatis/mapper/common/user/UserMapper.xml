@@ -3,31 +3,31 @@
 
 <mapper namespace="com.example.demo.common.user.dao.UserDao">
 
-    <insert id="insertUser" parameterType="com.example.demo.common.dto.user.User" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertUser" parameterType="com.example.demo.common.user.dto.User" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO users (is_active, last_login_at, name, email, profile_image_url, created_at, updated_at)
-        VALUES (#{isActive}, #{lastLoginAt}, #{name}, #{email}, #{profileImageUrl}, #{createdAt}, #{updatedAt})
+        VALUES (#{isActive}, #{lastLoginAt}, #{name}, #{email}, #{profileImageUrl}, now(), null)
     </insert>
 
-    <select id="selectUserById" parameterType="long" resultType="com.example.demo.common.dto.user.User">
+    <select id="selectUserById" parameterType="long" resultType="com.example.demo.common.user.dto.User">
         SELECT id, is_active, last_login_at, name, email, profile_image_url, created_at, updated_at
         FROM users
         WHERE id = #{id}
     </select>
 
-    <select id="selectAllUsers" resultType="com.example.demo.common.dto.user.User">
+    <select id="selectAllUsers" resultType="com.example.demo.common.user.dto.User">
         SELECT id, is_active, last_login_at, name, email, profile_image_url, created_at, updated_at
         FROM users
         ORDER BY created_at DESC
     </select>
 
-    <update id="updateUser" parameterType="com.example.demo.common.dto.user.User">
+    <update id="updateUser" parameterType="com.example.demo.common.user.dto.User">
         UPDATE users
         SET is_active = #{isActive},
             last_login_at = #{lastLoginAt},
             name = #{name},
             email = #{email},
             profile_image_url = #{profileImageUrl},
-            updated_at = #{updatedAt}
+            updated_at = now()
         WHERE id = #{id}
     </update>
 
@@ -36,7 +36,14 @@
         WHERE id = #{id}
     </delete>
 
-    <select id="selectUserByEmail" parameterType="string" resultType="com.example.demo.common.dto.user.User">
+    <update id="deactivateUser" parameterType="long">
+        UPDATE users
+        SET is_active = false,
+            updated_at = now()
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectUserByEmail" parameterType="string" resultType="com.example.demo.common.user.dto.User">
         SELECT id, is_active, last_login_at, name, email, profile_image_url, created_at, updated_at
         FROM users
         WHERE email = #{email}
