@@ -33,8 +33,6 @@ public class UserController {
 
     /**
      * 사용자 목록 조회 (chat.html용 - 응답 래핑 제외)
-     * GET /users
-     * 
      * @return 사용자 목록
      */
     @NoWrap
@@ -51,8 +49,6 @@ public class UserController {
 
     /**
      * 사용자 생성
-     * POST /api/users
-     * 
      * @param user 생성할 사용자 정보
      * @return 생성된 사용자 정보
      */
@@ -70,8 +66,6 @@ public class UserController {
 
     /**
      * 사용자 단건 조회
-     * GET /api/users/{id}
-     * 
      * @param id 조회할 사용자 ID
      * @return 사용자 정보
      */
@@ -91,8 +85,6 @@ public class UserController {
 
     /**
      * 전체 사용자 목록 조회 (응답 래핑 포함)
-     * GET /api/users
-     * 
      * @return 전체 사용자 목록
      */
     @GetMapping("/api/users")
@@ -108,8 +100,6 @@ public class UserController {
 
     /**
      * 사용자 정보 수정
-     * PUT /api/users/{id}
-     * 
      * @param id 수정할 사용자 ID
      * @param user 수정할 사용자 정보
      * @return 성공 시 200, 사용자 없으면 404
@@ -130,8 +120,6 @@ public class UserController {
 
     /**
      * 사용자 삭제
-     * DELETE /api/users/{id}
-     * 
      * @param id 삭제할 사용자 ID
      * @return 성공 시 204, 사용자 없으면 404
      */

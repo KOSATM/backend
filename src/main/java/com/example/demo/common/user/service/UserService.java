@@ -23,7 +23,6 @@ public class UserService {
     
     /**
      * 사용자 생성
-     * 
      * @param user 생성할 사용자 정보
      */
     public void createUser(User user) {
@@ -33,7 +32,6 @@ public class UserService {
     
     /**
      * 사용자 ID로 조회
-     * 
      * @param id 조회할 사용자 ID
      * @return 사용자 정보, 없으면 null
      */
@@ -44,7 +42,6 @@ public class UserService {
     
     /**
      * 전체 사용자 목록 조회
-     * 
      * @return 전체 사용자 목록
      */
     public List<User> getAllUsers() {
@@ -54,7 +51,6 @@ public class UserService {
     
     /**
      * 사용자 정보 수정
-     * 
      * @param id 수정할 사용자 ID
      * @param user 수정할 사용자 정보
      * @return 수정 성공 여부
@@ -73,7 +69,6 @@ public class UserService {
     
     /**
      * 사용자 삭제
-     * 
      * @param id 삭제할 사용자 ID
      * @return 삭제 성공 여부
      */
@@ -90,7 +85,6 @@ public class UserService {
     
     /**
      * 이메일로 사용자 조회
-     * 
      * @param email 조회할 이메일
      * @return 사용자 정보, 없으면 null
      */
