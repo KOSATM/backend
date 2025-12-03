@@ -12,7 +12,7 @@ public class CategoryRequirementChecker {
     // 1일 기준 최소 요구량
     private static final Map<String, Integer> BASE_MIN_REQUIRED = Map.of(
             CategoryNames.SPOT, 4,
-            CategoryNames.FOOD, 2,
+            CategoryNames.FOOD, 3,
             CategoryNames.CAFE, 1);
 
     // 카테고리별 개수 계산
@@ -59,4 +59,11 @@ public class CategoryRequirementChecker {
             Map<String, Integer> categoryCounts, int duration) {
         return findMissingCategories(categoryCounts, duration).isEmpty();
     }
+
+    public static int getMinRequiredForCategory(String category, int duration) {
+    int base = BASE_MIN_REQUIRED.getOrDefault(category, 0);
+    return base * duration;
+    }
+
+    
 }

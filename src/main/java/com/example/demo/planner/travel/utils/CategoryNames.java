@@ -15,6 +15,20 @@ public class CategoryNames {
     // 전체 카테고리 집합
     public static final List<String> ALL = List.of(SPOT, FOOD, CAFE, EVENT, SHOPPING, STAY, ETC);
 
-    // 일정 최소 필수 카테고리
-    public static final List<String> REQUIRED = List.of(SPOT, FOOD, CAFE);
+    // 1. FOOD 최우선 → 끼니 보장
+    // 2. SPOT 필수 → 핵심 관광지
+    // 3. CAFE 선택 → 휴식 공간
+    // 4. EVENT 선택 → 특별한 경험
+    // 5. SHOPPING 선택 → 쇼핑
+    public static final List<String> REQUIRED = List.of(
+        FOOD,      // 최우선
+        SPOT,      // 필수
+        CAFE,      // 선택
+        EVENT,     // 선택
+        SHOPPING   // 선택
+    );
+    
+    // 기타 카테고리 (나머지 공간 채우기)
+    public static final List<String> OPTIONAL = List.of(ETC);
+    // STAY는 숙소 관리이므로 일정에서 제외
 }

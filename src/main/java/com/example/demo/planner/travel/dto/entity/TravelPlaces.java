@@ -12,7 +12,7 @@ import lombok.ToString;
 @ToString
 public class TravelPlaces {
     private Long id;
-    private String contentId;
+    private Long contentId;
     private String title;
     private String address;
     private String tel;

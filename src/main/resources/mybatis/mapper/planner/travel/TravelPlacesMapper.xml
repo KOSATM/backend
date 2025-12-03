@@ -67,14 +67,7 @@
   <!-- 백터 검색 -->
   <select id="searchByVector" resultMap="TravelPlaceSearchResultMap">
       <![CDATA[ 
-      SELECT 
-      id,
-      title,
-      category_code,
-      description,
-      tags,
-      detail_info,
-      normalized_category,
+      SELECT id, content_id, title, address, tel, first_image, first_image2, lat, lng, description, detail_info, normalized_category,
       1 - (embedding <=> #{embedding, typeHandler=com.example.demo.common.global.typehandler.VectorTypeHandler}) AS score
         FROM travel_places
         WHERE embedding IS NOT NULL
@@ -83,5 +76,21 @@
       ]]>
   </select>
   
+  <select id="searchMissingCategoryByVector" parameterType="map" resultMap="TravelPlaceSearchResultMap">
+    <![CDATA[ 
+    SELECT id, content_id, title, address, tel, first_image, first_image2, lat, lng, description, detail_info, normalized_category,
+    1 - (embedding <=> #{embedding, typeHandler=com.example.demo.common.global.typehandler.VectorTypeHandler}) AS score
+    FROM travel_places
+    WHERE normalized_category = #{category}
+    ]]>
+    <if test="excludedIds != null and excludedIds.size() > 0">
+    AND id NOT IN 
+    <foreach item="id" collection="excludedIds" open="(" separator="," close=")">
+        #{id}
+    </foreach>
+    </if>
+    ORDER BY score DESC
+    LIMIT #{limit}
+</select>
   
 </mapper>
