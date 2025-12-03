@@ -103,12 +103,12 @@ public class PlanAgent {
 
                 return String.format("""
                     ✅ Travel plan created successfully!
-                    
+
                     Plan ID: #%d
                     Duration: %s ~ %s (%d days)
                     Budget: ₩%,d
                     Sample places: %d locations created
-                    
+
                     Your Seoul adventure is ready! Each day includes morning and afternoon activities.
                     """, plan.getId(), plan.getStartDate(), plan.getEndDate(), days, budgetDecimal.longValue(), days * 2);
 
@@ -136,13 +136,13 @@ public class PlanAgent {
 
                 return String.format("""
                     📋 Plan Details:
-                    
+
                     Plan ID: #%d
                     Duration: %s ~ %s
                     Budget: ₩%,d
                     Status: %s
-                    """, plan.getId(), plan.getStartDate(), plan.getEndDate(), 
-                    plan.getBudget().longValue(), 
+                    """, plan.getId(), plan.getStartDate(), plan.getEndDate(),
+                    plan.getBudget().longValue(),
                     plan.getIsEnded() ? "Completed" : "Active");
 
             } catch (Exception e) {

@@ -29,18 +29,18 @@ public class ChatController {
 
     @GetMapping("/api/chat/intent/analyze")
     public String getMethodName() {
-        
+
         IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").userMessage("강남 위주로 여행지 추천해줘").build();
         // IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner")
                 // .userMessage("오늘 날씨 알려주고 일정 수정하고 싶어?").build();
-        
+
         return intentAnalysisAgent.analyze(intentRequest).toString();
     }
 
     @GetMapping("/api/chat/test")
     public String getMethodNam1e() {
         IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").userMessage("강남 위주로 여행지 추천해줘").build();
-        
+
         return defaultChatPipeline.execute(intentRequest).toString();
     }
 
@@ -65,6 +65,6 @@ public class ChatController {
             return ResponseEntity.ok(TravelChatSendResponse.error(e.getMessage()));
         }
     }
-    
-    
+
+
 }

@@ -31,7 +31,7 @@ public class PlanService {
   private final PlanDayDao planDayDao;
   private final PlanPlaceDao planPlaceDao;
   private final PlanSnapshotDao planSnapshotDao;
-  
+
   // 스냅샷을 여행 계획, 여행 일자, 여행 장소로 분리
   public PlanSnapshotContent parseSnapshot(String snapshotJson) throws Exception {
     ObjectMapper objectMapper = new ObjectMapper();
@@ -45,7 +45,7 @@ public class PlanService {
    */
   public Plan createPlanWithSampleData(Long userId, Integer days, BigDecimal budget, LocalDate startDate) {
     log.info("샘플 데이터 포함 여행 계획 생성 시작: userId={}, days={}", userId, days);
-    
+
     // 1. Plan 생성
     Plan plan = Plan.builder()
         .userId(userId)
@@ -55,7 +55,7 @@ public class PlanService {
         .isEnded(false)
         .createdAt(OffsetDateTime.now(ZoneOffset.UTC))
         .build();
-    
+
     planDao.insertPlan(plan);
     Long planId = plan.getId();
     log.info("Plan 생성 완료: planId={}", planId);
@@ -63,7 +63,7 @@ public class PlanService {
     // 2. 요청된 일수만큼 Day와 Place 생성
     for (int i = 1; i <= days; i++) {
       LocalDate currentDate = startDate.plusDays(i - 1);
-      
+
       // PlanDay 생성
       PlanDay day = PlanDay.builder()
           .planId(planId)
@@ -71,7 +71,7 @@ public class PlanService {
           .title("Day " + i)
           .planDate(currentDate)
           .build();
-      
+
       planDayDao.insertPlanDay(day);
       Long dayId = day.getId();
       log.debug("PlanDay 생성 완료: dayId={}, dayIndex={}", dayId, i);
@@ -89,7 +89,7 @@ public class PlanService {
           .endAt(OffsetDateTime.of(currentDate, LocalTime.of(12, 0), ZoneOffset.ofHours(9)))
           .expectedCost(new BigDecimal("20000"))
           .build();
-      
+
       planPlaceDao.insertPlanPlace(morningPlace);
 
       // 오후 장소
@@ -104,9 +104,9 @@ public class PlanService {
           .endAt(OffsetDateTime.of(currentDate, LocalTime.of(18, 0), ZoneOffset.ofHours(9)))
           .expectedCost(new BigDecimal("30000"))
           .build();
-      
+
       planPlaceDao.insertPlanPlace(afternoonPlace);
-      
+
       log.debug("PlanPlace 2개 생성 완료: dayId={}", dayId);
     }
 
@@ -134,7 +134,7 @@ public class PlanService {
    */
   public PlanDetail getPlanDetail(Long planId) {
     log.info("Plan 상세 조회 시작: planId={}", planId);
-    
+
     // 1. Plan 조회
     Plan plan = planDao.selectPlanById(planId);
     if (plan == null) {
@@ -144,7 +144,7 @@ public class PlanService {
 
     // 2. Plan의 모든 Day 조회
     java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
-    
+
     // 3. 각 Day의 Places를 조회하여 PlanDayWithPlaces 생성
     java.util.List<PlanDayWithPlaces> daysWithPlaces = days.stream()
         .map(day -> {
@@ -153,8 +153,8 @@ public class PlanService {
         })
         .collect(java.util.stream.Collectors.toList());
 
-    log.info("Plan 상세 조회 완료: planId={}, days={}, 총 places={}", 
-        planId, daysWithPlaces.size(), 
+    log.info("Plan 상세 조회 완료: planId={}, days={}, 총 places={}",
+        planId, daysWithPlaces.size(),
         daysWithPlaces.stream().mapToInt(d -> d.getPlaces().size()).sum());
 
     return new PlanDetail(plan, daysWithPlaces);

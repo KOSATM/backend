@@ -51,7 +51,7 @@ public class PlanController {
       @RequestParam(required = false) java.time.LocalDate startDate) {
     try {
       log.info("여행 계획 생성 요청: userId={}, days={}", userId, days);
-      
+
       // 기본값 설정
       if (budget == null) {
         budget = new java.math.BigDecimal("500000");
@@ -59,7 +59,7 @@ public class PlanController {
       if (startDate == null) {
         startDate = java.time.LocalDate.now();
       }
-      
+
       Plan createdPlan = planService.createPlanWithSampleData(userId, days, budget, startDate);
       log.info("여행 계획 생성 완료: planId={}", createdPlan.getId());
       return ResponseEntity.status(HttpStatus.CREATED).body(createdPlan);
@@ -159,5 +159,5 @@ public class PlanController {
       return ResponseEntity.internalServerError().build();
     }
   }
-  
+
 }
