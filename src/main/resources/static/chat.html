@@ -1,0 +1,822 @@
+<!DOCTYPE html><!DOCTYPE html>
+
+<html lang="ko"><html lang="en">
+
+<head>  <head>
+
+    <meta charset="UTF-8">    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Travel Planner Chat</title>    <title>Travel Chat</title>
+
+    <style>    <style>
+
+        * {      * {
+
+            margin: 0;        margin: 0;
+
+            padding: 0;        padding: 0;
+
+            box-sizing: border-box;        box-sizing: border-box;
+
+        }      }
+
+
+
+        body {      body {
+
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);          "Helvetica Neue", Arial, sans-serif;
+
+            height: 100vh;        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+            display: flex;        height: 100vh;
+
+            justify-content: center;        display: flex;
+
+            align-items: center;        justify-content: center;
+
+            padding: 20px;        align-items: center;
+
+        }        padding: 20px;
+
+      }
+
+        .chat-container {
+
+            background: white;      .chat-container {
+
+            border-radius: 20px;        background: white;
+
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);        border-radius: 20px;
+
+            width: 100%;        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+            max-width: 800px;        width: 100%;
+
+            height: 90vh;        max-width: 800px;
+
+            display: flex;        height: 90vh;
+
+            flex-direction: column;        display: flex;
+
+            overflow: hidden;        flex-direction: column;
+
+        }        overflow: hidden;
+
+      }
+
+        .chat-header {
+
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);      .chat-header {
+
+            color: white;        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+            padding: 20px;        color: white;
+
+            text-align: center;        padding: 20px;
+
+            border-radius: 20px 20px 0 0;        text-align: center;
+
+        }        font-size: 24px;
+
+        font-weight: bold;
+
+        .chat-header h1 {      }
+
+            font-size: 24px;
+
+            margin-bottom: 5px;      .user-selector {
+
+        }        background: #f8f9fa;
+
+        padding: 15px 20px;
+
+        .chat-header p {        border-bottom: 1px solid #e0e0e0;
+
+            font-size: 14px;        display: flex;
+
+            opacity: 0.9;        align-items: center;
+
+        }        gap: 15px;
+
+      }
+
+        .user-id-container {
+
+            padding: 15px 20px;      .user-selector label {
+
+            background: #f8f9fa;        font-weight: 600;
+
+            border-bottom: 1px solid #e9ecef;        color: #333;
+
+            display: flex;      }
+
+            align-items: center;
+
+            gap: 10px;      .user-selector select {
+
+        }        padding: 8px 15px;
+
+        border: 2px solid #667eea;
+
+        .user-id-container label {        border-radius: 8px;
+
+            font-weight: 600;        font-size: 14px;
+
+            color: #495057;        outline: none;
+
+        }        cursor: pointer;
+
+        background: white;
+
+        .user-id-container input {      }
+
+            flex: 1;
+
+            padding: 8px 12px;      .chat-messages {
+
+            border: 2px solid #dee2e6;        flex: 1;
+
+            border-radius: 8px;        overflow-y: auto;
+
+            font-size: 14px;        padding: 20px;
+
+            transition: border-color 0.3s;        background: #f5f5f5;
+
+        }      }
+
+
+
+        .user-id-container input:focus {      .message {
+
+            outline: none;        margin-bottom: 15px;
+
+            border-color: #667eea;        display: flex;
+
+        }        animation: slideIn 0.3s ease;
+
+      }
+
+        .chat-messages {
+
+            flex: 1;      @keyframes slideIn {
+
+            overflow-y: auto;        from {
+
+            padding: 20px;          opacity: 0;
+
+            background: #f8f9fa;          transform: translateY(10px);
+
+        }        }
+
+        to {
+
+        .message {          opacity: 1;
+
+            margin-bottom: 15px;          transform: translateY(0);
+
+            display: flex;        }
+
+            animation: slideIn 0.3s ease;      }
+
+        }
+
+      .message.user {
+
+        @keyframes slideIn {        justify-content: flex-end;
+
+            from {      }
+
+                opacity: 0;
+
+                transform: translateY(10px);      .message-bubble {
+
+            }        max-width: 70%;
+
+            to {        padding: 12px 18px;
+
+                opacity: 1;        border-radius: 18px;
+
+                transform: translateY(0);        word-wrap: break-word;
+
+            }        white-space: pre-wrap;
+
+        }      }
+
+
+
+        .message.user {      .message.user .message-bubble {
+
+            justify-content: flex-end;        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        }        color: white;
+
+        border-bottom-right-radius: 4px;
+
+        .message.assistant {      }
+
+            justify-content: flex-start;
+
+        }      .message.bot .message-bubble {
+
+        background: white;
+
+        .message-content {        color: #333;
+
+            max-width: 70%;        border: 1px solid #e0e0e0;
+
+            padding: 12px 16px;        border-bottom-left-radius: 4px;
+
+            border-radius: 18px;      }
+
+            word-wrap: break-word;
+
+            white-space: pre-wrap;      .chat-input-container {
+
+        }        padding: 20px;
+
+        background: white;
+
+        .message.user .message-content {        border-top: 1px solid #e0e0e0;
+
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);      }
+
+            color: white;
+
+            border-bottom-right-radius: 4px;      .chat-input-wrapper {
+
+        }        display: flex;
+
+        gap: 10px;
+
+        .message.assistant .message-content {      }
+
+            background: white;
+
+            color: #333;      .chat-input {
+
+            border: 1px solid #e9ecef;        flex: 1;
+
+            border-bottom-left-radius: 4px;        padding: 12px 20px;
+
+        }        border: 2px solid #e0e0e0;
+
+        border-radius: 25px;
+
+        .message-time {        font-size: 15px;
+
+            font-size: 11px;        outline: none;
+
+            color: #999;        transition: border-color 0.3s;
+
+            margin-top: 5px;      }
+
+            text-align: right;
+
+        }      .chat-input:focus {
+
+        border-color: #667eea;
+
+        .chat-input-container {      }
+
+            padding: 20px;
+
+            background: white;      .send-button {
+
+            border-top: 1px solid #e9ecef;        padding: 12px 30px;
+
+            display: flex;        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+            gap: 10px;        color: white;
+
+        }        border: none;
+
+        border-radius: 25px;
+
+        .chat-input {        font-size: 15px;
+
+            flex: 1;        font-weight: 600;
+
+            padding: 12px 16px;        cursor: pointer;
+
+            border: 2px solid #dee2e6;        transition: transform 0.2s, box-shadow 0.2s;
+
+            border-radius: 25px;      }
+
+            font-size: 14px;
+
+            transition: border-color 0.3s;      .send-button:hover {
+
+            resize: none;        transform: translateY(-2px);
+
+            font-family: inherit;        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+
+            min-height: 44px;      }
+
+            max-height: 120px;
+
+        }      .send-button:active {
+
+        transform: translateY(0);
+
+        .chat-input:focus {      }
+
+            outline: none;
+
+            border-color: #667eea;      .quick-actions {
+
+        }        display: flex;
+
+        gap: 8px;
+
+        .send-button {        margin-top: 10px;
+
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);        flex-wrap: wrap;
+
+            color: white;      }
+
+            border: none;
+
+            border-radius: 25px;      .quick-btn {
+
+            padding: 12px 24px;        padding: 6px 12px;
+
+            font-size: 14px;        background: #f0f0f0;
+
+            font-weight: 600;        border: 1px solid #d0d0d0;
+
+            cursor: pointer;        border-radius: 15px;
+
+            transition: transform 0.2s, box-shadow 0.2s;        font-size: 12px;
+
+            white-space: nowrap;        cursor: pointer;
+
+        }        transition: all 0.2s;
+
+      }
+
+        .send-button:hover:not(:disabled) {
+
+            transform: translateY(-2px);      .quick-btn:hover {
+
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);        background: #667eea;
+
+        }        color: white;
+
+        border-color: #667eea;
+
+        .send-button:active:not(:disabled) {      }
+
+            transform: translateY(0);
+
+        }      .system-message {
+
+        text-align: center;
+
+        .send-button:disabled {        color: #999;
+
+            opacity: 0.5;        font-size: 13px;
+
+            cursor: not-allowed;        margin: 15px 0;
+
+        }        font-style: italic;
+
+      }
+
+        .loading {    </style>
+
+            display: flex;  </head>
+
+            gap: 5px;  <body>
+
+            padding: 10px;    <div class="chat-container">
+
+        }      <div class="chat-header">🌏 Travel Chat</div>
+
+
+
+        .loading-dot {      <div class="user-selector">
+
+            width: 8px;        <label>User:</label>
+
+            height: 8px;        <select id="userSelect">
+
+            border-radius: 50%;          <option value="">Loading users...</option>
+
+            background: #667eea;        </select>
+
+            animation: bounce 1.4s infinite ease-in-out;        <span style="color: #999; font-size: 14px" id="userInfo"></span>
+
+        }      </div>
+
+
+
+        .loading-dot:nth-child(1) {      <div class="chat-messages" id="chatMessages">
+
+            animation-delay: -0.32s;        <div class="system-message">
+
+        }          Welcome! Start chatting to plan your trip 🎒
+
+        </div>
+
+        .loading-dot:nth-child(2) {      </div>
+
+            animation-delay: -0.16s;
+
+        }      <div class="chat-input-container">
+
+        <div class="chat-input-wrapper">
+
+        @keyframes bounce {          <input
+
+            0%, 80%, 100% {            type="text"
+
+                transform: scale(0);            class="chat-input"
+
+            }            id="messageInput"
+
+            40% {            placeholder="Type your message here..."
+
+                transform: scale(1);            onkeypress="if(event.key==='Enter') sendMessage()"
+
+            }          />
+
+        }          <button class="send-button" onclick="sendMessage()">Send</button>
+
+        </div>
+
+        .error-message {        <div class="quick-actions">
+
+            background: #fff3cd;          <button
+
+            border: 1px solid #ffc107;            class="quick-btn"
+
+            color: #856404;            onclick="quickSend('create 3 day plan with 500000 budget')"
+
+            padding: 12px;          >
+
+            border-radius: 8px;            📅 Create Plan
+
+            margin: 10px 0;          </button>
+
+            text-align: center;          <button class="quick-btn" onclick="quickSend('show my plan')">
+
+        }            👀 Show Plan
+
+          </button>
+
+        /* 스크롤바 스타일 */          <button
+
+        .chat-messages::-webkit-scrollbar {            class="quick-btn"
+
+            width: 8px;            onclick="quickSend('complete current plan')"
+
+        }          >
+
+            ✅ Complete
+
+        .chat-messages::-webkit-scrollbar-track {          </button>
+
+            background: #f1f1f1;        </div>
+
+        }      </div>
+
+    </div>
+
+        .chat-messages::-webkit-scrollbar-thumb {
+
+            background: #888;    <script>
+
+            border-radius: 4px;      const chatMessages = document.getElementById("chatMessages");
+
+        }      const messageInput = document.getElementById("messageInput");
+
+      const userSelect = document.getElementById("userSelect");
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {      const userInfo = document.getElementById("userInfo");
+
+            background: #555;
+
+        }      // 페이지 로드 시 유저 목록 가져오기
+
+    </style>      async function loadUsers() {
+
+</head>        try {
+
+<body>          const response = await fetch("/api/users");
+
+    <div class="chat-container">          const users = await response.json();
+
+        <div class="chat-header">
+
+            <h1>🗺️ Travel Planner Agent</h1>          userSelect.innerHTML = "";
+
+            <p>서울 여행 계획을 도와드립니다</p>
+
+        </div>          if (users.length === 0) {
+
+            userSelect.innerHTML = '<option value="">No users found</option>';
+
+        <div class="user-id-container">            userInfo.textContent = "No users in database";
+
+            <label for="userId">User ID:</label>            return;
+
+            <input type="number" id="userId" value="1" min="1" placeholder="사용자 ID를 입력하세요">          }
+
+        </div>
+
+          // ID 순서대로 정렬
+
+        <div class="chat-messages" id="chatMessages">          users.sort((a, b) => a.id - b.id);
+
+            <div class="message assistant">
+
+                <div class="message-content">          users.forEach((user) => {
+
+                    안녕하세요! 서울 여행 계획을 도와드리는 AI 에이전트입니다. 😊<br><br>            const option = document.createElement("option");
+
+                    다음과 같은 것들을 도와드릴 수 있어요:<br>            option.value = user.id;
+
+                    • 여행 계획 생성 (예: "3일 여행 계획 만들어줘")<br>            option.textContent = `${user.name || "User " + user.id} (ID: ${
+
+                    • 여행 계획 조회 (예: "내 여행 계획 보여줘")<br>              user.id
+
+                    • 예산 설정 (예: "예산 50만원으로 2일 계획")<br><br>            })`;
+
+                    무엇을 도와드릴까요?            userSelect.appendChild(option);
+
+                </div>          });
+
+            </div>
+
+        </div>          updateUserInfo();
+
+          addSystemMessage(`Loaded ${users.length} users from database`);
+
+        <div class="chat-input-container">        } catch (error) {
+
+            <textarea           console.error("Error loading users:", error);
+
+                class="chat-input"           userSelect.innerHTML = '<option value="1">User 1 (Fallback)</option>';
+
+                id="messageInput"           userInfo.textContent = "Failed to load users";
+
+                placeholder="메시지를 입력하세요..."        }
+
+                rows="1"      }
+
+            ></textarea>
+
+            <button class="send-button" id="sendButton" onclick="sendMessage()">전송</button>      function updateUserInfo() {
+
+        </div>        const selectedUser = userSelect.options[userSelect.selectedIndex];
+
+    </div>        if (selectedUser) {
+
+          userInfo.textContent = `Selected: ${selectedUser.textContent}`;
+
+    <script>        }
+
+        const chatMessages = document.getElementById('chatMessages');      }
+
+        const messageInput = document.getElementById('messageInput');
+
+        const sendButton = document.getElementById('sendButton');      function addMessage(text, isUser) {
+
+        const userIdInput = document.getElementById('userId');        // 텍스트가 undefined이거나 null인 경우 처리
+
+        if (text === undefined || text === null) {
+
+        // 자동 높이 조절          text = "No message received";
+
+        messageInput.addEventListener('input', function() {        }
+
+            this.style.height = 'auto';
+
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';        // 텍스트가 문자열이 아닌 경우 문자열로 변환
+
+        });        text = String(text);
+
+
+
+        // Enter 키로 전송 (Shift+Enter는 줄바꿈)        const messageDiv = document.createElement("div");
+
+        messageInput.addEventListener('keydown', function(e) {        messageDiv.className = `message ${isUser ? "user" : "bot"}`;
+
+            if (e.key === 'Enter' && !e.shiftKey) {
+
+                e.preventDefault();        const bubble = document.createElement("div");
+
+                sendMessage();        bubble.className = "message-bubble";
+
+            }
+
+        });        // Bot 메시지에 포맷팅 적용
+
+        if (!isUser) {
+
+        function addMessage(content, isUser) {          // 줄바꿈 처리
+
+            const messageDiv = document.createElement('div');          let formattedText = text.replace(/\n/g, "<br>");
+
+            messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+
+                      // **굵게** 처리
+
+            const contentDiv = document.createElement('div');          formattedText = formattedText.replace(
+
+            contentDiv.className = 'message-content';            /\*\*(.*?)\*\*/g,
+
+            contentDiv.textContent = content;            "<strong>$1</strong>"
+
+                      );
+
+            messageDiv.appendChild(contentDiv);
+
+            chatMessages.appendChild(messageDiv);          // 이모지 강조
+
+                      formattedText = formattedText.replace(
+
+            // 스크롤을 맨 아래로            /([\u{1F300}-\u{1F9FF}])/gu,
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;            '<span style="font-size: 1.2em;">$1</span>'
+
+        }          );
+
+
+
+        function addLoadingIndicator() {          bubble.innerHTML = formattedText;
+
+            const messageDiv = document.createElement('div');        } else {
+
+            messageDiv.className = 'message assistant';          bubble.textContent = text;
+
+            messageDiv.id = 'loadingIndicator';        }
+
+            
+
+            const contentDiv = document.createElement('div');        messageDiv.appendChild(bubble);
+
+            contentDiv.className = 'message-content';        chatMessages.appendChild(messageDiv);
+
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            const loadingDiv = document.createElement('div');      }
+
+            loadingDiv.className = 'loading';
+
+            loadingDiv.innerHTML = `      function addSystemMessage(text) {
+
+                <div class="loading-dot"></div>        const div = document.createElement("div");
+
+                <div class="loading-dot"></div>        div.className = "system-message";
+
+                <div class="loading-dot"></div>        div.textContent = text;
+
+            `;        chatMessages.appendChild(div);
+
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            contentDiv.appendChild(loadingDiv);      }
+
+            messageDiv.appendChild(contentDiv);
+
+            chatMessages.appendChild(messageDiv);      async function sendMessage() {
+
+                    const message = messageInput.value.trim();
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;        if (!message) return;
+
+        }
+
+        addMessage(message, true);
+
+        function removeLoadingIndicator() {        messageInput.value = "";
+
+            const loading = document.getElementById('loadingIndicator');
+
+            if (loading) {        try {
+
+                loading.remove();          const response = await fetch("/api/chat", {
+
+            }            method: "POST",
+
+        }            headers: { "Content-Type": "application/json" },
+
+            body: JSON.stringify({
+
+        function showError(message) {              message: message,
+
+            const errorDiv = document.createElement('div');              planId: null,
+
+            errorDiv.className = 'error-message';              userId: parseInt(userSelect.value),
+
+            errorDiv.textContent = message;            }),
+
+            chatMessages.appendChild(errorDiv);          });
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                      const data = await response.json();
+
+            setTimeout(() => {          // API 응답 구조: {success: true, data: {response: "..."}}
+
+                errorDiv.remove();          const messageText =
+
+            }, 5000);            data.data?.response || data.response || "No response received";
+
+        }          addMessage(messageText, false);
+
+        } catch (error) {
+
+        async function sendMessage() {          addMessage("❌ Error: " + error.message, false);
+
+            const message = messageInput.value.trim();        }
+
+            const userId = userIdInput.value;      }
+
+            
+
+            if (!message) return;      function quickSend(message) {
+
+            if (!userId || userId < 1) {        messageInput.value = message;
+
+                showError('올바른 User ID를 입력해주세요.');        sendMessage();
+
+                return;      }
+
+            }
+
+                  userSelect.addEventListener("change", function () {
+
+            // 사용자 메시지 표시        updateUserInfo();
+
+            addMessage(message, true);        const selectedUser = userSelect.options[userSelect.selectedIndex];
+
+            messageInput.value = '';        addSystemMessage(`Switched to ${selectedUser.textContent}`);
+
+            messageInput.style.height = 'auto';      });
+
+            
+
+            // 버튼 비활성화      // 페이지 로드 시 유저 목록 가져오기
+
+            sendButton.disabled = true;      loadUsers();
+
+            messageInput.disabled = true;    </script>
+
+              </body>
+
+            // 로딩 표시</html>
+
+            addLoadingIndicator();
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        userId: parseInt(userId),
+                        message: message
+                    })
+                });
+                
+                removeLoadingIndicator();
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addMessage(data.message || data.data, false);
+                } else {
+                    showError(data.message || '오류가 발생했습니다.');
+                    addMessage('죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.', false);
+                }
+            } catch (error) {
+                removeLoadingIndicator();
+                console.error('Error:', error);
+                showError('서버와의 통신 중 오류가 발생했습니다.');
+                addMessage('죄송합니다. 서버와의 연결에 문제가 있습니다.', false);
+            } finally {
+                // 버튼 활성화
+                sendButton.disabled = false;
+                messageInput.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        // 페이지 로드 시 포커스
+        window.addEventListener('load', () => {
+            messageInput.focus();
+        });
+    </script>
+</body>
+</html>
