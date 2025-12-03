@@ -10,6 +10,8 @@ import com.example.demo.common.user.dao.UserDao;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+// 사용자 서비스
+// 사용자 관련 비즈니스 로직을 처리합니다.
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -17,21 +19,25 @@ public class UserService {
     
     private final UserDao userDao;
     
+    // 사용자 생성
     public void createUser(User user) {
         log.info("사용자 생성: email={}", user.getEmail());
         userDao.insertUser(user);
     }
     
+    // 사용자 ID로 조회
     public User getUserById(Long id) {
         log.info("사용자 조회: id={}", id);
         return userDao.selectUserById(id);
     }
     
+    // 전체 사용자 목록 조회
     public List<User> getAllUsers() {
         log.info("전체 사용자 조회");
         return userDao.selectAllUsers();
     }
     
+    // 사용자 정보 수정
     public boolean updateUserById(Long id, User user) {
         User existing = userDao.selectUserById(id);
         if (existing == null) {
@@ -44,6 +50,7 @@ public class UserService {
         return true;
     }
     
+    // 사용자 삭제
     public boolean deleteUserById(Long id) {
         User existing = userDao.selectUserById(id);
         if (existing == null) {
@@ -55,6 +62,7 @@ public class UserService {
         return true;
     }
     
+    // 이메일로 사용자 조회
     public User getUserByEmail(String email) {
         return userDao.selectUserByEmail(email);
     }
