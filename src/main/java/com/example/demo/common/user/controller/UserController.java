@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.common.dto.user.User;
+import com.example.demo.common.global.annotation.NoWrap;
 import com.example.demo.common.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class UserController {
     private final UserService userService;
     
     // For chat.html - simple /users endpoint
+    @NoWrap
     @GetMapping("/users")
     public ResponseEntity<List<User>> getUsers() {
         try {
