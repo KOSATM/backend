@@ -6,12 +6,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.common.chat.intent.dto.IntentCommand;
+import com.example.demo.common.chat.intent.dto.request.IntentRequest;
+import com.example.demo.common.chat.pipeline.DefaultChatPipeline;
 import com.example.demo.planner.plan.agent.PlaceSuggestAgent;
 import com.example.demo.planner.plan.service.PlanService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 
 @RestController
 @RequiredArgsConstructor
@@ -20,6 +22,8 @@ public class PlanController {
   private final PlanService planService;
 
   private final PlaceSuggestAgent placeSuggestAgent;
+
+  private final DefaultChatPipeline defaultChatPipeline;
 
   @GetMapping("/snapshot/search")
   public String snapshotSearch(@RequestBody String snapshot) {
@@ -31,14 +35,22 @@ public class PlanController {
     }
   }
 
-  @PostMapping("/suggest-spot")
-  public String suggestSpot(@RequestParam("question") String question) {
-    try {
-      String response = placeSuggestAgent.getPlacesFromDB(question);
-      return response;
-    } catch (Exception e) {
-      return "에러";
-    }
+  // @PostMapping("/suggest-spot")
+  // public String suggestSpot(@RequestParam("question") String question) {
+  // try {
+  // IntentCommand intentCommand
+  // String response = placeSuggestAgent.execute(question);
+  // return response;
+  // } catch (Exception e) {
+  // return "에러";
+  // }
+  // }
+
+  @PostMapping("/test")
+  public String test(String question) {
+    IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").userMessage(question).build();
+
+    return defaultChatPipeline.execute(intentRequest).getMainResponse().getMessage().toString();
   }
-  
+
 }

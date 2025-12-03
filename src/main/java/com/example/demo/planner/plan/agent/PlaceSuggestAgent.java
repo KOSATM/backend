@@ -12,11 +12,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import com.example.demo.common.chat.intent.dto.IntentCommand;
+import com.example.demo.common.chat.pipeline.AiAgentResponse;
+import com.example.demo.common.global.agent.AiAgent;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
-public class PlaceSuggestAgent {
+public class PlaceSuggestAgent implements AiAgent {
   private ChatClient chatClient;
 
   @Autowired
@@ -29,8 +33,15 @@ public class PlaceSuggestAgent {
     this.chatClient = chatClientBuilder.build();
   }
 
-  public String getPlacesFromDB(String question) {
-    log.info(question);
+  @Override
+  public AiAgentResponse execute(IntentCommand command) {
+    long start = System.nanoTime();
+    log.info(command.toString());
+    StringBuilder sb = new StringBuilder();
+    for (Object value : command.getArguments().values()) {
+      sb.append((String) value);
+    }
+    String question = sb.toString();
     String answer = this.chatClient.prompt()
         .system("""
             당신은 여행 전문가입니다.
@@ -52,12 +63,16 @@ public class PlaceSuggestAgent {
         .tools(new DBSearchTools())
         .call()
         .content();
-    return answer;
+    AiAgentResponse response = AiAgentResponse.builder().message(answer).build();
+    long end = System.nanoTime();
+    log.info("실행시간: {}", (end - start) / 1000000);
+    return response;
   }
 
   class DBSearchTools {
-    @Tool(description = "자료를 찾기 위해 DB를 조회합니다")
+    @Tool(description = "자료를 찾기 위해 DB를 조회합니다", returnDirect = true)
     public Object dbSearch(String query) {
+      long start = System.nanoTime();
       log.info(query);
       float[] vector = getQueryVector(query);
       String strVector = Arrays.toString(vector).replace(" ", "");
@@ -68,7 +83,7 @@ public class PlaceSuggestAgent {
           LIMIT 10
           """;
       List<Map<String, Object>> res = jdbcTemplate.queryForList(sql, strVector, strVector);
-      for (Map<String, Object> map: res) {
+      for (Map<String, Object> map : res) {
         String title = (String) map.get("title");
         Double distance = (Double) map.get("distance");
         log.info("장소: {}, 거리: {}", title, distance);
@@ -78,11 +93,16 @@ public class PlaceSuggestAgent {
         return "해당 키워드와 관련된 검색 결과가 없습니다.";
       }
       // log.info("res: {}", res.toString());
+      long end = System.nanoTime();
+      log.info("실행시간: {}", (end - start) / 1000000);
       return res;
     }
 
     private float[] getQueryVector(String query) {
+      long start = System.nanoTime();
       EmbeddingResponse response = embeddingModel.embedForResponse(List.of(query));
+      long end = System.nanoTime();
+      log.info("실행시간: {}", (end - start) / 1000000);
       return response.getResult().getOutput();
     }
   }
