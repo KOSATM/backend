@@ -15,6 +15,8 @@ import com.example.demo.planner.plan.dao.PlanSnapshotDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.planner.plan.dto.response.PlanDayWithPlaces;
+import com.example.demo.planner.plan.dto.response.PlanDetail;
 import com.example.demo.planner.plan.dto.response.PlanSnapshotContent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -110,6 +112,52 @@ public class PlanService {
 
     log.info("샘플 데이터 포함 여행 계획 생성 완료: planId={}, 총 {}일, {}개 장소", planId, days, days * 2);
     return plan;
+  }
+
+  /**
+   * Plan 단건 조회
+   */
+  public Plan findById(Long planId) {
+    return planDao.selectPlanById(planId);
+  }
+
+  /**
+   * 사용자별 Plan 목록 조회
+   */
+  public java.util.List<Plan> findByUserId(Long userId) {
+    return planDao.selectPlansByUserId(userId);
+  }
+
+  /**
+   * Plan 상세 조회 (Days + Places 포함)
+   * Plan -> List<PlanDayWithPlaces> 중첩 구조
+   */
+  public PlanDetail getPlanDetail(Long planId) {
+    log.info("Plan 상세 조회 시작: planId={}", planId);
+    
+    // 1. Plan 조회
+    Plan plan = planDao.selectPlanById(planId);
+    if (plan == null) {
+      log.warn("Plan을 찾을 수 없음: planId={}", planId);
+      return null;
+    }
+
+    // 2. Plan의 모든 Day 조회
+    java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
+    
+    // 3. 각 Day의 Places를 조회하여 PlanDayWithPlaces 생성
+    java.util.List<PlanDayWithPlaces> daysWithPlaces = days.stream()
+        .map(day -> {
+          java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+          return new PlanDayWithPlaces(day, places);
+        })
+        .collect(java.util.stream.Collectors.toList());
+
+    log.info("Plan 상세 조회 완료: planId={}, days={}, 총 places={}", 
+        planId, daysWithPlaces.size(), 
+        daysWithPlaces.stream().mapToInt(d -> d.getPlaces().size()).sum());
+
+    return new PlanDetail(plan, daysWithPlaces);
   }
 
 }
