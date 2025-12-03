@@ -7,6 +7,7 @@
     <resultMap id="TravelDayMap" type="com.example.demo.supporter.checklist.dto.response.TravelDayResponse">
         <id column="day_id" property="dayId" />
         <result column="plan_id" property="planId" />
+        <result column="user_id" property="userId" />
         <result column="day_index" property="dayIndex" />
         <result column="day_title" property="dayTitle" />
         <result column="plan_date" property="planDate" />
@@ -27,6 +28,7 @@
         SELECT
             d.id           AS day_id,
             d.plan_id,
+            pl.user_id,
             d.day_index,
             d.title        AS day_title,
             d.plan_date,
@@ -40,6 +42,7 @@
             p.lng,
             p.expected_cost
         FROM plan_days d
+        LEFT JOIN plans pl ON d.plan_id = pl.id
         LEFT JOIN plan_places p ON p.day_id = d.id
         WHERE d.plan_id = #{planId} AND d.day_index = #{dayIndex}
         ORDER BY p.start_at, p.id

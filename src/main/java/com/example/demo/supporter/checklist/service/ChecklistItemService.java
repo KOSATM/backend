@@ -13,26 +13,26 @@ public class ChecklistItemService {
     private final ChecklistItemDao dao;
 
     public ChecklistItem get(Long id) {
-        return dao.selectById(id);
+        return dao.selectChecklistItemById(id);
     }
 
-    public List<ChecklistItem> getAll() {
-        return dao.selectAll();
+    public List<ChecklistItem> getAll(Long checklistId) {
+        return dao.selectChecklistItemsByChecklistId(checklistId);
     }
 
     @Transactional
     public Long create(ChecklistItem item) {
-        dao.insert(item);
+        dao.insertChecklistItem(item);
         return item.getId();
     }
 
     @Transactional
     public int update(ChecklistItem item) {
-        return dao.update(item);
+        return dao.updateChecklistItem(item);
     }
 
     @Transactional
     public int delete(Long id) {
-        return dao.delete(id);
+        return dao.deleteChecklistItem(id);
     }
 }

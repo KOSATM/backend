@@ -19,9 +19,9 @@ public class ChecklistItemController {
         return ResponseEntity.ok(service.get(id));
     }
 
-    @GetMapping
-    public ResponseEntity<List<ChecklistItem>> list() {
-        return ResponseEntity.ok(service.getAll());
+    @GetMapping("/checklist/{checklistId}")
+    public ResponseEntity<List<ChecklistItem>> list(@PathVariable Long checklistId) {
+        return ResponseEntity.ok(service.getAll(checklistId));
     }
 
     @PostMapping
