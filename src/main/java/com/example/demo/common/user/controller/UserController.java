@@ -20,10 +20,8 @@ import com.example.demo.common.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * 사용자 관리 컨트롤러
- * 사용자 CRUD 및 조회 기능을 제공합니다.
- */
+// 사용자 관리 컨트롤러
+// 사용자 CRUD 및 조회 기능을 제공합니다.
 @RestController
 @RequiredArgsConstructor
 @Slf4j
@@ -31,10 +29,7 @@ public class UserController {
 
     private final UserService userService;
 
-    /**
-     * 사용자 목록 조회 (chat.html용 - 응답 래핑 제외)
-     * @return 사용자 목록
-     */
+    // 사용자 목록 조회 (chat.html용 - 응답 래핑 제외)
     @NoWrap
     @GetMapping("/users")
     public ResponseEntity<List<User>> getUsers() {
@@ -47,11 +42,7 @@ public class UserController {
         }
     }
 
-    /**
-     * 사용자 생성
-     * @param user 생성할 사용자 정보
-     * @return 생성된 사용자 정보
-     */
+    // 사용자 생성
     @PostMapping("/api/users")
     public ResponseEntity<User> createUser(@RequestBody User user) {
         try {
@@ -64,11 +55,7 @@ public class UserController {
         }
     }
 
-    /**
-     * 사용자 단건 조회
-     * @param id 조회할 사용자 ID
-     * @return 사용자 정보
-     */
+    // 사용자 단건 조회
     @GetMapping("/api/users/{id}")
     public ResponseEntity<User> getUser(@PathVariable Long id) {
         try {
@@ -83,10 +70,7 @@ public class UserController {
         }
     }
 
-    /**
-     * 전체 사용자 목록 조회 (응답 래핑 포함)
-     * @return 전체 사용자 목록
-     */
+    // 전체 사용자 목록 조회 (응답 래핑 포함)
     @GetMapping("/api/users")
     public ResponseEntity<List<User>> getAllUsers() {
         try {
@@ -98,12 +82,7 @@ public class UserController {
         }
     }
 
-    /**
-     * 사용자 정보 수정
-     * @param id 수정할 사용자 ID
-     * @param user 수정할 사용자 정보
-     * @return 성공 시 200, 사용자 없으면 404
-     */
+    // 사용자 정보 수정
     @PutMapping("/api/users/{id}")
     public ResponseEntity<Void> updateUser(@PathVariable Long id, @RequestBody User user) {
         try {
@@ -118,11 +97,7 @@ public class UserController {
         }
     }
 
-    /**
-     * 사용자 삭제
-     * @param id 삭제할 사용자 ID
-     * @return 성공 시 204, 사용자 없으면 404
-     */
+    // 사용자 삭제
     @DeleteMapping("/api/users/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         try {
