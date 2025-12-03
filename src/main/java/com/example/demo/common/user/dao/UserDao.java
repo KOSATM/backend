@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
 
-import com.example.demo.common.dto.user.User;
+import com.example.demo.common.user.dto.User;
 
 // 사용자 데이터 접근 객체 (DAO)
 // MyBatis를 통한 사용자 데이터베이스 작업을 처리합니다.
@@ -25,6 +25,9 @@ public interface UserDao {
 
     // 사용자 삭제
     void deleteUser(Long id);
+
+    // 사용자 비활성화 (소프트 삭제)
+    void deactivateUser(Long id);
 
     // 이메일로 사용자 조회
     User selectUserByEmail(String email);

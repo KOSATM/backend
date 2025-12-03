@@ -1,11 +1,10 @@
-package com.example.demo.common.dto.chat;
+package com.example.demo.common.chat.dto;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import lombok.Data;
 
 @Data
-public class ChatMemoryVector {
+public class ChatMemory {
     private Long id;
     private Long userId;
     private String agentName;
@@ -14,5 +13,4 @@ public class ChatMemoryVector {
     private Long tokenUsage;
     private OffsetDateTime createdAt;
     private String role;
-    private List<Double> embedding;
 }

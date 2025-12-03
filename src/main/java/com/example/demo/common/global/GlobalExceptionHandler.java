@@ -77,6 +77,23 @@ public class GlobalExceptionHandler {
                         ErrorResponse.of("METHOD_NOT_ALLOWED", "허용되지 않은 HTTP 메서드입니다.")));
     }
 
+    /* IllegalArgumentException 처리 (비즈니스 로직 에러) */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ResponseWrapper<?>> handleIllegalArgumentException(IllegalArgumentException e) {
+        log.warn("IllegalArgumentException: {}", e.getMessage());
+
+        // 에러 메시지에 따라 HTTP 상태 코드 결정
+        HttpStatus status = e.getMessage().contains("이미 등록된") 
+            ? HttpStatus.CONFLICT 
+            : HttpStatus.NOT_FOUND;
+
+        return ResponseEntity
+                .status(status)
+                .body(ResponseWrapper.error(
+                        status,
+                        ErrorResponse.of("BUSINESS_ERROR", e.getMessage())));
+    }
+
     /* 예상하지 못한 모든 예외 처리 */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ResponseWrapper<?>> handleException(Exception e) {
