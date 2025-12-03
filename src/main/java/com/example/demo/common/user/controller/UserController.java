@@ -24,9 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class UserController {
-    
+
     private final UserService userService;
-    
+
     // For chat.html - simple /users endpoint
     @NoWrap
     @GetMapping("/users")
@@ -39,7 +39,7 @@ public class UserController {
             return ResponseEntity.internalServerError().build();
         }
     }
-    
+
     // REST API endpoints
     @PostMapping("/api/users")
     public ResponseEntity<User> createUser(@RequestBody User user) {
@@ -52,7 +52,7 @@ public class UserController {
             return ResponseEntity.internalServerError().build();
         }
     }
-    
+
     @GetMapping("/api/users/{id}")
     public ResponseEntity<User> getUser(@PathVariable Long id) {
         try {
@@ -66,7 +66,7 @@ public class UserController {
             return ResponseEntity.internalServerError().build();
         }
     }
-    
+
     @GetMapping("/api/users")
     public ResponseEntity<List<User>> getAllUsers() {
         try {
@@ -77,7 +77,7 @@ public class UserController {
             return ResponseEntity.internalServerError().build();
         }
     }
-    
+
     @PutMapping("/api/users/{id}")
     public ResponseEntity<Void> updateUser(@PathVariable Long id, @RequestBody User user) {
         try {
@@ -91,7 +91,7 @@ public class UserController {
             return ResponseEntity.internalServerError().build();
         }
     }
-    
+
     @DeleteMapping("/api/users/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         try {
