@@ -53,27 +53,35 @@ public class ImageSearchAgent {
   }
 
   // 메인 함수
-  public void searchImagePlace(String placeType, byte[] bytes, String contentType, String address) {
+  public List<PlaceCandidate> searchImagePlace(String placeType, byte[] bytes, String contentType, String address) {
 
-    // String result = internetSearchTool.googleSearch("경복궁 서울");
-    // log.info(result);
-    // String response = analyzeImage(placeType, contentType, bytes);
-    // generateCandidates(response.toString(), placeType, address);
-    String response = """
-        [
-          {
-            \"address\": \"서울 종로구 사직로 161\",
-            \"name\": \"경복궁\",
-            \"type\": \"poi\",
-            \"location\": \"서울 종로구\",
-            \"visualFeatures\": \"조선 시대의 궁궐, 아름다운 건축물\",
-            \"similarity\": 0.95,
-            \"confidence\": 0.9
-          }
-        ]""";
-    List<PlaceCandidate> candidates = parseJsonToList(response, new TypeReference<List<PlaceCandidate>>() {
-    });
-    log.info(candidates.toString());
+    /*
+     * search test용
+     * String result = internetSearchTool.googleSearch("경복궁 서울");
+     * log.info(result);
+     */
+    /*
+     * test 용
+     * String response = """
+     * [
+     * {
+     * \"address\": \"서울 종로구 사직로 161\",
+     * \"name\": \"경복궁\",
+     * \"type\": \"poi\",
+     * \"location\": \"서울 종로구\",
+     * \"visualFeatures\": \"조선 시대의 궁궐, 아름다운 건축물\",
+     * \"similarity\": 0.95,
+     * \"confidence\": 0.9
+     * }
+     * ]""";
+     * List<PlaceCandidate> candidates = parseJsonToList(response, new
+     * TypeReference<List<PlaceCandidate>>() {
+     * });
+     * log.info(candidates.toString());
+     */
+    String response = analyzeImage(placeType, contentType, bytes);
+    List<PlaceCandidate> candidates = generateCandidates(response.toString(), placeType, address);
+    return candidates;
   }
 
   // 1단계: 이미지 분석 (요소 추출, type 지정, confidence 평가)
@@ -142,63 +150,76 @@ public class ImageSearchAgent {
     log.info("1단계 AI 응답: {}", response);
 
     return response;
-
-    // List<ImageFeature> imageFeatures = parseJsonToList(response, new
-    // TypeReference<List<ImageFeature>>() {
-    // });
-    // log.info(imageFeatures.toString());
-    // return Mono.just(imageFeatures);
   }
 
   // 2단계: 후보 5개 생성
-  public List<PlaceCandidate> generateCandidates(String placeFeatures, String placeType, String address) {
+  public List<PlaceCandidate> generateCandidates(String llmResponse, String placeType, String address) {
+    // poi인지 category인지 판단
 
+    List<PlaceCandidate> candidates;
+
+    if (llmResponse.indexOf("poi") != -1) {
+      candidates = generatePoiCandidates(llmResponse, placeType, address);
+    } else {
+      // category인 경우
+      candidates = generateCategoryCandidates(llmResponse, placeType, address);
+    }
+    return candidates;
+  }
+
+  public List<PlaceCandidate> generatePoiCandidates(String llmResponse, String placeType, String address) {
     // 시스템 입력
     String systemText = """
         당신은 이미지 기반 장소 추천 전문가입니다.
 
         ## 역할
-        - Step1 features를 기반으로 googleSearch 도구를 사용해 실제 존재하는 장소만 후보로 생성합니다.
-        - 장소명(name)은 반드시 googleSearch 결과에서만 가져옵니다.
-        - 임의 장소명, 임의 주소, 임의 location 생성은 절대 금지합니다.
-        - feature 1개당 1개의 후보만 생성하며, 최종 5개까지만 반환합니다.
+        - Step1 features(type="poi")를 기반으로 googleSearch 도구를 사용해 실제 존재하는 장소만 후보로 생성합니다.
+        - 장소명(name), address, location은 반드시 googleSearch 결과에서만 가져오며 임의 생성 금지.
+        - POI는 feature 1개당 메인 1개 + 확장 최대 2개 후보 생성 가능, 전체 후보는 최대 5개.
+        - Step1에서 도출된 POI 명(예: "경복궁")은 최우선 존중.
 
-        ## 검색 규칙
-        - POI(type="poi"):
-          - 1차 검색어: "<요소명> 서울"
-          - 검색 결과 없으면 visualFeatures 핵심 단어로 1회 추가 검색
-          - 총 검색 횟수는 feature당 최대 2회
+        ## 공통 규칙
+        - 검색 결과에서 name 또는 address가 없으면 후보 제외.
+        - 검색어 그대로 name에 넣거나 title/snippet을 조합하여 이름 생성 금지.
+        - 검색어와 반환된 name이 동일하면 검색 실패로 간주.
+        - 이미 선택된 장소는 중복 사용 금지.
+        - similarity/confidence는 Step1 feature와의 연관성 및 검색 품질 기준.
 
-        - Category(type="category"):
-          - 검색어: "<사용자 주소 지역명> <요소명>"
-          - 검색 결과 없으면 해당 feature는 후보 제외
+        ## 대체 규칙(Fallback)
+        - googleSearch 도구 응답이 "인터넷 검색 중 오류 발생"으로 시작하면
+          즉시 검색 중단 후 visualFeatures에 "인터넷 검색 실패" 포함 단일 JSON 출력.
 
-        ## 후보 생성 규칙
-        - googleSearch 결과에서 name과 address가 모두 존재하는 첫 번째 유효 장소만 후보로 사용합니다.
-        - “검색어 그대로” name에 넣거나, result.title/result.snippet을 조합해 새 이름을 만드는 행위 금지.
-        - 검색어와 후보 name이 동일하면 → **검색 실패로 간주**하고 그 feature는 제외합니다.
-        - Step1의 type(poi/category)은 그대로 유지하며 재분류 금지.
-        - 이미 선택된 장소는 중복 후보로 사용 불가.
+        --------------------------------------------
+        ## POI 처리 규칙
 
-        ## 대체 규칙 (Fallback Rule)
-        - 만약 googleSearch 도구 호출 결과가 "인터넷 검색 중 오류 발생"으로 시작하면 인터넷 검색이 불가능한 상태이므로,
-        - `visualFeatures` 필드에 "인터넷 검색 실패" 라는 문구만 넣고, 호출을 멈추세요
+        ### 1) 메인 후보 생성
+        - 검색어: "서울 <요소명>"
+        - googleSearch 결과 중 name+address 존재하는 첫 번째 실제 장소 사용.
 
-        ## 출력 규칙
-        - similarity: Step1 feature와 장소의 연관성을 기준으로 high/medium/low 중 선택
-        - confidence: 0.0~1.0 (googleSearch 결과 품질 기반 추정)
-        - 최종 결과는 JSON 배열만 출력하며, 설명 문구는 절대 포함 금지
+        ### 2) visualFeatures 기반 확장 후보 생성 (최대 2개)
+        - 핵심 단어는 POI의 장소성을 반영:
+          예) 경복궁 → 궁궐 / 전통 건축, 청계천 → 하천 / 도심 하천, 롯데타워 → 전망대 / 초고층 빌딩
+        - 야경, 조명, 사람, 건물들 등 맥락·분위기 단어 제외
+        - 검색어: "서울 <핵심단어>"
+        - 사용자 주소의 지역(구 기준) 근접 장소 우선 선택
+        - 메인 후보와 동일한 장소는 제외
 
+        ### 3) 최종 후보 구성
+        - 메인 후보 1개 + 확장 후보 최대 2개 = feature별 최대 3개
+        - 전체는 similarity/confidence 기준 상위 5개까지 출력
+
+        --------------------------------------------
         ## 출력 형식(JSON)
         [
           {
             "address": "주소",
             "name": "장소명",
-            "type": "poi | category",
+            "type": "poi",
             "location": "주소 또는 지역",
             "visualFeatures": "Step1 요소와의 관계",
             "similarity": "high | medium | low",
-            "confidence": 0.0~1.0
+            "confidence": 0.0~1.0,
+            "imageUrl": ""
           }
         ]
 
@@ -207,9 +228,96 @@ public class ImageSearchAgent {
         - placeType: %s
         - address: "%s"
 
-        위 정보를 바탕으로 필요한 googleSearch 도구 호출을 수행하고,
-        조건을 충족하는 실제 장소만 JSON 배열로 출력하세요.
-                                        """;
+        위 정보를 기반으로 googleSearch 도구 호출 후 실제 장소 후보만 JSON 배열로 출력하세요.
+        """;
+
+    // 사용자 입력
+    String userText = String.format("""
+        {
+          "step1Result" : %s,
+          "placeType" : %s,
+          "address" : "%s",
+          "instruction": "반드시 googleSearch 도구를 사용해서 실제 장소만 추천하세요."
+        }
+          """, llmResponse, placeType, address);
+
+    String response = chatClient.prompt()
+        .system(systemText)
+        .user(userText)
+        .tools(internetSearchTool)
+        .call()
+        .content();
+
+    log.info("2단계 AI 응답: {}", response);
+    // 2단계를 어떤 형식으로 보내줄 건지 생각
+
+    /*
+     * .class만 쓰면 안 되는 이유 : 리스트 타입만 알려줌
+     * 내부 객체가 무엇인지는 정보가 없음 -> Jackson은 기본적으로 Map으로 넣음
+     * TypeReference<List<PlaceCandidate>>() {}는 익명 서브클래스를 만들어서
+     * jackson에게 런타임에도 제네릭 타입 정보를 제공
+     */
+
+    List<PlaceCandidate> candidates = parseJsonToList(response, new TypeReference<List<PlaceCandidate>>() {
+    });
+    log.info(candidates.toString());
+
+    return candidates;
+  }
+
+  public List<PlaceCandidate> generateCategoryCandidates(String placeFeatures, String placeType, String address) {
+    // 시스템 입력
+    String systemText = """
+        당신은 이미지 기반 장소 추천 전문가입니다.
+
+        ## 역할
+        - Step1 features(type="category")를 기반으로 googleSearch 도구를 사용해 실제 존재하는 장소만 후보로 생성합니다.
+        - 장소명(name), address, location은 반드시 googleSearch 결과에서만 가져오며 임의 생성 금지.
+        - feature 1개당 최대 1개의 후보를 원칙으로 하되, Step1 결과 feature가 하나뿐인 경우
+          동일 feature를 기반으로 최대 3개 후보 생성 가능.
+        - 전체 최종 후보 수는 최대 5개.
+
+        ## 공통 규칙
+        - 검색 결과에서 name 또는 address가 없으면 후보 제외.
+        - 검색어 그대로 name 삽입 금지.
+        - 검색어와 반환된 name이 동일하면 검색 실패.
+        - 이미 선택한 장소는 중복 배제.
+        - Step1 type(category) 유지.
+        - similarity/confidence는 Step1 feature와 검색 결과의 연관성 기준.
+
+        ## 대체 규칙(Fallback)
+        - googleSearch 도구 호출 결과가 "인터넷 검색 중 오류 발생"으로 시작하면
+          즉시 검색 중단 후 visualFeatures 필드에 "인터넷 검색 실패" 문구만 포함한 단일 JSON 결과 출력.
+
+        --------------------------------------------
+        ## Category 처리 규칙
+        - 검색어: "<사용자 주소 지역명> <요소명>"
+        - googleSearch 결과 중 name+address 존재하는 첫 번째 장소 선택
+        - 검색 결과 없으면 해당 feature는 후보 제외
+        - Step1 feature가 하나만 존재하면, 동일 feature로 추가 후보 최대 3개 선택 가능
+
+        --------------------------------------------
+        ## 출력 형식(JSON)
+        [
+          {
+            "address": "주소",
+            "name": "장소명",
+            "type": "category",
+            "location": "주소 또는 지역",
+            "visualFeatures": "Step1 요소와의 관계",
+            "similarity": "high | medium | low",
+            "confidence": 0.0~1.0,
+            "imageUrl": ""
+          }
+        ]
+
+        ## 사용자 입력
+        - step1Result: %s
+        - placeType: %s
+        - address: "%s"
+
+        위 정보를 기반으로 googleSearch 도구를 사용해 후보를 생성하고 JSON 배열로 출력하세요.
+        """;
 
     // 사용자 입력
     String userText = String.format("""
@@ -242,14 +350,10 @@ public class ImageSearchAgent {
     });
     log.info(candidates.toString());
 
-    return null;
+    return candidates;
   }
 
-  // 3단계: RAG 검증 (poi만 해당)
-  public String verifyCandidatesWithRAG(String response) {
-    return null;
-  }
-
+  // json -> list<dto>로 변환해주는 메서드
   public <T> List<T> parseJsonToList(String jsonResponse, TypeReference<List<T>> typeReference) {
 
     // 빈 값 처리
@@ -258,12 +362,29 @@ public class ImageSearchAgent {
       return Collections.emptyList();
     }
 
+    String cleanedJson = jsonResponse.trim();
+    if (cleanedJson.startsWith("```json")) {
+      cleanedJson = cleanedJson.substring(7); // "```json" 제거
+    }
+    if (cleanedJson.startsWith("```")) {
+      cleanedJson = cleanedJson.substring(3); // "```" 제거
+    }
+    if (cleanedJson.endsWith("```")) {
+      cleanedJson = cleanedJson.substring(0, cleanedJson.length() - 3);
+    }
+    cleanedJson = cleanedJson.trim(); // 앞뒤 공백 최종 제거
+
+    if (cleanedJson.isEmpty() || cleanedJson.equals("[]")) {
+      return Collections.emptyList();
+    }
+
+    // 정제된 JSON 문자열을 사용
     try {
-      JsonNode rootNode = objectMapper.readTree(jsonResponse);
+      JsonNode rootNode = objectMapper.readTree(cleanedJson);
 
       // 배열인지 확인
       if (!rootNode.isArray()) {
-        log.warn("예상된 JSON 배열 형식이 아닙니다: {}", jsonResponse);
+        log.warn("예상된 JSON 배열 형식이 아닙니다: {}", cleanedJson);
         return Collections.emptyList();
       }
 
@@ -282,9 +403,7 @@ public class ImageSearchAgent {
           log.warn("DTO 유효성 검증 실패. 객체: {}, 위반: {}", item, violations);
         }
       }
-
       return validList;
-
     } catch (Exception e) {
       log.error("JSON 파싱 실패: {}", jsonResponse, e);
       return Collections.emptyList();

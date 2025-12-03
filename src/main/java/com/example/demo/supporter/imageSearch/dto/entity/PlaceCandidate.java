@@ -17,8 +17,10 @@ public class PlaceCandidate {
     private String location;
     @NotBlank
     private String visualFeatures; //step1 요소와 관련된 특징
-    @NotNull
-    private double similarity;
+    @NotBlank
+    private String similarity;
     @NotNull
     private double confidence;
+    // @NotBlank
+    private String imageUrl;
 }
