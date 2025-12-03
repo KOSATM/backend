@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.supporter.checklist.agent.ChecklistAgent;
@@ -35,9 +36,9 @@ public class ChecklistController {
         return ResponseEntity.ok(service.get(id));
     }
 
-    @GetMapping
-    public ResponseEntity<List<Checklist>> list() {
-        return ResponseEntity.ok(service.getAll());
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Checklist>> list(@PathVariable Long userId) {
+        return ResponseEntity.ok(service.getAll(userId));
     }
 
     @PostMapping
@@ -66,7 +67,8 @@ public class ChecklistController {
     @GetMapping("/checklist/{planId}/{dayIndex}")
     public ResponseEntity<ChecklistItemResponse> generateChecklist(
             @PathVariable("planId") Long planId,
-            @PathVariable("dayIndex") Integer dayIndex) {
-        return ResponseEntity.ok(checklistAgent.generateChecklist(planId, dayIndex));
+            @PathVariable("dayIndex") Integer dayIndex,
+            @RequestParam(value = "userId", required = false) Long userId) {
+        return ResponseEntity.ok(checklistAgent.generateChecklist(planId, dayIndex, userId));
     }
 }

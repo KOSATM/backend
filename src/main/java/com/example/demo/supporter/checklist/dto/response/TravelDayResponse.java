@@ -10,6 +10,7 @@ import lombok.Data;
 public class TravelDayResponse {
     private Long dayId;
     private Long planId;
+    private Long userId;
     private Integer dayIndex;
     private String dayTitle;
     private LocalDate planDate;
