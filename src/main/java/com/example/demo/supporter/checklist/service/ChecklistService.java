@@ -1,5 +1,6 @@
 package com.example.demo.supporter.checklist.service;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,26 +14,27 @@ public class ChecklistService {
     private final ChecklistDao dao;
 
     public Checklist get(Long id) {
-        return dao.selectById(id);
+        return dao.selectChecklistById(id);
     }
 
-    public List<Checklist> getAll() {
-        return dao.selectAll();
+    public List<Checklist> getAll(Long userId) {
+        return dao.selectChecklistsByUserId(userId);
     }
 
     @Transactional
     public Long create(Checklist c) {
-        dao.insert(c);
+        c.setCreatedAt(OffsetDateTime.now());
+        dao.insertChecklist(c);
         return c.getId();
     }
 
     @Transactional
     public int update(Checklist c) {
-        return dao.update(c);
+        return dao.updateChecklist(c);
     }
 
     @Transactional
     public int delete(Long id) {
-        return dao.delete(id);
+        return dao.deleteChecklist(id);
     }
 }

@@ -1,9 +1,12 @@
 package com.example.demo.supporter.checklist.dto.entity;
 
 import java.time.OffsetDateTime;
+
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 public class ChecklistItem {
     private Long id; //PK
     private Long checklistId; //FK
