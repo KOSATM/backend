@@ -7,9 +7,18 @@
 - **API Prefix**: `/api/plans`
 
 ## 사전 준비
-1. 애플리케이션을 실행합니다 (`./gradlew bootRun` 또는 IDE에서 실행)
-2. 서버가 8080 포트에서 실행 중인지 확인합니다
-3. PostgreSQL 데이터베이스가 연결되어 있는지 확인합니다
+1. PostgreSQL 데이터베이스가 실행 중이고 연결 가능한지 확인합니다
+   - `application.properties`에 설정된 데이터베이스에 연결할 수 있어야 합니다
+   - 필요한 테이블들(plan, plan_day, plan_place)이 생성되어 있어야 합니다
+2. 환경 변수가 설정되어 있는지 확인합니다
+   - `OPENAI_API_KEY`: OpenAI API 키 (필요시)
+   - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`: AWS 자격증명 (필요시)
+3. 애플리케이션을 실행합니다
+   ```bash
+   ./gradlew bootRun
+   ```
+   또는 IDE에서 `DemoApplication` 클래스를 실행합니다
+4. 서버가 8080 포트에서 정상적으로 실행되었는지 로그를 확인합니다
 
 ---
 
@@ -450,10 +459,34 @@ GET http://localhost:8080/plans/1 → 404
 
 ---
 
+## 자동화된 테스트
+
+Postman으로 수동 테스트하는 대신, 자동화된 통합 테스트를 실행할 수도 있습니다:
+
+```bash
+./gradlew test --tests PlanControllerIntegrationTest
+```
+
+통합 테스트 파일은 다음 위치에 있습니다:
+- `/src/test/java/com/example/demo/planner/plan/controller/PlanControllerIntegrationTest.java`
+
+이 테스트는 다음 항목들을 자동으로 검증합니다:
+- ✅ Plan 생성 (기본값 및 커스텀 파라미터)
+- ✅ Plan 단건 조회 (성공 및 404 케이스)
+- ✅ Plan 상세 조회 (Days와 Places 포함)
+- ✅ 사용자별 Plan 목록 조회
+- ✅ Plan 수정/삭제 미구현 확인 (501 응답)
+- ✅ 다양한 일수로 Plan 생성
+
+**주의**: 통합 테스트는 실제 데이터베이스를 사용하므로 데이터베이스가 연결되어 있어야 합니다.
+
+---
+
 ## 참고 정보
 
 - **Controller**: `/src/main/java/com/example/demo/planner/plan/controller/PlanController.java`
 - **Service**: `/src/main/java/com/example/demo/planner/plan/service/PlanService.java`
 - **Entity**: `/src/main/java/com/example/demo/planner/plan/dto/entity/Plan.java`
+- **Integration Test**: `/src/test/java/com/example/demo/planner/plan/controller/PlanControllerIntegrationTest.java`
 - **Server Port**: 8080 (application.properties)
 - **API Base Path**: `/api/plans`
