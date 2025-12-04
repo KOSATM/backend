@@ -1,5 +1,7 @@
 package com.example.demo.travelgram.review.service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -19,6 +21,9 @@ import com.example.demo.travelgram.review.dto.request.ReviewPhotoOrderUpdateRequ
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoUploadRequest;
 import com.example.demo.travelgram.review.dto.response.ReviewCreateResponse;
 import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +38,8 @@ public class ReviewService {
     private final ReviewPhotoDao reviewPhotoDao;
     private final ReviewPostDao reviewPostDao;
     private final ReviewHashtagDao reviewHashtagDao;
+
+    private final ObjectMapper objectMapper;
 
     // ======================================
     // 1) 리뷰 포스트 영역
@@ -52,22 +59,50 @@ public class ReviewService {
                 .reviewPostId(post.getId())
                 .build();
         ReviewHashtagGroup hashtagGroup = ReviewHashtagGroup.builder()
-            .reviewPostId(post.getId())
-            .build();
+                .reviewPostId(post.getId())
+                .build();
 
         // 4. DB insert -> group.id 자동 생성됨
         reviewPhotoDao.insertReviewPhotoGroup(photoGroup);
         reviewHashtagDao.insertHashtagGroup(hashtagGroup);
 
         // 결과 리턴
-        return new ReviewCreateResponse(post.getId(), photoGroup.getId(),hashtagGroup.getId());
+        return new ReviewCreateResponse(post.getId(), photoGroup.getId(), hashtagGroup.getId());
     }
 
     // ======================================
-    // 2) 사진 업로드/순서 영역
+    // 2) 사진 업로드 (JSON 파싱 로직 완전 삭제 버전)
     // ======================================
+    @Transactional
+    public List<ReviewPhotoUploadResponse> uploadPhotosBatch(
+            List<MultipartFile> files,
+            Long photoGroupId, // 👈 JSON 대신 그냥 받음
+            Integer startOrderIndex // 👈 JSON 대신 그냥 받음
+    ) {
 
-    public ReviewPhotoUploadResponse uploadPhoto(ReviewPhotoUploadRequest dto, MultipartFile file) {
+        // 1. 결과 담을 리스트
+        List<ReviewPhotoUploadResponse> results = new ArrayList<>();
+
+        // 2. 파일 리스트를 돌면서 순서대로 처리
+        for (int i = 0; i < files.size(); i++) {
+            MultipartFile file = files.get(i);
+
+            // ⭐ 핵심 로직: 순서는 (시작번호 + 현재 인덱스)로 자동 계산
+            int currentOrder = startOrderIndex + i;
+
+            // 3. 내부 메서드로 처리 위임
+            ReviewPhotoUploadResponse response = processSinglePhotoUpload(file, photoGroupId, currentOrder);
+            results.add(response);
+        }
+
+        return results;
+    }
+
+    // 내부 처리 메서드 (파라미터가 DTO에서 단순 변수들로 바뀜)
+    private ReviewPhotoUploadResponse processSinglePhotoUpload(
+            MultipartFile file,
+            Long photoGroupId,
+            int orderIndex) {
         // 1) 파일 비어있으면 예외 처리
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("file is empty");
@@ -101,8 +136,8 @@ public class ReviewService {
 
         // 5) DB에 저장할 엔티티 생성
         ReviewPhoto photo = ReviewPhoto.builder()
-                .photoGroupId(dto.getPhotoGroupId())
-                .orderIndex(dto.getOrderIndex())
+                .photoGroupId(photoGroupId)
+                .orderIndex(orderIndex)
                 .fileUrl(s3Url)
                 .build();
 
