@@ -1,6 +1,7 @@
 package com.example.demo.supporter.imageSearch.agent;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -14,12 +15,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
 
 import com.example.demo.common.tools.InternetSearchTool;
-import com.example.demo.supporter.imageSearch.dto.entity.PlaceCandidate;
+import com.example.demo.supporter.imageSearch.dto.response.PlaceCandidateResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.jsonwebtoken.lang.Collections;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.extern.slf4j.Slf4j;
@@ -53,7 +53,7 @@ public class ImageSearchAgent {
   }
 
   // 메인 함수
-  public List<PlaceCandidate> searchImagePlace(String placeType, byte[] bytes, String contentType, String address) {
+  public List<PlaceCandidateResponse> searchImagePlace(String placeType, byte[] bytes, String contentType, String address) {
 
     /*
      * search test용
@@ -80,7 +80,7 @@ public class ImageSearchAgent {
      * log.info(candidates.toString());
      */
     String response = analyzeImage(placeType, contentType, bytes);
-    List<PlaceCandidate> candidates = generateCandidates(response.toString(), placeType, address);
+    List<PlaceCandidateResponse> candidates = generateCandidates(response.toString(), placeType, address);
     return candidates;
   }
 
@@ -153,10 +153,10 @@ public class ImageSearchAgent {
   }
 
   // 2단계: 후보 5개 생성
-  public List<PlaceCandidate> generateCandidates(String llmResponse, String placeType, String address) {
+  public List<PlaceCandidateResponse> generateCandidates(String llmResponse, String placeType, String address) {
     // poi인지 category인지 판단
 
-    List<PlaceCandidate> candidates;
+    List<PlaceCandidateResponse> candidates;
 
     if (llmResponse.indexOf("poi") != -1) {
       candidates = generatePoiCandidates(llmResponse, placeType, address);
@@ -167,7 +167,7 @@ public class ImageSearchAgent {
     return candidates;
   }
 
-  public List<PlaceCandidate> generatePoiCandidates(String llmResponse, String placeType, String address) {
+  public List<PlaceCandidateResponse> generatePoiCandidates(String llmResponse, String placeType, String address) {
     // 시스템 입력
     String systemText = """
         당신은 이미지 기반 장소 추천 전문가입니다.
@@ -212,9 +212,11 @@ public class ImageSearchAgent {
         ## 출력 형식(JSON)
         [
           {
-            "address": "주소",
             "name": "장소명",
             "type": "poi",
+            "address": "주소",
+            "lat": 위도,
+            "lng": 경도,
             "location": "주소 또는 지역",
             "visualFeatures": "Step1 요소와의 관계",
             "similarity": "high | medium | low",
@@ -258,14 +260,14 @@ public class ImageSearchAgent {
      * jackson에게 런타임에도 제네릭 타입 정보를 제공
      */
 
-    List<PlaceCandidate> candidates = parseJsonToList(response, new TypeReference<List<PlaceCandidate>>() {
+    List<PlaceCandidateResponse> candidates = parseJsonToList(response, new TypeReference<List<PlaceCandidateResponse>>() {
     });
     log.info(candidates.toString());
 
     return candidates;
   }
 
-  public List<PlaceCandidate> generateCategoryCandidates(String placeFeatures, String placeType, String address) {
+  public List<PlaceCandidateResponse> generateCategoryCandidates(String placeFeatures, String placeType, String address) {
     // 시스템 입력
     String systemText = """
         당신은 이미지 기반 장소 추천 전문가입니다.
@@ -300,9 +302,11 @@ public class ImageSearchAgent {
         ## 출력 형식(JSON)
         [
           {
-            "address": "주소",
             "name": "장소명",
             "type": "category",
+            "address": "주소",
+            "lat": 위도,
+            "lng": 경도,
             "location": "주소 또는 지역",
             "visualFeatures": "Step1 요소와의 관계",
             "similarity": "high | medium | low",
@@ -346,7 +350,7 @@ public class ImageSearchAgent {
      * jackson에게 런타임에도 제네릭 타입 정보를 제공
      */
 
-    List<PlaceCandidate> candidates = parseJsonToList(response, new TypeReference<List<PlaceCandidate>>() {
+    List<PlaceCandidateResponse> candidates = parseJsonToList(response, new TypeReference<List<PlaceCandidateResponse>>() {
     });
     log.info(candidates.toString());
 
