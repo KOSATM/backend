@@ -1,6 +1,5 @@
 package com.example.demo.planner.travel.agent;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -12,15 +11,10 @@ import org.springframework.stereotype.Component;
 import com.example.demo.common.chat.intent.dto.IntentCommand;
 import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.common.global.agent.AiAgent;
-import com.example.demo.planner.travel.cluster.ClusterBundle;
-import com.example.demo.planner.travel.cluster.DbscanClusterer;
 import com.example.demo.planner.travel.dao.TravelDao;
-import com.example.demo.planner.travel.dto.response.ClusterResult;
-import com.example.demo.planner.travel.dto.response.DayPlanResult;
-import com.example.demo.planner.travel.dto.response.TravelPlaceSearchResult;
-import com.example.demo.planner.travel.service.ClusterService;
-import com.example.demo.planner.travel.service.TravelCategoryService;
-import com.example.demo.planner.travel.utils.CategoryUtils;
+import com.example.demo.planner.travel.dto.TravelPlaceCandidate;
+import com.example.demo.planner.travel.service.CategoryFillService;
+import com.example.demo.planner.travel.service.RegionService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,112 +26,67 @@ public class TravelPlannerAgent implements AiAgent {
         private final EmbeddingModel embeddingModel;
         private final SeedQueryAgent seedQueryAgent;
         private final DurationNormalizerAgent durationNormalizerAgent;
-        private final TravelCategoryService travelCategoryService;
         private final TravelDao travelDao;
-        private final ClusterService clusterService;
+        private final RegionService regionService;
+        private final CategoryFillService categoryFillService;
 
         public TravelPlannerAgent(ChatClient.Builder chatClientBuilder, EmbeddingModel embeddingModel,
                         SeedQueryAgent seedQueryAgent, DurationNormalizerAgent durationNormalizerAgent,
-                        TravelCategoryService travelCategoryService, TravelDao travelDao,
-                        ClusterService clusterService) {
+                        TravelDao travelDao, RegionService regionService, CategoryFillService categoryFillService) {
                 this.chatClient = chatClientBuilder.build();
                 this.embeddingModel = embeddingModel;
                 this.seedQueryAgent = seedQueryAgent;
                 this.durationNormalizerAgent = durationNormalizerAgent;
-                this.travelCategoryService = travelCategoryService;
                 this.travelDao = travelDao;
-                this.clusterService = clusterService;
+                this.regionService = regionService;
+                this.categoryFillService = categoryFillService;
         }
 
         @Override
         public AiAgentResponse execute(IntentCommand command) {
+                Map<String, Object> arguments = command.getArguments();
 
                 log.info("▷▷ 1. TravelPlannerAgent 실행");
-                Map<String, Object> arguments = command.getArguments();
+                log.info("▷▷ 2. DurationNormalizerAgent(정규화) 실행");
+                String normalized = durationNormalizerAgent.durationNormalized(arguments);
+                int duration = Integer.parseInt(normalized);
+                String location = (String) arguments.get("location");
+                log.info("duration: " + duration);
 
                 log.info("▷▷ 2. SeedQueryAgent() 실행");
                 String seedQuery = seedQueryAgent.generateSeedQuery(arguments);
                 log.info(">>" + seedQuery);
-                log.info("▷▷ 3. DurationNormalizerAgent(정규화) 실행");
-                String normalized = durationNormalizerAgent.durationNormalized(arguments);
-                int duration = Integer.parseInt(normalized);
-                log.info("duration: " + duration);
 
                 float[] embeddingSeedQuery = embeddingModel.embed(seedQuery);
-                log.info("▷▷ 4. 벡터 검색 실행");
-                List<TravelPlaceSearchResult> searchByVectorResults = travelDao.searchByVector(embeddingSeedQuery, 100);
+                log.info("▷▷ 4. 유사도 검색, 상위 50개 셔플");
+                List<TravelPlaceCandidate> initialCandidates = candidates(embeddingSeedQuery);
 
-                Collections.shuffle(searchByVectorResults.subList(0, Math.min(80, searchByVectorResults.size())));
-                searchByVectorResults = searchByVectorResults.subList(0, Math.min(60, searchByVectorResults.size()));
+                log.info("▷▷ 5. 지역 가중치 및 반경 필터링 후 여행지 압축(100->80)");
+                List<TravelPlaceCandidate> regionFilteredCandidates = regionService
+                                .applyRegionPreference(initialCandidates, location, duration);
 
-                log.info("▷▷ 5. 카테고리 그룹화 후 부족한 카테고리 보강");
-                Map<String, List<TravelPlaceSearchResult>> categorized = travelCategoryService.fill(arguments, duration,
-                                searchByVectorResults);
+                // categoryFillService.
 
-                log.info("▷▷ 6. 카테고리별 장소 클러스터링(군집화), 노이즈 장소 저장");
-                DbscanClusterer clusterer = new DbscanClusterer(0.8, 3);
-                List<TravelPlaceSearchResult> allPlaces = CategoryUtils.flatten(categorized);
-                ClusterBundle bundle = clusterer.cluster(allPlaces);
-                List<ClusterResult> clusters = bundle.clusters();
-                List<TravelPlaceSearchResult> noise = new ArrayList<>(bundle.noise());
-                // log.info(noise.toString());
+                // Collections.shuffle(searchByVectorResults.subList(0, Math.min(80,
+                // searchByVectorResults.size())));
+                // searchByVectorResults = searchByVectorResults.subList(0, Math.min(60,
+                // searchByVectorResults.size()));
 
-                log.info("▷▷ 7. 클러스터 정렬 수행");
-                clusterService.sortByScore(clusters);
-                List<ClusterResult> filterClusters = clusterService.filter(clusters);
-                List<TravelPlaceSearchResult> filteredOut = clusters.stream()
-                                .filter(c -> !filterClusters.contains(c))
-                                .flatMap(c -> c.getPlaces().stream())
-                                .toList();
-                noise.addAll(filteredOut);
-                clusterService.sortByDistance(filterClusters);
+                log.info("▷▷ 5. 카테고리 테스트 시작");
+                Map<String, List<TravelPlaceCandidate>> categoryMap = categoryFillService.fill(
+                                regionFilteredCandidates,
+                                3, // 예: Food min=3
+                                3 // 예: Spot min=3
+                );
 
-                debugClusters(filterClusters);
-
-                log.info("▷▷ 8. Day 분할");
-                List<DayPlanResult> dayPlans = clusterService.splitIntoDays(filterClusters, noise, duration);
-
-                debugDays(dayPlans);
-
-                String systemPrompt = """
-
-                                """;
-
-                log.info("▷▷ 9. TravelPlannerAgent 종료");
-                return AiAgentResponse.of("TravelPlannerAgent 실행 결과\n" + categorized.toString());
+                return AiAgentResponse.of("TravelPlannerAgent 실행 결과\n");
         }
 
-        private void debugClusters(List<ClusterResult> clusters) {
-                for (ClusterResult cluster : clusters) {
-                        log.info("=== Cluster #{} ===", cluster.getClusterNumber());
-                        for (TravelPlaceSearchResult r : cluster.getPlaces()) {
-                                log.info("{} / {} / {}",
-                                                r.getTravelPlaces().getTitle(),
-                                                r.getTravelPlaces().getAddress(),
-                                                r.getTravelPlaces().getNormalizedCategory());
-                        }
-                }
+        private List<TravelPlaceCandidate> candidates(float[] embeddingSeedQuery) {
+                List<TravelPlaceCandidate> candidates = travelDao.searchByVector(embeddingSeedQuery, 100);
+                int shuffleRange = Math.min(50, candidates.size());
+                Collections.shuffle(candidates.subList(0, shuffleRange));
+                return candidates;
         }
 
-        /**
-         * ClusterResult 사용
-         */
-        private void debugDays(List<DayPlanResult> dayPlans) {
-                for (DayPlanResult day : dayPlans) {
-                        log.info("========================================");
-                        log.info("============== Day {} ==============", day.getDayNumber());
-                        log.info("========================================");
-
-                        for (ClusterResult cluster : day.getClusters()) {
-                                log.info("  === Cluster {} ===", cluster.getClusterNumber());
-                                for (TravelPlaceSearchResult place : cluster.getPlaces()) {
-                                        log.info("    [{}] {} / {}",
-                                                        place.getTravelPlaces().getNormalizedCategory(),
-                                                        place.getTravelPlaces().getTitle(),
-                                                        place.getTravelPlaces().getAddress());
-                                }
-                        }
-                        log.info("");
-                }
-        }
 }

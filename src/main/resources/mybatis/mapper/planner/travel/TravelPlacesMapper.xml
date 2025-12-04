@@ -22,7 +22,7 @@
   </resultMap>
 
   <!-- 기본 컬럼 매핑 -->
-  <resultMap id="TravelPlaceSearchResultMap" type="com.example.demo.planner.travel.dto.response.TravelPlaceSearchResult">
+  <resultMap id="TravelPlaceSearchResultMap" type="com.example.demo.planner.travel.dto.TravelPlaceCandidate">
 
     <!-- score 직접 매핑 -->
     <result column="score" property="score"/>
@@ -76,7 +76,7 @@
       ]]>
   </select>
   
-  <select id="searchMissingCategoryByVector" parameterType="map" resultMap="TravelPlaceSearchResultMap">
+  <!-- <select id="searchMissingCategoryByVector" parameterType="map" resultMap="TravelPlaceSearchResultMap">
     <![CDATA[ 
     SELECT id, content_id, title, address, tel, first_image, first_image2, lat, lng, description, detail_info, normalized_category,
     1 - (embedding <=> #{embedding, typeHandler=com.example.demo.common.global.typehandler.VectorTypeHandler}) AS score
@@ -91,6 +91,6 @@
     </if>
     ORDER BY score DESC
     LIMIT #{limit}
-</select>
+</select> -->
   
 </mapper>
