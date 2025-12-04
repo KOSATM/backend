@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,11 +18,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Plan CRUD API 통합 테스트
  * 실제 API 엔드포인트가 제대로 작동하는지 검증
+ * 
+ * Note: 이 테스트는 실제 데이터베이스를 사용하며, @Transactional로 각 테스트 후 데이터를 롤백합니다.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional // 각 테스트 후 데이터 롤백
-@TestPropertySource(locations = "classpath:application.properties")
 class PlanControllerIntegrationTest {
 
     @Autowired
