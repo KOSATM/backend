@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.travelgram.review.ai.dao.AiReviewHashtagDao">
+
+  <insert id="insertAiReviewHashtag" parameterType="AiReviewHashtag" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO ai_review_hashtags (name, created_at, review_style_id, review_analysis_id)
+    VALUES (#{name}, now(), #{review_style_id}, #{reviewAnalysisId})
+  </insert>
+
+  <select id="selectAiReviewHashtagById" resultType="AiReviewHashtag">
+    SELECT name, created_at, review_style_id, review_analysis_id
+    FROM ai_review_hashtags WHERE id = #{id}
+  </select>
+
+  <update id="updateAiReviewHashtag" parameterType="AiReviewHashtag">
+    UPDATE ai_review_hashtags
+    SET name = #{name}, created_at = #{createdAt}, review_style_id = #{review_style_id},review_analysis_id = #{reviewAnalysisId}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteAiReviewHashtagById" parameterType="long">
+    DELETE FROM ai_review_hashtags WHERE id = #{id}
+  </delete>
+
+</mapper>

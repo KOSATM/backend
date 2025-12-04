@@ -9,10 +9,12 @@
 
   <typeAliases>
     <package name="com.example.demo.travelgram.review.dto.entity"/>
+    <package name="com.example.demo.planner.plan.dto.entity"/>
 
-    <package name="com.example.demo.travelgram.aiReview.dto.entity"/>
+    <package name="com.example.demo.travelgram.review.ai.dto.entity"/>
     <package name="com.example.demo.supporter.checklist.dto.entity"/>
     <package name="com.example.demo.supporter.imageSearch.dto.entity"/>
+    <package name="com.example.demo.supporter.imageSearch.dto.response"/>
     <package name="com.example.demo.supporter.map.dto.entity"/>
   </typeAliases>
 

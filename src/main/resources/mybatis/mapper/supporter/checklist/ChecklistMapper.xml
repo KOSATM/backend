@@ -3,7 +3,7 @@
 
 <mapper namespace="com.example.demo.supporter.checklist.dao.ChecklistDao">
 
-  <!-- 공통 컬럼 -->
+    <!-- 공통 컬럼 -->
     <resultMap id="ChecklistResultMap" type="Checklist">
         <id property="id" column="id" />
         <result property="userId" column="user_id" />
@@ -12,35 +12,36 @@
     </resultMap>
 
     <!-- INSERT -->
-    <insert id="insert" parameterType="Checklist" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertChecklist" parameterType="Checklist" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO checklists (user_id, day_index, created_at)
         VALUES (#{userId}, #{dayIndex}, #{createdAt})
     </insert>
 
     <!-- SELECT (단건 조회) -->
-    <select id="selectById" parameterType="long" resultMap="ChecklistResultMap">
+    <select id="selectChecklistById" parameterType="long" resultMap="ChecklistResultMap">
         SELECT id, user_id, day_index, created_at
         FROM checklists
         WHERE id = #{id}
     </select>
 
+    <!-- SELECT (userId와 dayIndex로 조회) -->
+    <select id="selectChecklistByUserIdAndDayIndex" resultMap="ChecklistResultMap">
+        SELECT id, user_id, day_index, created_at
+        FROM checklists
+        WHERE user_id = #{userId} AND day_index = #{dayIndex}
+        LIMIT 1
+    </select>
+
     <!-- SELECT (userId 기준 조회) -->
-    <select id="selectByUserId" parameterType="long" resultMap="ChecklistResultMap">
+    <select id="selectChecklistsByUserId" parameterType="long" resultMap="ChecklistResultMap">
         SELECT id, user_id, day_index, created_at
         FROM checklists
         WHERE user_id = #{userId}
-        ORDER BY created_at DESC
-    </select>
-
-    <!-- SELECT (전체 조회) -->
-    <select id="selectAll" resultMap="ChecklistResultMap">
-        SELECT id, user_id, day_index, created_at
-        FROM checklists
-        ORDER BY id DESC
+        ORDER BY day_index ASC
     </select>
 
     <!-- UPDATE -->
-    <update id="update" parameterType="Checklist">
+    <update id="updateChecklist" parameterType="Checklist">
         UPDATE checklists
         SET
             user_id = #{userId},
@@ -50,7 +51,7 @@
     </update>
 
     <!-- DELETE -->
-    <delete id="delete" parameterType="long">
+    <delete id="deleteChecklist" parameterType="long">
         DELETE FROM checklists
         WHERE id = #{id}
     </delete>

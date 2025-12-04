@@ -54,11 +54,11 @@
   </insert>
 
   <!-- 배치 INSERT -->
-  <insert id="batchInsert" parameterType="list">
-    INSERT INTO toilets (name, lat, lng, address)
+  <insert id="insertBatch" parameterType="list">
+    INSERT INTO toilets (name, address, lat, lng)
     VALUES
-    <foreach collection="list" item="t" separator=",">
-      (#{t.name}, #{t.lat}, #{t.lng}, #{t.address})
+    <foreach collection="list" item="toilet" separator=",">
+      (#{toilet.name}, #{toilet.address}, #{toilet.lat}, #{toilet.lng})
     </foreach>
   </insert>
 
@@ -88,5 +88,25 @@
           lng = EXCLUDED.lng,
           address = EXCLUDED.address
   </insert>
+
+  <select id="findInBounds" parameterType="map" resultMap="ToiletResultMap">
+    SELECT id, name, lat, lng, address
+    FROM toilets
+    WHERE lat BETWEEN #{southWestLat} AND #{northEastLat}
+      AND lng BETWEEN #{southWestLng} AND #{northEastLng}
+    ORDER BY name ASC
+  </select>
+
+  <select id="findNearest" parameterType="map" resultMap="ToiletResultMap">
+    SELECT id, name, address, lat, lng,
+            (6371 * acos(
+                cos(radians(#{lat})) * cos(radians(lat)) * 
+                cos(radians(lng) - radians(#{lng})) + 
+                sin(radians(#{lat})) * sin(radians(lat))
+            )) AS distance
+        FROM toilet
+        ORDER BY distance
+        LIMIT #{limit}
+  </select>
 
 </mapper>

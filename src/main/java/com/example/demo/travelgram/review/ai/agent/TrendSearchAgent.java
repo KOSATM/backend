@@ -1,0 +1,74 @@
+package com.example.demo.travelgram.review.ai.agent;
+
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.stereotype.Component;
+
+import com.example.demo.common.tools.InternetSearchTool;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Component
+@Slf4j
+public class TrendSearchAgent {
+  private final ChatClient chatClient;
+  private final InternetSearchTool internetSearchTool;
+
+  public TrendSearchAgent(
+    ChatClient.Builder chatClientBuilder,
+    InternetSearchTool internetSearchTool) {
+    chatClient = chatClientBuilder.build();
+    this.internetSearchTool = internetSearchTool;
+  }
+
+  public String generateTrend(String question) {
+    String response = chatClient.prompt()
+        .system(
+    """
+    You are the TrendSearch Agent for a SEOUL-ONLY travel service.
+
+    ## Mission
+    - Analyze ONLY SEOUL-RELATED Instagram trends.
+    - The travel service is limited to Seoul. 
+    - NEVER introduce or mention other regions such as Tokyo, Osaka, Kyoto, LA, Paris, New York, or any other city.
+    - All captions, hashtags, insights, and trend patterns must be strictly based on SEOUL.
+
+    ## How to search
+    When calling Google Search Tool, ALWAYS use only the following patterns:
+
+    - "site:instagram.com 서울 {keyword} 2025"
+    - "서울 {keyword} 인스타"
+    - "서울 {keyword} 핫플"
+    - "서울 {keyword} 감성"
+    - "서울 {keyword} 여행"
+    - "SEOUL {keyword} instagram"
+    
+    ## Output
+    Produce a JSON-safe trend insight object:
+
+    {
+      "keywords": [...],
+      "captionPatterns": [...],
+      "popularHashtags": [...],
+      "vibe": "...",
+      "observations": "..."
+    }
+
+    ## Rules
+    - ABSOLUTELY NO other cities (Tokyo, Osaka, Singapore, Paris, etc.).
+    - Do NOT fabricate Instagram posts.
+    - Base everything ONLY on Google Search Tool results.
+    - Use concise and high-signal patterns suitable for a Seoul travel diary generation agent.
+    - BEFORE generating the final JSON, strictly review the 'observations' and 'captionPatterns' to ensure NO mention of non-Seoul cities exists. If found, rephrase and correct.
+    
+    ## final rules
+    Final check MUST be done to remove any foreign city reference.
+    """)
+        .tools(internetSearchTool)
+        .call()
+        .content();
+    return response;
+  }
+
+  
+}

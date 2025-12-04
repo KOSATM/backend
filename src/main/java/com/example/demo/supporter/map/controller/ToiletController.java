@@ -3,13 +3,10 @@ package com.example.demo.supporter.map.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.supporter.map.dto.entity.Toilet;
@@ -23,29 +20,31 @@ import lombok.RequiredArgsConstructor;
 public class ToiletController {
     private final ToiletService service;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Toilet> get(@PathVariable Long id) {
-        return ResponseEntity.ok(service.get(id));
+    //테스트용, 데이터 갱신 API
+    @PostMapping()
+    public ResponseEntity<Integer> create() throws Exception {
+        service.refreshToiletData();
+        return ResponseEntity.ok().build();
     }
 
-    @GetMapping
-    public ResponseEntity<List<Toilet>> list() {
-        return ResponseEntity.ok(service.getAll());
+    @GetMapping("in-bounds")
+    public ResponseEntity<List<Toilet>> getToiletsInBounds(
+        @RequestParam Double northEastLat,
+        @RequestParam Double northEastLng,
+        @RequestParam Double southWestLat,
+        @RequestParam Double southWestLng
+    ) {
+        List<Toilet> toilets = service.findToiletsInBounds(northEastLat, northEastLng, southWestLat, southWestLng);
+        return ResponseEntity.ok(toilets);
     }
 
-    @PostMapping
-    public ResponseEntity<Long> create(@RequestBody Toilet t) {
-        return ResponseEntity.ok(service.create(t));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Integer> update(@PathVariable Long id, @RequestBody Toilet t) {
-        t.setId(id);
-        return ResponseEntity.ok(service.update(t));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Integer> delete(@PathVariable Long id) {
-        return ResponseEntity.ok(service.deleteAll());
+    @GetMapping("nearest")
+    public ResponseEntity<List<Toilet>> getNearestToilets(  
+        @RequestParam Double userLat,
+        @RequestParam Double userLng,
+        @RequestParam(defaultValue = "3") Integer limit
+    ) {
+        List<Toilet> toilets = service.findNearestToilets(userLat, userLng, limit);
+        return ResponseEntity.ok(toilets);
     }
 }

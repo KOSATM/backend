@@ -62,6 +62,7 @@ public class IntentAnalysisAgent {
                 - plan_add → { "date": "내일", "place": "롯데타워" }
                 - plan_modify → { "oldPlace": "롯데타워", "newPlace": "코엑스", "day": "1일차" }
                 - attraction_recommend → { "location": "부산" }
+                - plan_place_recommend → { "location": "홍대" } 또는 { "keyword": "케이팝" } 또는 { "location": "성수동", "keyword": "카페" }
                 - currency_exchange → { "from": "USD", "to": "KRW" }
 
             ---

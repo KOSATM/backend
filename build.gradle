@@ -59,19 +59,30 @@ dependencies {
 	// 암호화
 	implementation 'org.springframework.security:spring-security-crypto:6.3.8'
 
-	// JWT
-	implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
-	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
-	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
-
 	// AWS S3
 	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.700'
+
+	// 썸네일 생성 라이브러리
+	implementation 'net.coobird:thumbnailator:0.4.20'
 
 	// Multipart 안정성 보강
     implementation 'commons-fileupload:commons-fileupload:1.5'
 
 	// JdbcTemplate
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+
+	// Validation
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+	// Spring Security & OAuth2
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.security:spring-security-oauth2-client'
+	implementation 'org.springframework.security:spring-security-oauth2-jose'
+
+	// JWT (버전 다운그레이드)
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 }
 
 dependencyManagement {
