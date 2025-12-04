@@ -3,6 +3,7 @@ package com.example.demo.supporter.imageSearch.agent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.Collections;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -19,7 +20,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.jsonwebtoken.lang.Collections;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.extern.slf4j.Slf4j;
