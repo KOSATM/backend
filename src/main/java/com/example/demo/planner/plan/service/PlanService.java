@@ -39,10 +39,7 @@ public class PlanService {
     return planSnapshotContent;
   }
 
-  /**
-   * 여행 계획 생성 with 샘플 데이터 (Agent에서 호출용)
-   * Plan + 지정된 일수만큼의 Day + 각 Day마다 2개의 샘플 Place 생성
-   */
+  // 여행 계획 생성 with 샘플 데이터 (Agent에서 호출용) - Plan + 지정된 일수만큼의 Day + 각 Day마다 2개의 샘플 Place 생성
   public Plan createPlanWithSampleData(Long userId, Integer days, BigDecimal budget, LocalDate startDate) {
     log.info("샘플 데이터 포함 여행 계획 생성 시작: userId={}, days={}", userId, days);
 
@@ -114,24 +111,172 @@ public class PlanService {
     return plan;
   }
 
-  /**
-   * Plan 단건 조회
-   */
+  // Plan 단건 조회
   public Plan findById(Long planId) {
-    return planDao.selectPlanById(planId);
+    log.info("Plan 조회: planId={}", planId);
+    Plan plan = planDao.selectPlanById(planId);
+    if (plan == null) {
+      throw new IllegalArgumentException("존재하지 않는 여행 계획입니다: planId=" + planId);
+    }
+    return plan;
   }
 
-  /**
-   * 사용자별 Plan 목록 조회
-   */
+  // 사용자별 Plan 목록 조회
   public java.util.List<Plan> findByUserId(Long userId) {
+    log.info("사용자별 Plan 목록 조회: userId={}", userId);
     return planDao.selectPlansByUserId(userId);
   }
 
-  /**
-   * Plan 상세 조회 (Days + Places 포함)
-   * Plan -> List<PlanDayWithPlaces> 중첩 구조
-   */
+  // Plan 수정
+  public void updatePlan(Long planId, Plan plan) {
+    Plan existing = planDao.selectPlanById(planId);
+    if (existing == null) {
+      throw new IllegalArgumentException("존재하지 않는 여행 계획입니다: planId=" + planId);
+    }
+    
+    // Builder로 새 객체 생성 (ID는 기존 것 사용)
+    Plan updatedPlan = Plan.builder()
+        .id(planId)
+        .userId(plan.getUserId())
+        .budget(plan.getBudget())
+        .startDate(plan.getStartDate())
+        .endDate(plan.getEndDate())
+        .createdAt(existing.getCreatedAt())
+        .updatedAt(OffsetDateTime.now(ZoneOffset.UTC))
+        .isEnded(plan.getIsEnded())
+        .title(plan.getTitle())
+        .build();
+    
+    planDao.updatePlan(updatedPlan);
+    log.info("Plan 수정 완료: planId={}", planId);
+  }
+
+  // Plan 삭제 (연관된 Day, Place도 함께 삭제)
+  public void deletePlan(Long planId) {
+    Plan existing = planDao.selectPlanById(planId);
+    if (existing == null) {
+      throw new IllegalArgumentException("존재하지 않는 여행 계획입니다: planId=" + planId);
+    }
+    
+    // 연관된 Day와 Place 먼저 삭제
+    java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
+    for (PlanDay day : days) {
+      planPlaceDao.deletePlacesByDayId(day.getId());
+    }
+    planDayDao.deletePlanDaysByPlanId(planId);
+    
+    // Plan 삭제
+    planDao.deletePlan(planId);
+    log.info("Plan 삭제 완료: planId={}", planId);
+  }
+
+  // PlanDay 단건 조회
+  public PlanDay findDayById(Long dayId) {
+    log.info("PlanDay 조회: dayId={}", dayId);
+    PlanDay day = planDayDao.selectPlanDayById(dayId);
+    if (day == null) {
+      throw new IllegalArgumentException("존재하지 않는 여행 일자입니다: dayId=" + dayId);
+    }
+    return day;
+  }
+
+  // PlanDay 수정
+  public void updateDay(Long dayId, PlanDay day) {
+    PlanDay existing = planDayDao.selectPlanDayById(dayId);
+    if (existing == null) {
+      throw new IllegalArgumentException("존재하지 않는 여행 일자입니다: dayId=" + dayId);
+    }
+    
+    // Builder로 새 객체 생성 (ID는 기존 것 사용)
+    PlanDay updatedDay = PlanDay.builder()
+        .id(dayId)
+        .planId(day.getPlanId())
+        .dayIndex(day.getDayIndex())
+        .title(day.getTitle())
+        .planDate(day.getPlanDate())
+        .build();
+    
+    planDayDao.updatePlanDay(updatedDay);
+    log.info("PlanDay 수정 완료: dayId={}", dayId);
+  }
+
+  // PlanDay 삭제 (연관된 Place도 함께 삭제)
+  public void deleteDay(Long dayId) {
+    PlanDay existing = planDayDao.selectPlanDayById(dayId);
+    if (existing == null) {
+      throw new IllegalArgumentException("존재하지 않는 여행 일자입니다: dayId=" + dayId);
+    }
+    
+    // 연관된 Place 먼저 삭제
+    planPlaceDao.deletePlacesByDayId(dayId);
+    
+    // Day 삭제
+    planDayDao.deletePlanDay(dayId);
+    log.info("PlanDay 삭제 완료: dayId={}", dayId);
+  }
+
+  // PlanDay 생성
+  public PlanDay createDay(PlanDay day) {
+    log.info("PlanDay 생성: planId={}", day.getPlanId());
+    planDayDao.insertPlanDay(day);
+    log.info("PlanDay 생성 완료: dayId={}", day.getId());
+    return day;
+  }
+
+  // PlanPlace 단건 조회
+  public PlanPlace findPlaceById(Long placeId) {
+    log.info("PlanPlace 조회: placeId={}", placeId);
+    PlanPlace place = planPlaceDao.selectPlanPlaceById(placeId);
+    if (place == null) {
+      throw new IllegalArgumentException("존재하지 않는 여행 장소입니다: placeId=" + placeId);
+    }
+    return place;
+  }
+
+  // PlanPlace 수정
+  public void updatePlace(Long placeId, PlanPlace place) {
+    PlanPlace existing = planPlaceDao.selectPlanPlaceById(placeId);
+    if (existing == null) {
+      throw new IllegalArgumentException("존재하지 않는 여행 장소입니다: placeId=" + placeId);
+    }
+    
+    // Builder로 새 객체 생성 (ID는 기존 것 사용)
+    PlanPlace updatedPlace = PlanPlace.builder()
+        .id(placeId)
+        .dayId(place.getDayId())
+        .title(place.getTitle())
+        .startAt(place.getStartAt())
+        .endAt(place.getEndAt())
+        .placeName(place.getPlaceName())
+        .address(place.getAddress())
+        .lat(place.getLat())
+        .lng(place.getLng())
+        .expectedCost(place.getExpectedCost())
+        .build();
+    
+    planPlaceDao.updatePlanPlace(updatedPlace);
+    log.info("PlanPlace 수정 완료: placeId={}", placeId);
+  }
+
+  // PlanPlace 삭제
+  public void deletePlace(Long placeId) {
+    PlanPlace existing = planPlaceDao.selectPlanPlaceById(placeId);
+    if (existing == null) {
+      throw new IllegalArgumentException("존재하지 않는 여행 장소입니다: placeId=" + placeId);
+    }
+    planPlaceDao.deletePlanPlace(placeId);
+    log.info("PlanPlace 삭제 완료: placeId={}", placeId);
+  }
+
+  // PlanPlace 생성
+  public PlanPlace createPlace(PlanPlace place) {
+    log.info("PlanPlace 생성: dayId={}", place.getDayId());
+    planPlaceDao.insertPlanPlace(place);
+    log.info("PlanPlace 생성 완료: placeId={}", place.getId());
+    return place;
+  }
+
+  // Plan 상세 조회 (Days + Places 포함) - Plan -> List<PlanDayWithPlaces> 중첩 구조
   public PlanDetail getPlanDetail(Long planId) {
     log.info("Plan 상세 조회 시작: planId={}", planId);
 
