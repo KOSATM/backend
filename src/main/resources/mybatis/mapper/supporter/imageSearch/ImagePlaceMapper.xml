@@ -16,6 +16,18 @@
     <result column="image_status"           property="imageStatus"/>
   </resultMap>
 
+  <insert id="save" parameterType="ImagePlaceResponse" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO image_places (
+      name, description, lat, lng, address, place_type,
+      internal_original_url, internal_thumbnail_url,
+      external_image_url, image_status
+    ) VALUES (
+      #{name}, #{description}, #{lat}, #{lng}, #{address}, #{placeType},
+      #{internalOriginalUrl}, #{internalThumbnailUrl},
+      #{externalImageUrl}, #{imageStatus, jdbcType=VARCHAR}
+    )
+  </insert>
+
   <!-- 단건 조회 -->
   <select id="selectById" parameterType="long" resultMap="ImagePlaceResultMap">
     SELECT id,name,description,lat,lng,address,place_type,

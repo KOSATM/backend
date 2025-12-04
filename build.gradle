@@ -62,6 +62,9 @@ dependencies {
 	// AWS S3
 	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.700'
 
+	// 썸네일 생성 라이브러리
+	implementation 'net.coobird:thumbnailator:0.4.20'
+
 	// Multipart 안정성 보강
     implementation 'commons-fileupload:commons-fileupload:1.5'
 

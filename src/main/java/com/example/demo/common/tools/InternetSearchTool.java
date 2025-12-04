@@ -74,4 +74,41 @@ public class InternetSearchTool {
             return "인터넷 검색 중 오류 발생: " + e.getMessage();
         }
     }
+
+    @Tool(description = "이미지 자료를 찾기 위해 인터넷 검색을 합니다.")
+    public String getImgUrl(String name) {
+        log.info("이미지 URL 검색 시작 : {}", name);
+        try {
+            String responseBody = webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                    .queryParam("key", apiKey)
+                    .queryParam("cx", engineId)
+                    .queryParam("q", name)
+                    //이미지 검색을 하도록 명시적인 파라미터 추가
+                    .queryParam("searchType", "image")
+                    //가장 정확한 결과 1개만 받도록 설정
+                    .queryParam("num", "1")
+                    .build())
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+            JsonNode root = objectMapper.readTree(responseBody);
+            JsonNode items = root.path("items");
+
+            //검색 결과가 없거나 배열이 아닌 경우
+            if (!items.isArray() || items.isEmpty()) {
+                    log.warn("이미지 검색 결과 없음: {}", name);
+                    return null; // 결과가 없으면 null 반환
+            }
+
+            String imageUrl = items.get(0).path("link").asText();
+            log.info("검색된 이미지 URL : {}", imageUrl);
+            
+            return imageUrl;
+        } catch (Exception e) {
+            log.error("이미지 URL 검색 중 오류 발생: {}", e.getMessage());
+            return null;
+        }
+    }
 }
