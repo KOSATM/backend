@@ -41,8 +41,8 @@ public class ImageProcessorService {
         // 3) S3에 업로드, 변환된 파일URL 얻기
         String originalName = "images/original/" + UUID.randomUUID() + ".jpeg";
         String thumbnailName = "images/thumbnail/" + UUID.randomUUID() + ".jpeg";
-        String originalUrl = s3Service.uploadFile(originalJpegBytes, originalName);
-        String thumbnailUrl = s3Service.uploadFile(ThumbnailJpegBytes, thumbnailName);
+        String originalUrl = s3Service.uploadFile2(originalJpegBytes, originalName);
+        String thumbnailUrl = s3Service.uploadFile2(ThumbnailJpegBytes, thumbnailName);
 
         // 4) S3 image URL을 객체에 담아 반환
         ImageUrlResult result = new ImageUrlResult(originalUrl, thumbnailUrl);

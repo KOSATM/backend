@@ -47,6 +47,19 @@ public class S3Service {
         }
     }
 
+    public String uploadFile2(byte[] imageBytes, String storedName) {
+        // 1) 메타 데이터 생성 (파일 크기, 종류 등)
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(imageBytes.length);
+        metadata.setContentType("image/jpeg");
+
+        InputStream inputStream = new ByteArrayInputStream(imageBytes); //byte[] -> InputStream
+        PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, storedName, inputStream, metadata); //업로드 요청 객체 생성
+        amazonS3.putObject(putObjectRequest);
+
+        return amazonS3.getUrl(bucket, storedName).toString(); //업로드된 파일의 URL 반환
+    }
+
     public void deleteFile(String fileUrl) {
     try {
         // fileUrl에서 key(storedName)만 추출하는 로직 필요
