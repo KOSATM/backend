@@ -45,6 +45,13 @@ public class SecurityConfig {
                         // 공개 엔드포인트
                         .requestMatchers("/", "/login/**", "/oauth2/**", "/api/auth/**").permitAll()
                         .requestMatchers("/users", "/api/users/**").permitAll()
+                        // 테스트 에이전트 API - 모두 허용
+                        .requestMatchers("/api/test/**").permitAll()
+                        // 헬스 체크
+                        .requestMatchers("/actuator/health").permitAll()
+                        // 정적 리소스
+                        .requestMatchers("/static/**").permitAll()
+                        .requestMatchers("/*.html").permitAll()
                         // 나머지는 모두 허용 (실제로는 인증 필요)
                         .anyRequest().permitAll())
                 // Google OAuth2 로그인 설정

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seoul Travel Itinerary Agent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-family: inherit;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .response-section {
+            background: #f5f5f5;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .response-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .response-content {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 500px;
+            overflow-y: auto;
+            line-height: 1.6;
+            color: #555;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .response-content.empty {
+            color: #999;
+            font-style: italic;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f0f0f0;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: #e74c3c;
+            padding: 10px;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            color: #27ae60;
+            padding: 10px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .preset-btn {
+            padding: 10px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .preset-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 3px;
+            font-size: 13px;
+            color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌍 Seoul Travel Itinerary Agent</h1>
+            <p>AI-Powered Travel Planning for International Visitors</p>
+        </div>
+
+        <div class="content">
+            <div class="info-box">
+                <strong>💡 How to use:</strong> Describe your desired travel in Seoul (e.g., "I want a 5-day Seoul trip") 
+                and the AI agent will create a detailed itinerary following Seoul travel guidelines.
+            </div>
+
+            <div id="message-error" class="error" style="display:none;"></div>
+            <div id="message-success" class="success" style="display:none;"></div>
+
+            <div class="input-group">
+                <label for="userId">User ID</label>
+                <input type="number" id="userId" value="1" min="1" placeholder="Enter your user ID">
+            </div>
+
+            <div class="input-group">
+                <label for="message">Your Travel Request</label>
+                <textarea id="message" placeholder="e.g., I want a 5-day Seoul itinerary..."></textarea>
+            </div>
+
+            <div class="input-group">
+                <label>Quick Presets</label>
+                <div class="preset-buttons">
+                    <button class="preset-btn" onclick="setPreset('I want a 3-day Seoul itinerary')">3 Days Seoul</button>
+                    <button class="preset-btn" onclick="setPreset('I want a 5-day Seoul itinerary')">5 Days Seoul</button>
+                    <button class="preset-btn" onclick="setPreset('I want a 7-day Seoul itinerary')">7 Days Seoul</button>
+                    <button class="preset-btn" onclick="setPreset('Create a Seoul travel plan for me')">Create Plan</button>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="sendChat()">Send Request</button>
+                <button class="btn-secondary" onclick="clearForm()">Clear</button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processing your request...</p>
+            </div>
+
+            <div class="response-section">
+                <div class="response-title">📋 Response</div>
+                <div class="response-content empty" id="response">No response yet. Send a request to get started.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setPreset(text) {
+            document.getElementById('message').value = text;
+        }
+
+        function clearForm() {
+            document.getElementById('message').value = '';
+            document.getElementById('response').textContent = 'No response yet. Send a request to get started.';
+            document.getElementById('response').classList.add('empty');
+            document.getElementById('message-error').style.display = 'none';
+            document.getElementById('message-success').style.display = 'none';
+        }
+
+        async function sendChat() {
+            const message = document.getElementById('message').value.trim();
+            const userId = document.getElementById('userId').value;
+            const errorDiv = document.getElementById('message-error');
+            const successDiv = document.getElementById('message-success');
+            const responseDiv = document.getElementById('response');
+            const loadingDiv = document.getElementById('loading');
+
+            // Validation
+            if (!message) {
+                errorDiv.textContent = '❌ Please enter your travel request.';
+                errorDiv.style.display = 'block';
+                successDiv.style.display = 'none';
+                return;
+            }
+
+            if (!userId || userId < 1) {
+                errorDiv.textContent = '❌ Please enter a valid user ID.';
+                errorDiv.style.display = 'block';
+                successDiv.style.display = 'none';
+                return;
+            }
+
+            try {
+                errorDiv.style.display = 'none';
+                successDiv.style.display = 'none';
+                loadingDiv.classList.add('active');
+                responseDiv.textContent = '';
+                responseDiv.classList.remove('empty');
+
+                const response = await fetch('/api/test/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': userId
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        userId: userId
+                    })
+                });
+
+                const data = await response.json();
+                loadingDiv.classList.remove('active');
+
+                if (data.success) {
+                    successDiv.textContent = '✅ ' + data.message;
+                    successDiv.style.display = 'block';
+                    responseDiv.textContent = data.data.message;
+                    responseDiv.classList.remove('empty');
+                } else {
+                    errorDiv.textContent = '❌ ' + data.message;
+                    errorDiv.style.display = 'block';
+                    responseDiv.textContent = 'Error: ' + data.message;
+                }
+            } catch (error) {
+                loadingDiv.classList.remove('active');
+                errorDiv.textContent = '❌ Error: ' + error.message;
+                errorDiv.style.display = 'block';
+                responseDiv.textContent = 'Error occurred. Please try again.';
+            }
+        }
+
+        // Allow Enter key to send
+        document.getElementById('message').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                sendChat();
+            }
+        });
+
+        // Set default message
+        window.addEventListener('load', function() {
+            document.getElementById('message').focus();
+        });
+    </script>
+</body>
+</html>

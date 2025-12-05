@@ -1,0 +1,136 @@
+{
+	"info": {
+		"name": "Seoul Travel Itinerary Agent",
+		"description": "Test collection for Seoul Travel Itinerary API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create 3-Day Itinerary",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-User-Id",
+						"value": "1"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"days\": 3\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/test/create-itinerary",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"test",
+						"create-itinerary"
+					]
+				},
+				"description": "Create a 3-day Seoul travel itinerary"
+			},
+			"response": []
+		},
+		{
+			"name": "Create 5-Day Itinerary",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-User-Id",
+						"value": "1"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"days\": 5\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/test/create-itinerary",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"test",
+						"create-itinerary"
+					]
+				},
+				"description": "Create a 5-day Seoul travel itinerary"
+			},
+			"response": []
+		},
+		{
+			"name": "Create 7-Day Itinerary",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-User-Id",
+						"value": "1"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"days\": 7\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/test/create-itinerary",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"test",
+						"create-itinerary"
+					]
+				},
+				"description": "Create a 7-day Seoul travel itinerary (maximum)"
+			},
+			"response": []
+		},
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/test/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"test",
+						"health"
+					]
+				},
+				"description": "Check if Seoul Travel Itinerary Agent is running"
+			},
+			"response": []
+		}
+	]
+}
