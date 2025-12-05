@@ -29,8 +29,8 @@
 
 
   <select id="selectPhotoSummariesByPhotoGroupId"
-    resultType="ReviewPhoto">
-    SELECT id as photoId, summary FROM review_photos WHERE photo_group_id = #{photoGroupId} AND
+    resultType="string">
+    SELECT summary FROM review_photos WHERE photo_group_id = #{photoGroupId} AND
     summary IS NOT NULL </select>
 
   <update id="updatePhotoOrder"> UPDATE review_photos SET order_index = #{orderIndex} WHERE id =

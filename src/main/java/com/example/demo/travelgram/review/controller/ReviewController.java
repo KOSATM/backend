@@ -1,14 +1,9 @@
 package com.example.demo.travelgram.review.controller;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,10 +14,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.common.global.annotation.NoWrap;
-import com.example.demo.travelgram.review.dto.request.*;
-import com.example.demo.travelgram.review.dto.response.*;
+import com.example.demo.travelgram.review.dto.request.ReviewCreateRequest;
+import com.example.demo.travelgram.review.dto.request.ReviewPhotoOrderUpdateRequest;
+import com.example.demo.travelgram.review.dto.response.PhotoAnalysisResult;
+import com.example.demo.travelgram.review.dto.response.ReviewCreateResponse;
+import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
 import com.example.demo.travelgram.review.service.ReviewService;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -79,4 +76,13 @@ public class ReviewController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/photo/analyze")
+    public ResponseEntity<Void> updatePhotoMoods(@RequestParam("photoGroupId") Long photoGroupId) {
+
+        // 서비스 실행 (내부에서 DB 업데이트까지 완료됨)
+        reviewService.analyzeTripContext(photoGroupId);
+
+        // 내용물 없이 성공 신호(200 OK)만 보냄
+        return ResponseEntity.ok().build();
+    }
 }
