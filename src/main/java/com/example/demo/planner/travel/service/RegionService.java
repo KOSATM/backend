@@ -9,8 +9,11 @@ import com.example.demo.common.chat.intent.dto.SeoulRegion;
 import com.example.demo.planner.travel.cluster.GeoUtils;
 import com.example.demo.planner.travel.dto.TravelPlaceCandidate;
 
+import lombok.extern.slf4j.Slf4j;
+
 
 @Service
+@Slf4j
 public class RegionService {
 
     public List<TravelPlaceCandidate> applyRegionPreference(
@@ -22,7 +25,7 @@ public class RegionService {
 
         // 지역 매칭
         SeoulRegion region = SeoulRegion.fromUserInput(regionName);
-
+        
         // 지역 없는 경우 = 그냥 전체 서울 기준 랜덤 일정
         if (region == null) {
             return new ArrayList<>(candidates);
@@ -38,8 +41,8 @@ public class RegionService {
     private void applyScoreWeight(List<TravelPlaceCandidate> candidates, SeoulRegion region) {
         for (TravelPlaceCandidate p : candidates) {
             double d = GeoUtils.haversine(
-                p.getTravelPlaces().getLat(),
-                p.getTravelPlaces().getLng(),
+                p.getTravelPlacesLat(),
+                p.getTravelPlacesLng(),
                 region.lat,
                 region.lng
             );
@@ -87,8 +90,8 @@ public class RegionService {
         List<TravelPlaceCandidate> result = new ArrayList<>();
         for (TravelPlaceCandidate p : list) {
             double d = GeoUtils.haversine(
-                p.getTravelPlaces().getLat(),
-                p.getTravelPlaces().getLng(),
+                p.getTravelPlacesLat(),
+                p.getTravelPlacesLng(),
                 region.lat,
                 region.lng
             );

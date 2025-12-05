@@ -16,7 +16,19 @@ public class TravelPlaceCandidate {
     TravelPlaces travelPlaces;
 
     public String getNormalizedCategory() {
-        return travelPlaces != null ? travelPlaces.getNormalizedCategory() : null;
+        return travelPlaces.getNormalizedCategory();
+    }
+
+    public Double getTravelPlacesLat() {
+        return travelPlaces.getLat();
+    }
+
+    public Double getTravelPlacesLng() {
+        return travelPlaces.getLng();
+    }
+
+    public Long getId() {
+        return travelPlaces.getId();
     }
 
 }

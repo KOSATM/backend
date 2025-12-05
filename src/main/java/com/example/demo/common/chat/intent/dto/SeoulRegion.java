@@ -3,7 +3,6 @@ package com.example.demo.common.chat.intent.dto;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 
 @AllArgsConstructor
 public enum SeoulRegion {

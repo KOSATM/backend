@@ -1,110 +1,171 @@
-// package com.example.demo.planner.travel.service;
+package com.example.demo.planner.travel.service;
 
-// import java.util.ArrayList;
-// import java.util.Collections;
-// import java.util.List;
-// import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
-// import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Service;
 
+import com.example.demo.planner.travel.cluster.GeoUtils;
+import com.example.demo.planner.travel.dto.Cluster;
+import com.example.demo.planner.travel.dto.ClusterBundle;
+import com.example.demo.planner.travel.dto.ClusterPlace;
+import com.example.demo.planner.travel.dto.response.DayPlanResult;
+import com.example.demo.planner.travel.strategy.DayRequirement;
+import com.example.demo.planner.travel.strategy.TravelPlanStrategy;
+import com.example.demo.planner.travel.utils.CategoryNames;
 
-// import com.example.demo.planner.travel.dto.TravelPlaceCandidate;
-// import com.example.demo.planner.travel.dto.response.DayPlanResult;
-// import com.example.demo.planner.travel.strategy.DayRequirement;
-// import com.example.demo.planner.travel.strategy.TravelPlanStrategy;
-// import com.example.demo.planner.travel.utils.CategoryNames;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
-// @Service
-// public class DaySplitService {
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class DaySplitService {
 
-//     private final TravelPlanStrategy strategy;
+    public List<DayPlanResult> split(ClusterBundle bundle,
+            int duration,
+            TravelPlanStrategy strategy) {
 
-//     public DaySplitService(TravelPlanStrategy strategy) {
-//         this.strategy = strategy;
-//     }
+        log.info("=== [DaySplit] 일정 생성 시작 ===");
 
-//     /**
-//      * 하루 일정 생성
-//      */
-//     public DayPlanResult createDayPlan(
-//             int day,
-//             int duration,
-//             List<ClusterResult> clusters,
-//             List<TravelPlaceCandidate> noise
-//     ) {
-//         DayRequirement req = strategy.getDayRequirement(day, duration);
-//         DayPlanResult plan = new DayPlanResult(day);
+        List<Cluster> clusters = bundle.getClusters();
+        List<DayPlanResult> results = new ArrayList<>();
 
-//         // 전체 후보 : 클러스터 + noise 합침
-//         List<TravelPlaceCandidate> allCandidates = mergeCandidates(clusters, noise);
+        int day = 1;
 
-//         // STEP 1 : SPOT 필수 채우기
-//         fillCategory(plan, allCandidates, CategoryNames.SPOT, req.getMinSpot());
+        for (Cluster cluster : clusters) {
 
-//         // STEP 2 : FOOD 필수 채우기
-//         fillCategory(plan, allCandidates, CategoryNames.FOOD, req.getMinFood());
+            DayRequirement req = strategy.getDayRequirement(day, duration);
 
-//         // STEP 3 : OPTIONAL 랜덤 1개 채우기
-//         fillOptionalRandom(plan, allCandidates, req.getMinOptional());
+            DayPlanResult dayPlan = makeDayPlan(cluster, req, day);
 
-//         return plan;
-//     }
+            results.add(dayPlan);
 
-//     /** 후보 합치기 */
-//     private List<TravelPlaceCandidate> mergeCandidates(
-//             List<ClusterResult> clusters,
-//             List<TravelPlaceCandidate> noise) {
+            day++;
 
-//         List<TravelPlaceCandidate> list = new ArrayList<>();
-//         for (ClusterResult cl : clusters) {
-//             list.addAll(cl.getPlaces());
-//         }
-//         list.addAll(noise);
-//         return list;
-//     }
+            if (day > duration)
+                break;
+        }
 
-//     /** 필수 카테고리 채우기 */
-//     private void fillCategory(
-//             DayPlanResult plan,
-//             List<TravelPlaceCandidate> candidates,
-//             String category,
-//             int requiredCount) {
+        log.info("=== [DaySplit] 완료: {}일 일정 생성 ===", results.size());
+        return results;
+    }
 
-//         if (requiredCount <= 0) return;
+    private DayPlanResult makeDayPlan(Cluster cluster, DayRequirement req, int dayNumber) {
 
-//         for (TravelPlaceCandidate c : candidates) {
-//             if (plan.countByCategory(category) >= requiredCount) return;
+        log.info("---- Day {} 일정 생성 ----", dayNumber);
 
-//             if (c.getNormalizedCategory().equals(category)) {
-//                 plan.addPlace(c);
-//             }
-//         }
-//     }
+        DayPlanResult result = new DayPlanResult();
+        result.setDayNumber(dayNumber);
 
-//     /** 선택 카테고리 랜덤 채우기 */
-//     private void fillOptionalRandom(
-//             DayPlanResult plan,
-//             List<TravelPlaceCandidate> candidates,
-//             int requiredCount) {
+        List<ClusterPlace> source = new ArrayList<>(cluster.getPlaces());
 
-//         if (requiredCount <= 0) return;
+        // 1) SPOT
+        addCategory(source, result, CategoryNames.SPOT, req.getMinSpot());
 
-//         // 이미 채웠으면 패스
-//         if (plan.countOptional() >= requiredCount) return;
+        // 2) FOOD
+        addCategory(source, result, CategoryNames.FOOD, req.getMinFood());
 
-//         // Optional 목록에서 랜덤 카테고리 선택
-//         List<String> optionalCats = new ArrayList<>(CategoryNames.OPTIONAL);
-//         Collections.shuffle(optionalCats);
+        // FOOD는 이후 절대 추가되지 않도록 source에서 제거
+        source.removeIf(p -> p.getOriginal().getNormalizedCategory().equals(CategoryNames.FOOD));
 
-//         for (String cat : optionalCats) {
-//             Optional<TravelPlaceCandidate> pick = candidates.stream()
-//                     .filter(c -> c.getNormalizedCategory().equals(cat))
-//                     .findAny();
+        // 3) OPTIONAL
+        addOptional(source, result, req.getMinOptional());
 
-//             if (pick.isPresent()) {
-//                 plan.addPlace(pick.get());
-//                 return;
-//             }
-//         }
-//     }
-// }
+        // 4) 남은 장소 중 일부 추가
+        while (!source.isEmpty() && result.getPlaces().size() < req.getMaxPlaces()) {
+            result.getPlaces().add(source.remove(0));
+        }
+
+        // 5) 동선 정렬
+        sortByDistance(result);
+
+        return result;
+    }
+
+    private void addCategory(List<ClusterPlace> source,
+            DayPlanResult result,
+            String category,
+            int count) {
+
+        if (count <= 0)
+            return;
+
+        List<ClusterPlace> matched = source.stream()
+                .filter(p -> p.getOriginal().getNormalizedCategory().equals(category))
+                .toList();
+
+        int take = Math.min(count, matched.size());
+
+        for (int i = 0; i < take; i++) {
+            result.getPlaces().add(matched.get(i));
+            source.remove(matched.get(i));
+        }
+
+        if (take < count) {
+            log.warn("카테고리 {} 필요 {}개 중 {}개만 확보됨", category, count, take);
+        }
+    }
+
+    private void addOptional(List<ClusterPlace> source,
+            DayPlanResult result,
+            int count) {
+
+        if (count <= 0)
+            return;
+
+        for (String cat : CategoryNames.OPTIONAL) {
+
+            List<ClusterPlace> matched = source.stream()
+                    .filter(p -> p.getOriginal().getNormalizedCategory().equals(cat))
+                    .toList();
+
+            if (!matched.isEmpty()) {
+                result.getPlaces().add(matched.get(0));
+                source.remove(matched.get(0));
+                return;
+            }
+        }
+
+        log.warn("[Optional] 선택 카테고리를 찾지 못함");
+    }
+
+    private void sortByDistance(DayPlanResult result) {
+
+        if (result.getPlaces().size() <= 2)
+            return;
+
+        List<ClusterPlace> sorted = new ArrayList<>();
+        ClusterPlace cur = result.getPlaces().get(0);
+
+        sorted.add(cur);
+
+        List<ClusterPlace> remain = new ArrayList<>(result.getPlaces());
+        remain.remove(cur);
+
+        while (!remain.isEmpty()) {
+            ClusterPlace next = remain.get(0);
+            double bestDist = dist(cur, next);
+
+            for (ClusterPlace p : remain) {
+                double d = dist(cur, p);
+                if (d < bestDist) {
+                    bestDist = d;
+                    next = p;
+                }
+            }
+
+            sorted.add(next);
+            remain.remove(next);
+            cur = next;
+        }
+
+        result.setPlaces(sorted);
+    }
+
+    private double dist(ClusterPlace a, ClusterPlace b) {
+        return GeoUtils.haversine(
+                a.getLat(), a.getLng(),
+                b.getLat(), b.getLng());
+    }
+}
