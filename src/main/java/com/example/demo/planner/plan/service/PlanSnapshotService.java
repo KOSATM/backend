@@ -1,11 +1,19 @@
 package com.example.demo.planner.plan.service;
 
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.planner.plan.dao.PlanSnapshotDao;
+import com.example.demo.planner.plan.dto.entity.Plan;
+import com.example.demo.planner.plan.dto.entity.PlanDay;
+import com.example.demo.planner.plan.dto.entity.PlanPlace;
 import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
+import com.example.demo.planner.plan.dto.response.PlanSnapshotContent;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +52,63 @@ public class PlanSnapshotService {
     public PlanSnapshot savePlanSnapshot(PlanSnapshot planSnapshot) {
         log.info("Saving travel plan snapshot for user: {}", planSnapshot.getUserId());
         planSnapshotDao.insertPlanSnapshot(planSnapshot);
+        return planSnapshot;
+    }
+
+    // 스냅샷 저장(기본 테이블 사용)
+    @Transactional
+    public PlanSnapshot savePlanSnapshot(Plan plan, List<PlanDay> planDays, List<PlanPlace> planPlaces) throws Exception {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        log.info("Saving travel plan snapshot for user: {}", plan.getUserId());
+        // 최신 스냅샷이 있는지 확인 -> 없으면 버전 정보는 1
+        PlanSnapshot latestPlanSnapshot = getLatestPlanSnapshot(plan.getUserId());
+        Integer versionNo = latestPlanSnapshot == null ? 1 : latestPlanSnapshot.getVersionNo() + 1;
+
+        PlanSnapshotContent planSnapshotContent = new PlanSnapshotContent();
+        planSnapshotContent.setUserId(plan.getUserId());
+        planSnapshotContent.setBudget(plan.getBudget());
+        planSnapshotContent.setStartDate(plan.getStartDate().toString());
+        planSnapshotContent.setEndDate(plan.getEndDate().toString());
+        
+        List<PlanSnapshotContent.PlanDay> pscDays = new ArrayList<>();
+        for (PlanDay planDay : planDays) {
+            PlanSnapshotContent.PlanDay pscDay = new PlanSnapshotContent.PlanDay();
+            pscDay.setDate(planDay.getPlanDate().toString());
+            pscDay.setTitle(planDay.getTitle());
+            
+            List<PlanSnapshotContent.PlanDayItem> pscItems = new ArrayList<>();
+            for (PlanPlace planPlace : planPlaces) {
+                PlanSnapshotContent.PlanDayItem pscItem = new PlanSnapshotContent.PlanDayItem();
+                pscItem.setTitle(planPlace.getTitle());
+                pscItem.setStartAt(planPlace.getStartAt().format(formatter));
+                pscItem.setEndAt(planPlace.getEndAt().format(formatter));
+                pscItem.setPlaceName(planPlace.getPlaceName());
+                pscItem.setAddress(planPlace.getAddress());
+                pscItem.setLat(planPlace.getLat());
+                pscItem.setLng(planPlace.getLng());
+                pscItem.setExpectedCost(planPlace.getExpectedCost());
+
+                pscItems.add(pscItem);
+            }
+            pscDay.setSchedules(pscItems);
+            pscDays.add(pscDay);
+        }
+        planSnapshotContent.setDays(pscDays);
+
+        // log.info(planSnapshotContent.toString());
+        String snapshotJson = objectMapper.writeValueAsString(planSnapshotContent);
+
+        PlanSnapshot planSnapshot = PlanSnapshot.builder()
+            .userId(plan.getUserId())
+            .versionNo(versionNo)
+            .snapshotJson(snapshotJson)
+            .build();
+            
+        planSnapshotDao.insertPlanSnapshot(planSnapshot);
+
+        planSnapshot = planSnapshotDao.selectLatestPlanSnapshotByUserId(plan.getUserId());
         return planSnapshot;
     }
 
