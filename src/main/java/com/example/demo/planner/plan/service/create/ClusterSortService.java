@@ -1,4 +1,4 @@
-package com.example.demo.planner.travel.service;
+package com.example.demo.planner.plan.service.create;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -6,8 +6,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.example.demo.planner.plan.dto.Cluster;
 import com.example.demo.planner.travel.cluster.GeoUtils;
-import com.example.demo.planner.travel.dto.Cluster;
 
 @Service
 public class ClusterSortService {

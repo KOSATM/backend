@@ -1,4 +1,4 @@
-package com.example.demo.planner.travel.service;
+package com.example.demo.planner.plan.service.create;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -10,11 +10,11 @@ import org.apache.commons.math3.ml.clustering.DoublePoint;
 import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer;
 import org.springframework.stereotype.Service;
 
+import com.example.demo.planner.plan.dto.Cluster;
+import com.example.demo.planner.plan.dto.ClusterBundle;
+import com.example.demo.planner.plan.dto.ClusterPlace;
+import com.example.demo.planner.plan.dto.TravelPlaceCandidate;
 import com.example.demo.planner.travel.cluster.GeoUtils;
-import com.example.demo.planner.travel.dto.Cluster;
-import com.example.demo.planner.travel.dto.ClusterBundle;
-import com.example.demo.planner.travel.dto.ClusterPlace;
-import com.example.demo.planner.travel.dto.TravelPlaceCandidate;
 import com.example.demo.planner.travel.utils.CategoryNames;
 
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package com.example.demo.planner.travel.service;
+package com.example.demo.planner.plan.service.create;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,7 +7,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
-import com.example.demo.planner.travel.dto.TravelPlaceCandidate;
+import com.example.demo.planner.plan.dto.TravelPlaceCandidate;
 import com.example.demo.planner.travel.utils.CategoryNames;
 
 import lombok.extern.slf4j.Slf4j;
