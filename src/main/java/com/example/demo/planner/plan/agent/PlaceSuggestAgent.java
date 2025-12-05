@@ -48,16 +48,6 @@ public class PlaceSuggestAgent implements AiAgent {
             사용자의 질문에서 키워드를 추출하여 키워드에 관한 데이터베이스를 조회하고 사용자에게 여행 장소를 추천하세요.
             데이터베이스 조회는 `dbSearch` 도구를 사용하세요.
             (중요)각 행의 컬럼 값을 바꾸지 말고 그대로 가져오세요.
-
-            출력 형식은 다음과 같아야 합니다.
-            [
-              {
-                "title": "<방문할 장소 이름>",
-                "address": "<방문할 장소의 주소>",
-                "lat": <방문할 장소의 위도 (숫자)>,
-                "lng": <방문할 장소의 경도 (숫자)>,
-              }
-            ]
             """)
         .user(question)
         .tools(new DBSearchTools())
