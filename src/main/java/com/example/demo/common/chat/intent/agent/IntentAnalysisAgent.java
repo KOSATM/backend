@@ -67,6 +67,7 @@ public class IntentAnalysisAgent {
                 - plan_add → { "date": "...", "place": "..." }
                 - plan_modify → { "oldPlace": "...", "newPlace": "...", "day": "..." }
                 - attraction_recommend → { "location": "..." }
+                - plan_place_recommend → { "location": "홍대" } 또는 { "keyword": "케이팝" } 또는 { "location": "성수동", "keyword": "카페" }
                 - currency_exchange → { "from": "USD", "to": "KRW" }
 
             ---
@@ -105,7 +106,8 @@ public class IntentAnalysisAgent {
             # ✔ 출력
             오직 JSON만 출력한다.
 
-        """.formatted(CategoryType.buildCategoryList(), IntentType.buildIntentList());
+        """
+        .formatted(CategoryType.buildCategoryList(), IntentType.buildIntentList());
     // log.info(systemPrompt);
     String userPrompt = """
         USER_MESSAGE: "%s"

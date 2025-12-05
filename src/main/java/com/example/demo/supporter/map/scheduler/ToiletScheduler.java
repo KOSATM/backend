@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.example.demo.supporter.map.apiclient.ToiletApiClient;
 import com.example.demo.supporter.map.service.ToiletService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -13,8 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class ToiletScheduler {
 
-	@Autowired
-	private ToiletApiClient apiClient;
 	@Autowired
     private ToiletService toiletService;
 	

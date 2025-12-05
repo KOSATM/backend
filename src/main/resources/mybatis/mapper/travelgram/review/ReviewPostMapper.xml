@@ -1,28 +1,29 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.example.demo.travelgram.review.dao.ReviewPostDao">
 
     <!-- review_posts -->
     <insert id="insertDraft" parameterType="ReviewPost" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO review_posts (caption, is_posted, review_post_url, created_at, plan_id, photo_group_id, hashtag_group_id, review_style_id)
-        VALUES (null, false, null, NOW(), #{planId}, #{photoGroupId}, #{hashtagGroupId}, null);
-    </insert>
+        INSERT INTO review_posts (caption, is_posted, review_post_url, created_at, plan_id,
+        photo_group_id, hashtag_group_id, review_style_id, overall_moods, travel_type) VALUES (null,
+        false, null, NOW(), #{planId}, #{photoGroupId}, #{hashtagGroupId}, null, null, null); </insert>
 
-    <select id="selectReviewPostById" resultType="ReviewPost">
-        SELECT * FROM review_posts WHERE id = #{id};
-    </select>
+    <select id="selectReviewPostById" resultType="ReviewPost"> SELECT * FROM review_posts WHERE id =
+        #{id}; </select>
 
-    <select id="selectReviewPostsByPlanId" resultType="ReviewPost">
-        SELECT * FROM review_posts WHERE plan_id = #{planId};
-    </select>
+    <select id="selectReviewPostsByPlanId" resultType="ReviewPost"> SELECT * FROM review_posts WHERE
+        plan_id = #{planId}; </select>
 
-    <update id="updateReviewPost" parameterType="ReviewPost">
+
+    <update id="updateReviewPostMood"> UPDATE review_posts SET overall_moods =
+        #{overallMoods}, travel_type = #{travelType}::travel_type_enum WHERE photo_group_id = #{photoGroupId} </update>
+    <!-- <update id="updateReviewPost" parameterType="ReviewPost">
         UPDATE review_posts
-        SET caption = #{caption}, is_posted = #{isPosted}, review_post_url = #{reviewPostUrl}, created_at = #{createdAt},
+        SET caption = #{caption}, is_posted = #{isPosted}, review_post_url = #{reviewPostUrl}, created_at =
+    #{createdAt},
             plan_id = #{planId}, photo_group_id =#{photoGroupId}, hashtag_group_id=#{hashtagGroupId},
-            review_style_id = #{reviewStyleId}
+            review_style_id = #{reviewStyleId}, 
         WHERE id = #{id}
-  </update>
+    </update> -->
 </mapper>

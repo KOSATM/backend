@@ -7,8 +7,7 @@ import com.example.demo.travelgram.review.dto.entity.ReviewPost;
 @Mapper
 public interface ReviewPostDao {
     void insertDraft(ReviewPost post);
-
-
+    void updateReviewPostMood(Long postId, String overallMoods, String travelType);
 
     
 

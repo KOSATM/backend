@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.common.global.agent.SampleAiAgent;
 import com.example.demo.planner.travel.agent.TravelPlannerAgent;
+import com.example.demo.planner.plan.agent.PlaceSuggestAgent;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public enum IntentType {
     PLAN_DELETE("plan_delete", CategoryType.PLANNER, "/planner", "일정에서 장소 삭제", null),
     PLAN_MODIFY("plan_modify", CategoryType.PLANNER, "/planner", "일정 수정", null),
     PLAN_PLACE_RECOMMEND("plan_place_recommend", CategoryType.PLANNER, "/planner/recommend", "여행지 추천",
-            null),
+            PlaceSuggestAgent.class),
     ATTRACTION_RECOMMEND("attraction_recommend", CategoryType.PLANNER, "/planner/recommend", "여행지 추천",
             SampleAiAgent.class),
     HOTEL_RECOMMEND("hotel_recommend", CategoryType.PLANNER, "/planner/hotel", "호텔 추천", null),
