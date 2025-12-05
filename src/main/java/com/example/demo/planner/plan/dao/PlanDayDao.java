@@ -48,4 +48,14 @@ public interface PlanDayDao {
      * 여행 계획의 모든 날짜를 삭제합니다.
      */
     int deletePlanDaysByPlanId(Long planId);
+    
+    /**
+     * 특정 planId와 dayIndex 조합이 존재하는지 확인합니다.
+     */
+    PlanDay selectPlanDayByPlanIdAndDayIndex(Long planId, Integer dayIndex);
+    
+    /**
+     * 특정 planId의 최대 dayIndex를 조회합니다.
+     */
+    Integer selectMaxDayIndexByPlanId(Long planId);
 }

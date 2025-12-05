@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.planner.plan.dto.entity.Plan;
+import com.example.demo.planner.plan.dto.entity.PlanDay;
+import com.example.demo.planner.plan.dto.entity.PlanPlace;
 import com.example.demo.planner.plan.dto.response.PlanDetail;
 import com.example.demo.planner.plan.service.PlanService;
 
@@ -23,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 
 
 @RestController
-@RequestMapping("/api/plans")
+@RequestMapping("/plans")
 @RequiredArgsConstructor
 @Slf4j
 public class PlanController {
@@ -39,125 +41,169 @@ public class PlanController {
     }
   }
 
-  /**
-   * 여행 계획 생성 (샘플 데이터 포함)
-   * POST /api/plans?days=3
-   */
+  // 여행 계획 생성 (빈 Plan만) - POST /plans
   @PostMapping
-  public ResponseEntity<Plan> createPlan(
-      @RequestParam Long userId,
-      @RequestParam(defaultValue = "3") Integer days,
-      @RequestParam(required = false) java.math.BigDecimal budget,
-      @RequestParam(required = false) java.time.LocalDate startDate) {
-    try {
-      log.info("여행 계획 생성 요청: userId={}, days={}", userId, days);
+  public ResponseEntity<Plan> createPlan(@RequestBody Plan plan) {
+    log.info("=== Plan 생성 요청 받음 ===");
+    log.info("Request Body: userId={}, budget={}, startDate={}, endDate={}, title={}",
+        plan.getUserId(), plan.getBudget(), plan.getStartDate(), plan.getEndDate(), plan.getTitle());
 
-      // 기본값 설정
-      if (budget == null) {
-        budget = new java.math.BigDecimal("500000");
-      }
-      if (startDate == null) {
-        startDate = java.time.LocalDate.now();
-      }
+    Plan created = planService.createPlan(plan);
 
-      Plan createdPlan = planService.createPlanWithSampleData(userId, days, budget, startDate);
-      log.info("여행 계획 생성 완료: planId={}", createdPlan.getId());
-      return ResponseEntity.status(HttpStatus.CREATED).body(createdPlan);
-    } catch (Exception e) {
-      log.error("여행 계획 생성 실패", e);
-      return ResponseEntity.internalServerError().build();
-    }
+    log.info("=== Plan 생성 완료: planId={} ===", created.getId());
+    return ResponseEntity.status(HttpStatus.CREATED).body(created);
   }
 
-  /**
-   * 여행 계획 단건 조회
-   * GET /api/plans/{planId}
-   */
+  // 여행 계획 생성 (샘플 데이터 포함) - POST /plans/with-sample?days=3
+  @PostMapping("/with-sample")
+  public ResponseEntity<Plan> createPlanWithSample(
+      @RequestParam("userId") Long userId,
+      @RequestParam(value = "days", required = false) Integer days,
+      @RequestParam(value = "budget", required = false) java.math.BigDecimal budget,
+      @RequestParam(value = "startDate", required = false) java.time.LocalDate startDate) {
+    Plan created = planService.createPlanWithSampleData(userId, days, budget, startDate);
+    return ResponseEntity.status(HttpStatus.CREATED).body(created);
+  }
+
+  // 여행 계획 단건 조회 - GET /plans/{planId}
   @GetMapping("/{planId}")
-  public ResponseEntity<Plan> getPlan(@PathVariable Long planId) {
-    try {
-      log.info("여행 계획 조회 요청: planId={}", planId);
-      Plan plan = planService.findById(planId);
-      if (plan == null) {
-        log.warn("여행 계획을 찾을 수 없음: planId={}", planId);
-        return ResponseEntity.notFound().build();
-      }
-      return ResponseEntity.ok(plan);
-    } catch (Exception e) {
-      log.error("여행 계획 조회 실패: planId={}", planId, e);
-      return ResponseEntity.internalServerError().build();
-    }
+  public ResponseEntity<Plan> getPlan(@PathVariable("planId") Long planId) {
+    Plan plan = planService.findById(planId);
+    return ResponseEntity.ok(plan);
   }
 
-  /**
-   * 여행 계획 상세 조회 (Days + Places 포함)
-   * GET /api/plans/{planId}/detail
-   */
+  // 여행 계획 상세 조회 (Days + Places 포함) - GET /plans/{planId}/detail
   @GetMapping("/{planId}/detail")
-  public ResponseEntity<PlanDetail> getPlanDetail(@PathVariable Long planId) {
-    try {
-      log.info("여행 계획 상세 조회 요청: planId={}", planId);
-      PlanDetail planDetail = planService.getPlanDetail(planId);
-      if (planDetail == null) {
-        log.warn("여행 계획을 찾을 수 없음: planId={}", planId);
-        return ResponseEntity.notFound().build();
-      }
-      return ResponseEntity.ok(planDetail);
-    } catch (Exception e) {
-      log.error("여행 계획 상세 조회 실패: planId={}", planId, e);
-      return ResponseEntity.internalServerError().build();
-    }
+  public ResponseEntity<PlanDetail> getPlanDetail(@PathVariable("planId") Long planId) {
+    PlanDetail planDetail = planService.getPlanDetail(planId);
+    return ResponseEntity.ok(planDetail);
   }
 
-  /**
-   * 사용자별 여행 계획 목록 조회
-   * GET /api/plans/user/{userId}
-   */
+  // 사용자별 여행 계획 목록 조회 - GET /plans/user/{userId}
   @GetMapping("/user/{userId}")
-  public ResponseEntity<List<Plan>> getPlansByUserId(@PathVariable Long userId) {
-    try {
-      log.info("사용자 여행 계획 목록 조회: userId={}", userId);
-      List<Plan> plans = planService.findByUserId(userId);
-      return ResponseEntity.ok(plans);
-    } catch (Exception e) {
-      log.error("사용자 여행 계획 목록 조회 실패: userId={}", userId, e);
-      return ResponseEntity.internalServerError().build();
-    }
+  public ResponseEntity<List<Plan>> getPlansByUserId(@PathVariable("userId") Long userId) {
+    List<Plan> plans = planService.findByUserId(userId);
+    return ResponseEntity.ok(plans);
   }
 
-  /**
-   * 여행 계획 수정
-   * PUT /api/plans/{planId}
-   */
+  // 사용자별 여행 계획 상세 목록 조회 (모든 Plan + Days + Places) - GET /plans/user/{userId}/details
+  @GetMapping("/user/{userId}/details")
+  public ResponseEntity<List<PlanDetail>> getPlanDetailsByUserId(@PathVariable("userId") Long userId) {
+    List<PlanDetail> planDetails = planService.getPlanDetailsByUserId(userId);
+    return ResponseEntity.ok(planDetails);
+  }
+
+  // 여행 계획 수정 - PUT /plans/{planId}
   @PutMapping("/{planId}")
-  public ResponseEntity<Void> updatePlan(@PathVariable Long planId, @RequestBody Plan plan) {
-    try {
-      log.info("여행 계획 수정 요청: planId={}", planId);
-      // Plan은 @Builder이므로 수정 메서드 필요
-      // 현재 PlanService에 update 메서드가 없으므로 추가 필요
-      log.warn("Plan 수정 기능은 아직 구현되지 않았습니다");
-      return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
-    } catch (Exception e) {
-      log.error("여행 계획 수정 실패: planId={}", planId, e);
-      return ResponseEntity.internalServerError().build();
-    }
+  public ResponseEntity<Plan> updatePlan(@PathVariable("planId") Long planId, @RequestBody Plan plan) {
+    planService.updatePlan(planId, plan);
+    Plan updated = planService.findById(planId);
+    return ResponseEntity.ok(updated);
   }
 
-  /**
-   * 여행 계획 삭제
-   * DELETE /api/plans/{planId}
-   */
+  // 여행 계획 삭제 - DELETE /plans/{planId}
   @DeleteMapping("/{planId}")
-  public ResponseEntity<Void> deletePlan(@PathVariable Long planId) {
-    try {
-      log.info("여행 계획 삭제 요청: planId={}", planId);
-      // 현재 PlanService에 delete 메서드가 없으므로 추가 필요
-      log.warn("Plan 삭제 기능은 아직 구현되지 않았습니다");
-      return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
-    } catch (Exception e) {
-      log.error("여행 계획 삭제 실패: planId={}", planId, e);
-      return ResponseEntity.internalServerError().build();
-    }
+  public ResponseEntity<String> deletePlan(@PathVariable("planId") Long planId) {
+    planService.deletePlan(planId);
+    return ResponseEntity.ok("여행 계획이 삭제되었습니다.");
+  }
+
+  // 여행 완료 처리 - POST /plans/{planId}/complete
+  @PostMapping("/{planId}/complete")
+  public ResponseEntity<Plan> completePlan(@PathVariable("planId") Long planId) {
+    Plan completed = planService.completePlan(planId);
+    return ResponseEntity.ok(completed);
+  }
+
+  // ==================== PlanDay CRUD ====================
+
+  // 여행 일자 생성 - POST /plans/days
+  // Optional query param: confirm=true to allow extending plan endDate when creating a day beyond current duration
+  @PostMapping("/days")
+  public ResponseEntity<PlanDay> createDay(@RequestBody PlanDay day,
+      @RequestParam(value = "confirm", required = false) Boolean confirm) {
+    PlanDay created = planService.createDay(day, confirm);
+    return ResponseEntity.status(HttpStatus.CREATED).body(created);
+  }
+
+  // 여행 일자 조회 - GET /plans/days/{dayId}
+  @GetMapping("/days/{dayId}")
+  public ResponseEntity<PlanDay> getDay(@PathVariable("dayId") Long dayId) {
+    PlanDay day = planService.findDayById(dayId);
+    return ResponseEntity.ok(day);
+  }
+
+  // 여행 일자 수정 - PUT /plans/days/{dayId}
+  @PutMapping("/days/{dayId}")
+  public ResponseEntity<PlanDay> updateDay(@PathVariable("dayId") Long dayId, @RequestBody PlanDay day) {
+    planService.updateDay(dayId, day);
+    PlanDay updated = planService.findDayById(dayId);
+    return ResponseEntity.ok(updated);
+  }
+
+  // 여행 일자 삭제 - DELETE /plans/days/{dayId}
+  @DeleteMapping("/days/{dayId}")
+  public ResponseEntity<String> deleteDay(@PathVariable("dayId") Long dayId) {
+    planService.deleteDay(dayId);
+    return ResponseEntity.ok("여행 일자가 삭제되었습니다.");
+  }
+
+  // 여행 일자 이동 (in-place) - POST /plans/days/{dayId}/move?toIndex=3&confirm=true
+  @PostMapping("/days/{dayId}/move")
+  public ResponseEntity<PlanDetail> moveDay(@PathVariable("dayId") Long dayId,
+      @RequestParam("toIndex") Integer toIndex,
+      @RequestParam(value = "confirm", required = false) Boolean confirm) {
+    PlanDetail detail = planService.moveDay(dayId, toIndex, confirm);
+    return ResponseEntity.ok(detail);
+  }
+
+  // 이동 미리보기: 확장이 필요한지 여부와 새 endDate 예측 - GET /plans/days/{dayId}/move-preview?toIndex=6
+  @GetMapping("/days/{dayId}/move-preview")
+  public ResponseEntity<com.example.demo.planner.plan.dto.response.MovePreview> movePreview(
+      @PathVariable("dayId") Long dayId,
+      @RequestParam("toIndex") Integer toIndex) {
+    com.example.demo.planner.plan.dto.response.MovePreview preview = planService.movePreview(dayId, toIndex);
+    return ResponseEntity.ok(preview);
+  }
+
+  // PlanDay 생성 미리보기 - GET /plans/{planId}/days/create-preview?dayIndex=6
+  @GetMapping("/{planId}/days/create-preview")
+  public ResponseEntity<com.example.demo.planner.plan.dto.response.MovePreview> createDayPreview(
+      @PathVariable("planId") Long planId,
+      @RequestParam("dayIndex") Integer dayIndex) {
+    com.example.demo.planner.plan.dto.response.MovePreview preview = planService.createDayPreview(planId, dayIndex);
+    return ResponseEntity.ok(preview);
+  }
+
+  // ==================== PlanPlace CRUD ====================
+
+  // 여행 장소 생성 - POST /plans/places
+  @PostMapping("/places")
+  public ResponseEntity<PlanPlace> createPlace(@RequestBody PlanPlace place) {
+    PlanPlace created = planService.createPlace(place);
+    return ResponseEntity.status(HttpStatus.CREATED).body(created);
+  }
+
+  // 여행 장소 조회 - GET /plans/places/{placeId}
+  @GetMapping("/places/{placeId}")
+  public ResponseEntity<PlanPlace> getPlace(@PathVariable("placeId") Long placeId) {
+    PlanPlace place = planService.findPlaceById(placeId);
+    return ResponseEntity.ok(place);
+  }
+
+  // 여행 장소 수정 - PUT /plans/places/{placeId}
+  @PutMapping("/places/{placeId}")
+  public ResponseEntity<PlanPlace> updatePlace(@PathVariable("placeId") Long placeId, @RequestBody PlanPlace place) {
+    planService.updatePlace(placeId, place);
+    PlanPlace updated = planService.findPlaceById(placeId);
+    return ResponseEntity.ok(updated);
+  }
+
+  // 여행 장소 삭제 - DELETE /plans/places/{placeId}
+  @DeleteMapping("/places/{placeId}")
+  public ResponseEntity<String> deletePlace(@PathVariable("placeId") Long placeId) {
+    planService.deletePlace(placeId);
+    return ResponseEntity.ok("여행 장소가 삭제되었습니다.");
   }
 
 }

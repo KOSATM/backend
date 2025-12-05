@@ -49,7 +49,7 @@
     WHERE id = #{id}
   </delete>
 
-  <delete id="deletePlanPlaceByDayId" parameterType="long">
+  <delete id="deletePlacesByDayId" parameterType="long">
     DELETE FROM plan_places
     WHERE day_id = #{dayId}
   </delete>
