@@ -241,7 +241,7 @@ public class PlanService {
     // 연관된 Day와 Place 먼저 삭제
     java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
     for (PlanDay day : days) {
-      planPlaceDao.deletePlacesByDayId(day.getId());
+      planPlaceDao.deletePlanPlaceByDayId(day.getId());
     }
     planDayDao.deletePlanDaysByPlanId(planId);
 
@@ -288,7 +288,7 @@ public class PlanService {
     }
 
     // 연관된 Place 먼저 삭제
-    planPlaceDao.deletePlacesByDayId(dayId);
+    planPlaceDao.deletePlanPlaceByDayId(dayId);
 
     // Day 삭제
     planDayDao.deletePlanDay(dayId);
