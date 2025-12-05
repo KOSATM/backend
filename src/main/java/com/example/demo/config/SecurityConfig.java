@@ -59,7 +59,7 @@ public class SecurityConfig {
                         // 로그아웃 URL
                         .logoutUrl("/api/auth/logout")
                         // 로그아웃 성공 후 리다이렉트 URL
-                        .logoutSuccessUrl("http://localhost:3000")
+                        .logoutSuccessUrl("http://localhost:80")
                         // HTTP 세션 무효화
                         .invalidateHttpSession(true)
                         // 인증 정보 제거
