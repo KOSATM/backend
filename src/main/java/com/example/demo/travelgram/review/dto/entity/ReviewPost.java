@@ -20,5 +20,7 @@ public class ReviewPost {
     private Boolean isPosted;
     private String reviewPostUrl;
 
+    private String travelType;
+    private String overallMoods;
     private OffsetDateTime createdAt;
 }
