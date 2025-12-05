@@ -4,11 +4,15 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+
 import lombok.Builder;
 import lombok.Getter;
 
 @Builder
 @Getter
+@JsonDeserialize(builder = Plan.PlanBuilder.class)
 public class Plan {
     private Long id;
     private Long userId;
@@ -19,4 +23,8 @@ public class Plan {
     private OffsetDateTime updatedAt;
     private Boolean isEnded;
     private String title; // 여행 제목 끝날 때 생성
+
+    @JsonPOJOBuilder(withPrefix = "")
+    public static class PlanBuilder {
+    }
 }
