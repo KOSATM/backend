@@ -18,4 +18,9 @@
     <package name="com.example.demo.supporter.map.dto.entity"/>
   </typeAliases>
 
+  <typeHandlers>
+    <typeHandler handler="com.example.demo.common.global.typehandler.VectorTypeHandler" />
+    <typeHandler handler="com.example.demo.common.global.typehandler.JsonListTypeHandler" />
+  </typeHandlers>
+
 </configuration>

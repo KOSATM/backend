@@ -4,11 +4,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.common.chat.dto.TravelChatSendRequest;
 import com.example.demo.common.chat.dto.TravelChatSendResponse;
-import com.example.demo.common.chat.intent.IntentAnalysisAgent;
+import com.example.demo.common.chat.intent.agent.IntentAnalysisAgent;
 import com.example.demo.common.chat.intent.dto.request.IntentRequest;
 import com.example.demo.common.chat.pipeline.DefaultChatPipeline;
 import com.example.demo.planner.plan.agent.PlanAgent;
@@ -37,10 +38,10 @@ public class ChatController {
         return intentAnalysisAgent.analyze(intentRequest).toString();
     }
 
-    @GetMapping("/api/chat/test")
-    public String getMethodNam1e() {
-        IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").userMessage("강남 위주로 여행지 추천해줘").build();
-
+    @GetMapping("/test")
+    public String getMethodNam1e(@RequestParam("msg") String msg) {
+        IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").userMessage(msg).build();
+        
         return defaultChatPipeline.execute(intentRequest).toString();
     }
 

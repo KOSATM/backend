@@ -1,11 +1,14 @@
 package com.example.demo.planner.plan.dao;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import com.example.demo.planner.plan.dto.TravelPlaceCandidate;
 import com.example.demo.planner.plan.dto.entity.Plan;
+import com.example.demo.planner.plan.dto.entity.TravelPlaces;
 
 @Mapper
 public interface PlanDao {
@@ -36,4 +39,11 @@ public interface PlanDao {
      * 여행 계획을 삭제합니다.
      */
     int deletePlan(Long id);
+
+
+    /* 여행 계획 관련 메서드*/
+    TravelPlaces findById(@Param("id") Long id);
+    List<TravelPlaces> findAll(@Param("limit") int limit, @Param("offset") int offset);
+    List<TravelPlaceCandidate> searchByVector(@Param("embedding") float[] embedding, @Param("limit") int limit);
+    List<TravelPlaceCandidate> searchMissingCategoryByVector(Map<String, Object> params);
 }
