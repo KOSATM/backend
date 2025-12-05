@@ -2,21 +2,38 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.travelgram.review.dao.ReviewPhotoDao">
 
+  <!-- ReviewPhotoGroup -->
+
   <insert id="insertReviewPhotoGroup" parameterType="ReviewPhotoGroup" useGeneratedKeys="true"
     keyProperty="id" keyColumn="id"> INSERT INTO review_photo_groups (created_at, review_post_id)
     VALUES (NOW(), #{reviewPostId} ) </insert>
 
+  <select id="selectPhotoGroupByPostId" resultType="ReviewPhotoGroup"> SELECT id, ,created_at,
+    review_post_id FROM review_photo_groups WHERE review_post_id = #{reviewPostId} </select>
+
+
+  <!-- ReviewPhoto -->
+
   <insert id="insertReviewPhoto" parameterType="ReviewPhoto" useGeneratedKeys="true"
-    keyProperty="id" keyColumn="id"> INSERT INTO review_photos ( photo_group_id, file_url, order_index,
-    created_at ) VALUES ( #{photoGroupId}, #{fileUrl}, #{orderIndex}, now() ); </insert>
+    keyProperty="id" keyColumn="id"> INSERT INTO review_photos ( photo_group_id, file_url,
+    order_index, created_at, summary ) VALUES ( #{photoGroupId}, #{fileUrl}, #{orderIndex}, now(),
+    #{summary} ); </insert>
 
   <select id="selectReviewPhotoById" resultType="ReviewPhoto"> SELECT id, file_url, order_index,
     created_at, photo_group_id FROM review_photos WHERE id = #{id} </select>
 
+
+  <select id="selectReviewPhotosByPhotoGroupId" resultType="ReviewPhoto"> SELECT id, file_url,
+    order_index, created_at, photo_group_id FROM review_photos WHERE photo_group_id =
+    #{photoGroupId} </select>
+
+
+  <select id="selectPhotoSummariesByPhotoGroupId"
+    resultType="string">
+    SELECT summary FROM review_photos WHERE photo_group_id = #{photoGroupId} AND
+    summary IS NOT NULL </select>
+
   <update id="updatePhotoOrder"> UPDATE review_photos SET order_index = #{orderIndex} WHERE id =
     #{photoId} AND photo_group_id = #{photoGroupId} </update>
-
-
-  <delete id="delete" parameterType="long"> DELETE FROM review_photos WHERE id = #{id} </delete>
 
 </mapper>

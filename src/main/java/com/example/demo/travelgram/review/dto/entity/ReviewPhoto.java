@@ -12,6 +12,6 @@ public class ReviewPhoto {
     private Long photoGroupId;
     private String fileUrl;
     private Integer orderIndex;
-
+    private String summary;
     private OffsetDateTime createdAt;
 }

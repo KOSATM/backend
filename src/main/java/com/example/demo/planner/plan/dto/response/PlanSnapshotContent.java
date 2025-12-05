@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 public class PlanSnapshotContent {
   private Long userId;
-  private Double budget;
+  private BigDecimal budget;
   private String startDate;
   private String endDate;
   private List<PlanDay> days;
@@ -28,8 +28,8 @@ public class PlanSnapshotContent {
     private String endAt; 
     private String placeName;
     private String address;
-    private double lat;
-    private double lng;
+    private Double lat;
+    private Double lng;
     private BigDecimal expectedCost;
   }
 }

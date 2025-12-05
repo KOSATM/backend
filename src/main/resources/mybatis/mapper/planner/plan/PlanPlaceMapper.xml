@@ -17,7 +17,7 @@
     ORDER BY start_at ASC
   </select>
 
-  <select id="selectPlanPlaceByPlanId" parameterType="long" resultType="PlanPlace">
+  <select id="selectPlanPlacesByPlanId" parameterType="long" resultType="PlanPlace">
     SELECT tp.id, tp.day_id, tp.title, tp.start_at, tp.end_at, tp.place_name, tp.address, tp.lat, tp.lng, tp.expected_cost
     FROM plan_places tp
     INNER JOIN plan_days td ON tp.day_id = td.id

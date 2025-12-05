@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.example.demo.common.chat.intent.IntentAnalysisAgent;
+import com.example.demo.common.chat.intent.agent.IntentAnalysisAgent;
 import com.example.demo.common.chat.intent.dto.IntentCommand;
 import com.example.demo.common.chat.intent.dto.request.IntentRequest;
 import com.example.demo.common.chat.intent.dto.response.IntentResponse;

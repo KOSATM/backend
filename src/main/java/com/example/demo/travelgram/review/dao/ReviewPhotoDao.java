@@ -17,7 +17,11 @@ public interface ReviewPhotoDao {
     void updatePhotoOrder(@Param("photoId") Long photoId,
                       @Param("orderIndex") Integer orderIndex,
                       @Param("photoGroupId") Long photoGroupId);
-    ReviewPhotoGroup findPhotoGroupByPostId(Long postId);
-    List<ReviewPhoto> findByPostId(Long postId);
+    ReviewPhoto selectReviewPhotoById(Long id);
+    ReviewPhotoGroup selectPhotoGroupByPostId(Long postId);
+    List<ReviewPhoto> selectReviewPhotosByPhotoGroupId(Long photoGroupId);
+    List<String> selectPhotoSummariesByPhotoGroupId(Long photoGroupId);
+
+
     void deleteReviewPhoto(Long id);
 }
