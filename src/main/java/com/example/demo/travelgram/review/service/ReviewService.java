@@ -1,5 +1,6 @@
 package com.example.demo.travelgram.review.service;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -9,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.common.s3.service.S3Service;
+import com.example.demo.travelgram.review.ai.agent.ReviewImageAnalysisAgent;
 import com.example.demo.travelgram.review.dao.ReviewHashtagDao;
 import com.example.demo.travelgram.review.dao.ReviewPhotoDao;
 import com.example.demo.travelgram.review.dao.ReviewPostDao;
@@ -18,11 +20,10 @@ import com.example.demo.travelgram.review.dto.entity.ReviewPhotoGroup;
 import com.example.demo.travelgram.review.dto.entity.ReviewPost;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoOrderUpdateRequest;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoOrderUpdateRequest.PhotoOrderItem;
-import com.example.demo.travelgram.review.dto.request.ReviewPhotoUploadRequest;
+import com.example.demo.travelgram.review.dto.request.ReviewPhotosAnalysisRequest;
+import com.example.demo.travelgram.review.dto.response.PhotoAnalysisResult;
 import com.example.demo.travelgram.review.dto.response.ReviewCreateResponse;
 import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class ReviewService {
     private final ReviewPostDao reviewPostDao;
     private final ReviewHashtagDao reviewHashtagDao;
 
+    private final ReviewImageAnalysisAgent reviewImageAnalysisAgent;
     private final ObjectMapper objectMapper;
 
     // ======================================
@@ -65,6 +67,8 @@ public class ReviewService {
         // 4. DB insert -> group.id 자동 생성됨
         reviewPhotoDao.insertReviewPhotoGroup(photoGroup);
         reviewHashtagDao.insertHashtagGroup(hashtagGroup);
+        // 5. 리뷰 포스트에 그룹 아이디 업데이트
+        reviewPostDao.updateReviewPostGroupId(post.getId(),photoGroup.getId(), hashtagGroup.getId());
 
         // 결과 리턴
         return new ReviewCreateResponse(post.getId(), photoGroup.getId(), hashtagGroup.getId());
@@ -89,7 +93,6 @@ public class ReviewService {
 
             // ⭐ 핵심 로직: 순서는 (시작번호 + 현재 인덱스)로 자동 계산
             int currentOrder = startOrderIndex + i;
-
             // 3. 내부 메서드로 처리 위임
             ReviewPhotoUploadResponse response = processSinglePhotoUpload(file, photoGroupId, currentOrder);
             results.add(response);
@@ -107,7 +110,14 @@ public class ReviewService {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("file is empty");
         }
-
+        String summary;
+        try {
+            // file.getBytes() throws IOException, so we must catch it
+            summary = reviewImageAnalysisAgent.analyzeReviewImage(file.getContentType(), file.getBytes());
+        } catch (IOException e) {
+            log.error("Failed to read bytes from file", e);
+            throw new RuntimeException("Failed to process file for analysis", e);
+        }
         // 2) 확장자 추출
         String originalName = file.getOriginalFilename();
 
@@ -139,6 +149,7 @@ public class ReviewService {
                 .photoGroupId(photoGroupId)
                 .orderIndex(orderIndex)
                 .fileUrl(s3Url)
+                .summary(summary)
                 .build();
 
         // 6) DB 저장
@@ -158,4 +169,28 @@ public class ReviewService {
         }
     }
 
+    public void analyzeTripContext(Long photoGroupId) {
+
+        // 1. [DB 조회] 해당 그룹의 모든 사진 요약 가져오기 (리스트로 반환됨)
+        // for문 필요 없음! MyBatis가 List로 줍니다.
+        List<String> summaryList = reviewPhotoDao.selectPhotoSummariesByPhotoGroupId(photoGroupId);
+
+        // 요약된 사진이 하나도 없으면 분석 중단
+        if (summaryList.isEmpty())
+            return;
+
+        // 2. [DTO 포장] LLM에게 보낼 요청 객체 생성
+        ReviewPhotosAnalysisRequest requestDto = new ReviewPhotosAnalysisRequest();
+        requestDto.setPhotoGroupId(photoGroupId);
+        requestDto.setSummaries(summaryList); // DB에서 가져온 리스트를 바로 넣음
+
+        // 3. [LLM 호출] 에이전트에게 DTO를 넘김
+        // 에이전트 코드는 아래 3단계에서 설명
+        PhotoAnalysisResult result = reviewImageAnalysisAgent.analyzeTripContext(requestDto.getSummaries());
+
+        reviewPostDao.updateReviewPostMood(photoGroupId, result.getOverallMood(), result.getTravelType());
+
+        log.info("📊 여행 분석 완료: Type={}, Mood={}", result.getTravelType(), result.getOverallMood());
+
+    }
 }
