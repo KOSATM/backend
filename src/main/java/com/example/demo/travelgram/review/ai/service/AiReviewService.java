@@ -12,9 +12,12 @@ import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.travelgram.review.ai.agent.ReviewImageAnalysisAgent;
 import com.example.demo.travelgram.review.ai.agent.PlanTitleGenerateAgent;
 import com.example.demo.travelgram.review.ai.builder.ReviewInputJsonBuilder;
 import com.example.demo.travelgram.review.ai.dao.AiReviewDao;
+import com.example.demo.travelgram.review.dao.ReviewPhotoDao;
+import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,8 @@ public class AiReviewService {
     private final PlanDao planDao;
     private final PlanDayDao dayDao;
     private final PlanPlaceDao placeDao;
+
+    private final ReviewPhotoDao photoDao;
     private final ReviewInputJsonBuilder builder;
 
 
@@ -64,5 +69,7 @@ public class AiReviewService {
         
         return title;
     }
+
+
 }
 
