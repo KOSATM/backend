@@ -51,7 +51,7 @@ public class InternetSearchTool {
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
-            // log.info("응답본문: {}", responseBody);
+            //log.info("응답본문: {}", responseBody);
 
             JsonNode root = objectMapper.readTree(responseBody);
             JsonNode items = root.path("items");

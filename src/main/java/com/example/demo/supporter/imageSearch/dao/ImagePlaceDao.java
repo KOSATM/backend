@@ -6,7 +6,7 @@ import com.example.demo.supporter.imageSearch.dto.response.ImagePlaceResponse;
 
 @Mapper
 public interface ImagePlaceDao {
-    ImagePlaceResponse save(ImagePlaceResponse response);
+    int save(ImagePlaceResponse response);
     // ImagePlace selectById(Long id);
     // List<ImagePlace> selectAll();
     // int insert(ImagePlace place);

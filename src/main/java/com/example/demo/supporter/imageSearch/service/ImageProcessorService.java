@@ -39,8 +39,8 @@ public class ImageProcessorService {
         byte[] ThumbnailJpegBytes = createThumbnail(imageBytes, 100);
 
         // 3) S3에 업로드, 변환된 파일URL 얻기
-        String originalName = "images/original/" + UUID.randomUUID() + ".jpeg";
-        String thumbnailName = "images/thumbnail/" + UUID.randomUUID() + ".jpeg";
+        String originalName = "imageSearch/original/" + UUID.randomUUID() + ".jpeg";
+        String thumbnailName = "imageSearch/thumbnail/" + UUID.randomUUID() + ".jpeg";
         String originalUrl = s3Service.uploadFile2(originalJpegBytes, originalName);
         String thumbnailUrl = s3Service.uploadFile2(ThumbnailJpegBytes, thumbnailName);
 
