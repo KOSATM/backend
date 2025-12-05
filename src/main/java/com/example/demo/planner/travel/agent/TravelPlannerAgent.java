@@ -103,16 +103,61 @@ public class TravelPlannerAgent implements AiAgent {
         log.info("▷▷ 8. KMeans 클러스터링");
         ClusterBundle clusters = kMeansClusterService.cluster(merged, duration);
         logClusterResults(clusters);
+        logClusterInfoResult(clusters);
 
         // Day 분할
         log.info("▷▷ 9. 일정 분배");
         List<DayPlanResult> dayPlans = daySplitService.split(clusters, duration, strategy);
         // logDayPlans(dayPlans);
 
+        log.info("▷▷ 10. 최종 일정 반환");
+
+
+        log.info("▷▷ 11. TravelPlannerAgent 완료");
         
+        
+        printDayPlans(dayPlans);
 
-        log.info("▷▷ 10. TravelPlannerAgent 완료");
+        return AiAgentResponse.of(buildResponse(dayPlans));
 
+    }
+
+    // ==================== Private 메서드 ====================
+
+    private TravelPlanStrategy selectStrategy(Map<String, Object> args) {
+        // 추후 확장
+        return new StandardTravelStrategy();
+    }
+
+    // Duration 정규화
+    private int normalizeDuration(Map<String, Object> args) {
+        String normalized = durationNormalizerAgent.durationNormalized(args);
+        return Integer.parseInt(normalized);
+    }
+
+    // 벡터 검색 & 셔플
+    private List<TravelPlaceCandidate> searchAndShuffle(float[] embedding) {
+        List<TravelPlaceCandidate> results = travelDao.searchByVector(embedding, 100);
+        int shuffleRange = Math.min(50, results.size());
+        Collections.shuffle(results.subList(0, shuffleRange));
+        return results;
+    }
+
+    private void logClusterResults(ClusterBundle clusters) {
+        log.info("  클러스터 수: {}", clusters.getClusters().size());
+        for (Cluster c : clusters.getClusters()) {
+            log.info("    Cluster {}: {}개 장소", c.getId(), c.getPlaces().size());
+        }
+    }
+
+    private void logDayPlans(List<DayPlanResult> dayPlans) {
+        log.info("=== 최종 일정 ===");
+        for (DayPlanResult day : dayPlans) {
+            log.info("  Day {}: {}개 장소", day.getDayNumber(), day.getPlaces().size());
+        }
+    }
+
+    private void logClusterInfoResult(ClusterBundle clusters) {
         StringBuilder sb = new StringBuilder();
         sb.append("\n===== KMeans 클러스터 결과 =====\n");
         sb.append("총 클러스터 수: ").append(clusters.getClusters().size()).append("\n");
@@ -137,56 +182,11 @@ public class TravelPlannerAgent implements AiAgent {
                         .append(" (").append(p.getOriginal().getNormalizedCategory()).append(")\n");
             }
         }
-        printDayPlans(dayPlans);
-
-        return AiAgentResponse.of(buildResponse(dayPlans));
-
     }
 
-    // ==================== Private 메서드 ====================
 
-    private TravelPlanStrategy selectStrategy(Map<String, Object> args) {
-        // 추후 확장
-        return new StandardTravelStrategy();
-    }
-
-    /**
-     * Duration 정규화
-     */
-    private int normalizeDuration(Map<String, Object> args) {
-        String normalized = durationNormalizerAgent.durationNormalized(args);
-        return Integer.parseInt(normalized);
-    }
-
-    /**
-     * 벡터 검색 & 셔플
-     */
-    private List<TravelPlaceCandidate> searchAndShuffle(float[] embedding) {
-        List<TravelPlaceCandidate> results = travelDao.searchByVector(embedding, 100);
-        int shuffleRange = Math.min(50, results.size());
-        Collections.shuffle(results.subList(0, shuffleRange));
-        return results;
-    }
-
-    private void logClusterResults(ClusterBundle clusters) {
-        log.info("  클러스터 수: {}", clusters.getClusters().size());
-        for (Cluster c : clusters.getClusters()) {
-            log.info("    Cluster {}: {}개 장소", c.getId(), c.getPlaces().size());
-        }
-    }
-
-    private void logDayPlans(List<DayPlanResult> dayPlans) {
-        log.info("=== 최종 일정 ===");
-        for (DayPlanResult day : dayPlans) {
-            log.info("  Day {}: {}개 장소", day.getDayNumber(), day.getPlaces().size());
-        }
-    }
-
-    /**
-     * 응답 메시지 생성
-     */
+    // 응답 메시지 생성
     private String buildResponse(List<DayPlanResult> dayPlans) {
-        // 응답 메시지 생성
         return "총 " + dayPlans.size() + "일 일정이 생성되었습니다.";
     }
 
