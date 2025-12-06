@@ -25,6 +25,11 @@ public interface PlanDao {
     List<Plan> selectPlansByUserId(Long userId);
 
     /**
+     * 사용자의 활성화된 여행 계획을 조회합니다.
+     */
+    Plan selectActiveTravelPlanByUserId(Long userId);
+
+    /**
      * 여행 계획을 생성합니다.
      */
     int insertPlan(Plan Plan);
