@@ -16,9 +16,12 @@
         plan_id = #{planId}; </select>
 
     <update id="updateReviewPostGroupId"> UPDATE review_posts SET photo_group_id =
-        #{photoGroupId}, hashtag_group_id = #{hashtagGroupId} WHERE id = #{postId} </update>
+        #{photoGroupId}, hashtag_group_id = #{hashtagGroupId} WHERE id = #{reviewPostId} </update>
     <update id="updateReviewPostMood"> UPDATE review_posts SET overall_moods =
         #{overallMoods}, travel_type = #{travelType}::travel_type_enum WHERE photo_group_id = #{photoGroupId} </update>
+    <update id="updateReviewPostStyleIdById"> UPDATE review_posts SET review_style_id =
+        #{reviewStyleId} WHERE id = #{reviewPostId} </update>
+
     <!-- <update id="updateReviewPost" parameterType="ReviewPost">
         UPDATE review_posts
         SET caption = #{caption}, is_posted = #{isPosted}, review_post_url = #{reviewPostUrl}, created_at =
