@@ -34,9 +34,9 @@ public class ImageSearchAgent {
   private final ChatClient chatClient;
   private final PoiSearchAgent poiSearchAgent;
   private final CategorySearchAgent categorySearchAgent;
-  
 
-  public ImageSearchAgent(ChatClient.Builder chatClientBuilder, PoiSearchAgent poiSearchAgent, CategorySearchAgent categorySearchAgent) {
+  public ImageSearchAgent(ChatClient.Builder chatClientBuilder, PoiSearchAgent poiSearchAgent,
+      CategorySearchAgent categorySearchAgent) {
     this.chatClient = chatClientBuilder.build();
     this.poiSearchAgent = poiSearchAgent;
     this.categorySearchAgent = categorySearchAgent;
@@ -73,52 +73,75 @@ public class ImageSearchAgent {
     String response = analyzeImage(placeType, contentType, bytes);
     List<PlaceCandidateResponse> candidates = generateCandidates(response.toString(), placeType, address);
     return candidates;
+    // return null;
   }
 
-  // 1단계: 이미지 분석 (요소 추출, type 지정, confidence 평가)
+  // 1단계: 이미지 분석 (요소 추출, type 지정, confidence 평가) //요소 추출 -> type 지정
   public String analyzeImage(String placeType, String contentType, byte[] bytes) {
     // vision 분석 틀
     SystemMessage systemMessage = SystemMessage.builder()
         .text("""
-            당신은 이미지 기반 장소 추천 전용 AI입니다.
+            당신은 "이미지 기반 장소 추천 시스템"의 Step1을 담당하는 전용 AI입니다.
 
-            ## 역할
-            1. 사용자가 업로드한 이미지를 분석하여 **핵심 요소(feature)**만 추출합니다.
-            2. 각 요소가 실제 존재하는 장소, landmark, 체험/활동, 또는 명확한 POI인지 판단합니다.
-              - landmark / specific place → type="poi"
-              - 음식점, 체험, 활동, 풍경 등 장소와 관련된 카테고리 → type="category"
-            3. 각 요소에 대해 confidence(0~1)를 평가합니다.
+            ## 역할(핵심)
+            1. 업로드된 이미지를 분석하여, 그 안에서 시각적으로 식별 가능한 요소(feature)를 추출합니다.
+            2. 추출된 요소를 사용자가 지정한 type(landscape | food | activities)에 따라 **정확히 필터링**합니다.
+            3. placeType과 직접적으로 연결되지 않는 요소는 어떤 경우에도 포함하면 안 됩니다.
+            4. 최종 결과는 JSON 배열로만 출력합니다.
+
+            ## 요소 분류 규칙
+            각 요소는 반드시 다음 중 하나로 분류합니다:
+            - type="poi": 실제 존재하는 고유명사 장소/랜드마크/특정 지점
+            - type="category": 음식/음식점 종류/체험·활동·액티비티 등 카테고리성 요소
+
+            ## type 절대 규칙 (가장 중요)
+            type은 선택지가 아니라 **절대적인 필터 기준**입니다.
+            아무리 이미지에서 크게 보이고 중요해도, type에 맞지 않으면 **절대 포함 금지**입니다.
+
+            ### type = "landscape"
+            - 포함 가능:
+              - 실제 랜드마크, 건물, 관광지 등 POI만
+            - 포함 금지:
+              - 음식, 식당 카테고리, 사람, 활동/체험, 소품 등
+
+            ### type = "food"
+            - 포함 가능:
+              - 실제 음식 이름 (예: 김밥, 라멘)
+              - 음식점 카테고리 (예: 김밥집, 카페)
+            - 포함 금지:
+              - 랜드마크, 체험·활동, 건물·풍경 등의 장소
+
+            ### type = "activities"
+            장소에서 사람들이 무엇을 하고 싶은지 설명해
+            - 포함 가능:
+              - 실제 활동/체험 이름 (예: 암벽 등반, 서핑 수업, 한복 체험)
+              - 활동 카테고리 (예: 실외 액티비티, 전통 체험)
+            - 포함 금지:
+              - 음식, 음식점, 랜드마크, 일반 건물·풍경
 
             ## 필수 조건
-            - 핵심 요소만 포함합니다. (배경 요소나 지나가는 사람, 구름, 나무 한 그루 등은 제외)
-            - 요소명은 반드시 **실제 존재 가능성이 있는 고유 명칭**이나 **실제 체험/활동 이름**이어야 합니다.
-              - 예시:
-                - O: "경복궁", "남산타워", "한복 체험관", "암벽 등반 체험", "골든 브릿지"
-                - X: "클라이밍 벽", "대회 로고", "인공 암벽 시설", "구름", "풀 한 그루"
-            - POI(type="poi")는 실제 존재 가능한 고유 landmark 또는 장소만 포함합니다.
-              **지역 제한은 두지 않으며, 서울 외 landmark도 추출합니다.**
-            - type 필드에는 **“poi” 또는 “category”만 사용**합니다. placeType 값은 절대 사용하지 않습니다.
-            - JSON 배열 외 다른 텍스트는 절대 출력하지 않습니다.
-            - 한국어로 응답합니다.
-            - 절대로 임의로 요소명을 만들어 넣지 마세요. 반드시 실제 존재 가능성이 있는 이름이어야 합니다.
+            - 임의 창작 금지 (허구 장소/허구 활동/허구 음식 생성 금지)
+            - 요소 이름은 반드시 실제 세계에서 존재 가능한 명칭이어야 함
+            - 이미지의 배경적 요소(하늘, 구름, 그림자, 사람 자체 등) 제외
+            - JSON 외 다른 텍스트 출력 금지
+            - 한국어로 작성
 
             ## 출력 형식(JSON 배열)
             [
               {
                 "name": "요소명",
                 "type": "poi | category",
-                "visualFeatures": "이미지에서 추출된 특징 요약",
+                "visualFeatures": "이미지에서 추출된 특징 설명",
                 "confidence": 0.0-1.0
               }
             ]
 
-            아래는 사용자 입력입니다.
-            - placeType: %s
-            - address: "%s"
+            ## 사용자 입력
+            - type: %s
 
-            이미지에서 실제 존재 가능한 핵심 요소만 분석하여 JSON 배열로 출력하세요.
-            서울 외 landmark는 Step1에서 추출하되, Step2에서 후보를 찾는 것은 서울 내로 제한됩니다.
-                              """)
+            이미지에서 type 목적에 가장 부합하는 실제 존재 가능한 요소만 분석하여 위 JSON 배열 형식으로만 출력하세요.
+
+            """)
         .build();
 
     Resource resource = new ByteArrayResource(bytes);
@@ -129,7 +152,7 @@ public class ImageSearchAgent {
 
     // 사용자 입력 + 이미지
     UserMessage userMessage = UserMessage.builder()
-        .text("사용자 질문 : {question}, placeType: {placeType}")
+        .text("type: " + placeType)
         .media(media)
         .build();
 
