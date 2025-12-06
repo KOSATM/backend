@@ -2,26 +2,26 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.travelgram.review.ai.dao.AiReviewStyleDao">
+<mapper namespace="com.example.demo.travelgram.review.ai.dao.AiReviewDao">
 
   <insert id="insertAiReviewStyle" parameterType="AiReviewStyle" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO ai_review_styles (name, created_at, tone_code, description, review_analysis_id)
-    VALUES (#{name}, now(), #{reviewAnalysisId})
+    INSERT INTO ai_review_styles (name, created_at, tone_code, caption, review_analysis_id)
+    VALUES (#{name}, now(), #{toneCode}, #{caption}, #{reviewAnalysisId})
   </insert>
 
   <select id="selectAiReviewStyleById" resultType="AiReviewStyle">
-    SELECT name, created_at, tone_code, description, review_analysis_id
+    SELECT name, created_at, tone_code, caption, review_analysis_id
     FROM ai_review_styles WHERE id = #{id}
   </select>
 
-  <select id="findStyleByAnalaysisId" resultType="AiReviewStyle">
-    SELECT id, name, created_at, tone_code, description, review_analysis_id
+  <select id="selectAllStylesByAnalysisId" resultType="AiReviewStyle">
+    SELECT id, name, created_at, tone_code, caption, review_analysis_id
     FROM ai_review_styles WHERE review_analysis_id = #{reviewAnalysisId}
   </select>
 
   <update id="updateAiReviewStyle" parameterType="AiReviewStyle">
     UPDATE ai_review_styles
-    SET name = #{name}, created_at = #{createdAt}, tone_code=#{toneCode}, description=#{description}, review_analysis_id = #{reviewAnalysisId}
+    SET name = #{name}, created_at = #{createdAt}, tone_code=#{toneCode}, caption=#{caption}, review_analysis_id = #{reviewAnalysisId}
     WHERE id = #{id}
   </update>
 

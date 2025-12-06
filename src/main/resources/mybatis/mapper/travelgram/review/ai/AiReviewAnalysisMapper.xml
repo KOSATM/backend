@@ -2,23 +2,24 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.demo.travelgram.review.ai.dao.AiReviewAnalysisDao">
+<mapper namespace="com.example.demo.travelgram.review.ai.dao.AiReviewDao">
 
   <insert id="insertAiReviewAnalysis" parameterType="AiReviewAnalysis" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO ai_review_analysis (input_json, output_json, created_at, user_id, review_post_id)
-    VALUES (#{inputJson}, #{outputJson}, now(), #{userId}, #{reviewPostId})
+    INSERT INTO ai_review_analysis (input_json, output_json, created_at, review_post_id)
+    VALUES (#{inputJson}::jsonb, #{outputJson}::jsonb, now(), #{reviewPostId})
   </insert>
 
   <select id="selectAiReviewAnalysisById" resultType="AiReviewAnalysis">
-    SELECT input_json, output_json, created_at, user_id, review_post_id
+    SELECT input_json, output_json, created_at, review_post_id
     FROM ai_review_analysis WHERE id = #{id}
   </select>
 
-
   <update id="updateAiReviewAnalysis" parameterType="AiReviewAnalysis">
     UPDATE ai_review_analysis
-    SET input_json = #{inputJson}, output_json = #{outputJson},
-        created_at = #{createdAt}, user_id = #{userId}, review_post_id = #{reviewPostId}
+    SET input_json = #{inputJson}::jsonb, 
+        output_json = #{outputJson}::jsonb,
+        created_at = #{createdAt}, 
+        review_post_id = #{reviewPostId}
     WHERE id = #{id}
   </update>
 
