@@ -35,4 +35,10 @@ public class ChecklistItemService {
     public int delete(Long id) {
         return dao.deleteChecklistItem(id);
     }
+
+    // 체크리스트 항목 전부 삭
+    @Transactional
+    public int deleteItemsByChecklistId(Long checklistId) {
+        return dao.deleteChecklistItemsByChecklistId(checklistId);
+    }
 }
