@@ -17,9 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.demo.common.global.annotation.NoWrap;
 import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
 import com.example.demo.travelgram.review.dto.request.HashtagUpdateRequest;
-import com.example.demo.travelgram.review.dto.request.ReviewCreateRequest;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoOrderUpdateRequest;
-import com.example.demo.travelgram.review.dto.response.PhotoAnalysisResult;
 import com.example.demo.travelgram.review.dto.response.ReviewCreateResponse;
 import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
 import com.example.demo.travelgram.review.service.ReviewService;
@@ -42,9 +40,9 @@ public class ReviewController {
 
     @PostMapping("/create")
     public ResponseEntity<ReviewCreateResponse> createReview(
-            @RequestBody ReviewCreateRequest request) {
+            @RequestParam("planId") Long planId) {
 
-        ReviewCreateResponse result = reviewService.createReview(request.getPlanId());
+        ReviewCreateResponse result = reviewService.createReview(planId);
 
         return ResponseEntity.ok(result);
     }
