@@ -8,6 +8,8 @@ import java.util.UUID;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.common.s3.service.S3Service;
@@ -156,6 +158,11 @@ public class ReviewService {
 
         return new ReviewPhotoUploadResponse(photo.getId(), photo.getFileUrl(), photo.getOrderIndex());
 
+    }
+
+
+    public List<ReviewPhoto> getReviewPhotos(Long photoGroupId) {
+        return reviewPhotoDao.selectReviewPhotosByPhotoGroupId(photoGroupId);
     }
 
     @Transactional

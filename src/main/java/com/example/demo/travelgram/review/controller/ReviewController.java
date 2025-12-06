@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.common.global.annotation.NoWrap;
+import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
 import com.example.demo.travelgram.review.dto.request.ReviewCreateRequest;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoOrderUpdateRequest;
 import com.example.demo.travelgram.review.dto.response.PhotoAnalysisResult;
@@ -70,6 +72,12 @@ public class ReviewController {
         return ResponseEntity.ok(result);
     }
 
+    @GetMapping("/photos")
+    public ResponseEntity<List<ReviewPhoto>> getPhotosByGroup(@RequestParam("photoGroupId") Long photoGroupId) {
+        // Service에 해당 메서드가 없다면 추가해야 합니다 (아래 설명)
+        List<ReviewPhoto> photos = reviewService.getReviewPhotos(photoGroupId);
+        return ResponseEntity.ok(photos);
+    }
     @PutMapping("/photo/order")
     public ResponseEntity<?> updatePhotoOrder(@RequestBody ReviewPhotoOrderUpdateRequest request) {
         reviewService.updatePhotoOrder(request);
