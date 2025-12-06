@@ -79,6 +79,13 @@ public class PlanController {
     return ResponseEntity.ok(planDetail);
   }
 
+  // 사용자의 활성화된 여행 계획 상세 조회 (Days + Places 포함) - GET /plans/{userId}/active/detail
+  @GetMapping("/{userId}/active/detail")
+  public ResponseEntity<PlanDetail> getActivePlanDetail(@PathVariable("userId") Long userId) {
+    PlanDetail planDetail = planService.getLatestPlanDetail(userId);
+    return ResponseEntity.ok(planDetail);
+  }
+
   // 사용자별 여행 계획 목록 조회 - GET /plans/user/{userId}
   @GetMapping("/user/{userId}")
   public ResponseEntity<List<Plan>> getPlansByUserId(@PathVariable("userId") Long userId) {
