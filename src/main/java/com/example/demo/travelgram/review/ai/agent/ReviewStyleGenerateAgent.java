@@ -32,7 +32,7 @@ public class ReviewStyleGenerateAgent {
             
             Key Styles:
             1. **EMOTIONAL**: Focus on feelings, scenery, and "vibes". Soft tone.
-            2. **INFORMATIVE**: Focus on tips, costs, location names, and efficient routes. Helpful tone.
+            2. **INFORMATIVE**: Focus on tips, location names, and efficient routes. Helpful tone. (Do not mention specific prices).
             3. **WITTY**: Fun, short, usage of slang or emojis, humorous complaints or joy.
             4. **SIMPLE**: Very short, chic, hashtags-focused. Minimalist.
             
@@ -42,17 +42,19 @@ public class ReviewStyleGenerateAgent {
             3. **Content (Crucial)**: 
                 - Use the 'memo' and 'place_name' from input data effectively.
                 - Do NOT fabricate places not in the data.
+                - **NO EXACT COSTS**: Do NOT mention specific prices or currency amounts (e.g., $50, 10000won) in the caption. General terms like "affordable" or "luxury" are allowed.
                 - The 'caption' field must contain **ONLY the narrative text**.
                 - **ABSOLUTELY DO NOT** include hashtags inside the 'caption' string.
-                - Bad Example: "Seoul is great! #Seoul #Fun"
-                - Good Example: "Seoul is great!" (Hashtags go to 'hashtags' array)
+            4. **Tone Naming**:
+                - The 'toneName' must be in **English**.
+                - It must be descriptive and longer than the 'toneCode' (e.g., "Deeply Sentimental Vibes" instead of just "Emotional").
 
             ## JSON Structure
             {
               "styles": [
                 {
                   "toneCode": "EMOTIONAL",
-                  "toneName": "감성 가득",
+                  "toneName": "Sentimental & Dreamy Atmosphere",
                   "caption": "...",
                   "hashtags": ["#...", "#..."]
                 },
