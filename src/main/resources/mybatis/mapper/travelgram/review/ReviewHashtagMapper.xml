@@ -1,52 +1,40 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
-  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.travelgram.review.dao.ReviewHashtagDao">
 
   <!-- ReviewHashtagGroup  -->
 
-  <select id="selectHashtagGroupById" resultType="ReviewHashtagGroup">
-    SELECT id, created_at, review_post_id
-    FROM review_hashtag_groups WHERE id = #{id}
-  </select>
+  <select id="selectHashtagGroupById" resultType="ReviewHashtagGroup"> SELECT id, created_at,
+    review_post_id FROM review_hashtag_groups WHERE id = #{id} </select>
 
-  <insert id="insertHashtagGroup" parameterType="ReviewHashtagGroup" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO review_hashtag_groups (created_at, review_post_id)
-    VALUES (now(), #{reviewPostId})
-  </insert>
+  <insert id="insertHashtagGroup" parameterType="ReviewHashtagGroup" useGeneratedKeys="true"
+    keyProperty="id" keyColumn="id"> INSERT INTO review_hashtag_groups (created_at, review_post_id)
+    VALUES (now(), #{reviewPostId}) </insert>
 
-  <update id="updateHashtagGroup" parameterType="ReviewHashtagGroup">
-    UPDATE review_hashtag_groups
-    SET review_post_id = #{reviewPostId}
-    WHERE id = #{id}
-  </update>
+  <update id="updateHashtagGroup" parameterType="ReviewHashtagGroup"> UPDATE review_hashtag_groups
+    SET review_post_id = #{reviewPostId} WHERE id = #{id} </update>
 
-  <delete id="deleteHashtagGroupById" parameterType="long">
-    DELETE FROM review_hashtag_groups WHERE id = #{id}
-  </delete>
+  <delete id="deleteHashtagGroupById" parameterType="long"> DELETE FROM review_hashtag_groups WHERE
+    id = #{id} </delete>
 
 
   <!-- ReviewHashtag -->
 
-  <insert id="insertHashtag" parameterType="ReviewHashtag" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO review_hashtags (name, is_selected, created_at, hashtag_group_id)
-    VALUES (#{name}, #{isSelected}, #{createdAt}, #{hashtagGroupId})
+
+  <delete id="deleteHashtagsByHashtagGroupId"> DELETE FROM review_hashtags WHERE hashtag_group_id =
+    #{hashtagGroupId} </delete>
+
+  <insert id="insertHashtagList"> INSERT INTO review_hashtags ( hashtag_group_id, name, created_at )
+    VALUES <foreach collection="names" item="name" separator=","> ( #{hashtagGroupId}, #{name},
+    NOW() ) </foreach>
   </insert>
 
-  <select id="selectHashtagById" resultType="ReviewHashtag">
-    SELECT id, name, is_selected, created_at, hashtag_group_id
-    FROM review_hashtags WHERE id = #{id}
-  </select>
-  
-  <update id="updateHashtag" parameterType="ReviewHashtag">
-    UPDATE review_hashtags
-    SET name = #{name}, is_selected = #{isSelected}, created_at = NOW(), hashtag_group_id = #{hashtagGroupId}
-    WHERE id = #{id}
-  </update>
+  <select id="selectHashtagById" resultType="ReviewHashtag"> SELECT id, name, created_at,
+    hashtag_group_id FROM review_hashtags WHERE id = #{id} </select>
 
-  <delete id="deleteHashtagById" parameterType="long">
-    DELETE FROM review_hashtags WHERE id = #{id}
-  </delete>
+  <update id="updateHashtag" parameterType="ReviewHashtag"> UPDATE review_hashtags SET name =
+    #{name}, created_at = NOW(), hashtag_group_id = #{hashtagGroupId} WHERE id = #{id} </update>
+
+  <delete id="deleteHashtagById" parameterType="long"> DELETE FROM review_hashtags WHERE id = #{id} </delete>
 
 </mapper>
