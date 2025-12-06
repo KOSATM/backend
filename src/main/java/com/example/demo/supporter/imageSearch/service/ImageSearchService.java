@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.demo.common.tools.InternetSearchTool;
 import com.example.demo.common.tools.NaverInternetSearchTool;
 import com.example.demo.common.travel.dao.TravelPlaceDao;
 import com.example.demo.supporter.imageSearch.agent.ImageSearchAgent;
@@ -29,7 +28,6 @@ public class ImageSearchService {
     private final ImageProcessorService imageProcessorService;
     private final ImagePlaceDao imagePlaceDao;
 
-    @Transactional
     public List<PlaceCandidateResponse> processImageForPlaceRecommendation(String placeType, MultipartFile image,
             String address)
             throws Exception {
@@ -79,26 +77,42 @@ public class ImageSearchService {
             PlaceCandidateResponse currCandidate = candidates.get(i);
             String candidateName = currCandidate.getPlaceName();
 
-            String imageUrlFromDB = travelPlaceDao.selectImgUrlByTitle(candidateName);
+            String imageUrlFromDB = getImageUrlFromDatabase(candidateName);
+
             if (imageUrlFromDB != null) {
                 // 있으면 db에서 이미지 삽입
                 currCandidate.setImageUrl(imageUrlFromDB);
             } else {
-                // 없으면 인터넷 서치를 이용해 이미지 삽입
-                // internet Search 기록이 이미지 형식인지 확인
-                final int MAX_ATTEMPTS = 3;
-                for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-                    String imageUrlFromInternet = internetSearchTool.getImgUrl(candidateName);
-
-                    // URL이 유효한 링크인지 확인
-                    if (isDirectImageUrl(imageUrlFromInternet)) {
-                        currCandidate.setImageUrl(imageUrlFromInternet);
-                        break;
-                    }
+                // 없으면 인터넷에서 이미지 검색
+                String imageUrlFromInternet = searchImageFromInternet(candidateName);
+                if (imageUrlFromInternet != null) {
+                    currCandidate.setImageUrl(imageUrlFromInternet);
                 }
             }
             log.info("후보자 {}의 이미지 URL: {}", i + 1, currCandidate.getImageUrl());
         }
+    }
+
+    @Transactional(readOnly = true)
+    private String getImageUrlFromDatabase(String candidateName) {
+        return travelPlaceDao.selectImgUrlByTitle(candidateName);
+    }
+
+    private String searchImageFromInternet(String candidateName) {
+        final int MAX_ATTEMPTS = 3;
+        for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+            try {
+                String imageUrlFromInternet = internetSearchTool.getImgUrl(candidateName);
+
+                // URL이 유효한 링크인지 확인
+                if (isDirectImageUrl(imageUrlFromInternet)) {
+                    return imageUrlFromInternet;
+                }
+            } catch (Exception e) {
+                log.warn("인터넷 이미지 검색 중 예외 발생: {}", e.getMessage());
+            }
+        }
+        return null;
     }
 
     public boolean isDirectImageUrl(String url) {

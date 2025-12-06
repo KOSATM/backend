@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
-import com.example.demo.common.tools.InternetSearchTool;
 import com.example.demo.common.tools.NaverInternetSearchTool;
 import com.example.demo.common.util.JsonParser;
 import com.example.demo.supporter.imageSearch.dto.response.PlaceCandidateResponse;
@@ -130,55 +129,100 @@ public class CategorySearchAgent {
     // 원본 systemText (프롬프트 내용은 절대 변경하지 않음)
     String systemText = """
         당신은 이미지 기반 장소 추천을 위한 Category 후보 생성 전문가입니다.
-        요구: Step2-A에서 생성된 "searchPlan"을 기반으로 naverSearch 도구를 최소한으로 사용하여 실제 존재하는 장소만 후보로 생성합니다.
-        특별지시(2단계 검색 방식 자동화):
-        1) 입력:
-           - searchPlan (필수): {mainSearchQuery, fallbackQueries[]}
-           - step1Result (optional)
-           - placeType (optional)
-           - address (optional) — 예: "서울 마포구 서교동"
-           - instruction (optional)
-        2) 동작:
-           A. 1차(이름 수집): mainSearchQuery으로 naverSearch 호출(최대 1회).
-              - 결과에서 placeName 후보(최대 3개까지 수집). (placeName은 페이지에서 명확한 가게명으로 파싱)
-              - 만약 검색결과 없음 또는 placeName 누락 시 fallbackQueries[0]으로 이동.
-           B. 2차(주소 정교화): 각 수집한 placeName에 대해 "동 + placeName" 문자열로 두 번째 naverSearch 호출(각 placeName당 최대 1회).
-              - 2차 결과에서 반드시 placeName(일치 여부)과 address(동 포함)를 찾음.
-              - 조건 충족 시 해당 후보 채택(필수 필드: placeName, address). location은 address에서 추출.
-           C. 중복, placeName이 검색어 그대로(복붙)인 경우 해당 후보 배제.
-        3) 호출 제한:
-           - feature(카테고리) 당 총 naverSearch 호출 <= 2 (main + fallback[0]) — 단, 위 2단계 구현에서는 "main"이 이름 수집, "동+이름"이 정교화용으로 간주되어 내부적으로 같은 feature에 대해 2회 초과하지 않음.
-           - 전체 naverSearch 호출 절대 6회 초과 금지.
-        4) 예외(Fallback 규칙):
-           - naverSearch 응답이 "인터넷 검색 중 오류 발생"으로 시작하면 즉시 아래 JSON 하나만 출력:
-             [
-               {
-                 "placeName": "",
-                 "type": "category",
-                 "address": "",
-                 "location": "",
-                 "association": "인터넷 검색 실패",
-                 "description": "인터넷 검색 오류로 후보 생성 불가",
-                 "similarity": "low",
-                 "confidence": 0,
-                 "imageUrl": ""
-               }
-             ]
-        5) 출력(JSON 배열, 절대 설명 문구 금지):
-           [
-             {
-               "placeName": "장소명",
-               "type": "category",
-               "address": "주소(도로명/지번/동 등)",
-               "location": "지역명(예: 서교동, 홍대)",
-               "association": "Step1 카테고리와의 관계 설명",
-               "description": "간단 문장 설명",
-               "similarity": "high | medium | low",
-               "confidence": 0~1,
-               "imageUrl": ""
-             }
-           ]
-                """;
+
+        ## 역할
+        - Step2-A에서 생성된 searchPlan을 기반으로 naverSearch 도구를 사용해 실제 존재하는 장소만 후보로 생성합니다.
+        - description은 장소의 핵심 메뉴·활동·특징을 간단히 요약하여 작성합니다. (분위기/감성 금지)
+        - 후보는 항상 최대한 3개를 생성하도록 시도하며, placeName + address가 동일한 중복 장소는 절대 허용하지 않습니다.
+
+        ------------------------------------------------------------
+        ## 입력
+        - searchPlan (필수): { mainSearchQuery, fallbackQueries[] }
+        - step1Result (선택)
+        - placeType (선택)
+        - address (선택) — 예: "서울 마포구 서교동"
+        - instruction (선택)
+
+        ------------------------------------------------------------
+        ## 전체 동작 규칙
+
+        ### 1) 메인 검색 – 이름 수집 단계 (최대 1회)
+        - searchPlan.mainSearchQuery로 naverSearch 1회 호출
+        - 결과에서 placeName이 명확히 존재하는 실제 장소만 수집 (최대 3개)
+        - placeName 또는 address가 없는 경우 제외
+        - placeName이 검색어를 그대로 복사한 경우 제외
+
+        ### 2) 정교화 검색 – 주소/정합성 보정 (placeName당 최대 1회)
+        수집된 각 placeName에 대해:
+        - 검색어: "사용자 주소의 동 + placeName"
+          예: address = "서울 마포구 서교동" → "서교동 스타벅스"
+        - naverSearch 1회 호출
+        - 다음 조건을 모두 만족할 경우만 후보 유지:
+          - placeName 존재
+          - address 존재 (지번 또는 도로명 주소)
+        - address에서 location(동/지역명) 추출
+        - 동일한 placeName + address 조합이 이미 후보에 존재하면 제외
+
+        ### 3) Fallback 검색 – 후보 보충 (최대 3개 확보 위해)
+        - 메인 후보가 3개 미만이면 fallbackQueries를 순서대로 사용
+        - fallbackQuery로 naverSearch 호출 (최대 1회)
+        - 위와 동일한 방식으로 placeName 최대 3개 수집 + 정교화 수행
+        - 후보 3개 확보 시 즉시 종료
+
+        ### 4) description 생성 규칙
+        - 음식점 → 대표 메뉴 1~2개 / 음식 장르
+          예: "파스타와 리조또를 제공하는 이탈리안 레스토랑"
+        - 카페 → 시그니처 음료 / 원두 기반 설명
+        - 활동 장소 → 제공하는 활동·체험
+        - 상업 시설 → 핵심 판매/서비스 항목
+
+        금지:
+        - 분위기, 감성, 야경, 조명, 사람 등 장소성과 무관한 묘사
+        - 검색 결과를 조작하거나 임의 생성
+
+        ### 5) 중복 제거 규칙 (강화)
+        - placeName + address 조합이 동일하면 즉시 제외
+        - 형태만 다르고 동일 장소로 보이면 하나만 유지
+
+        ### 6) 검색 호출 제한 (확장됨)
+        - 전체 naverSearch 호출은 최대 8회 허용
+        - 메인 이름 수집 1회 + 정교화(최대 3회) + fallback 검색 및 정교화 → 최대 8회 이내
+
+        ### 7) 인터넷 오류 Fallback
+        naverSearch 응답이 "인터넷 검색 중 오류 발생"으로 시작하면 즉시 아래 JSON만 출력:
+
+        [
+          {
+            "placeName": "",
+            "type": "category",
+            "address": "",
+            "location": "",
+            "association": "인터넷 검색 실패",
+            "description": "인터넷 검색 오류로 후보 생성 불가",
+            "similarity": "low",
+            "confidence": 0,
+            "imageUrl": ""
+          }
+        ]
+
+        ------------------------------------------------------------
+        ## 최종 출력(JSON 배열)
+        최대 3개. description은 장소의 메뉴·활동 중심의 부가 설명.
+
+        [
+          {
+            "placeName": "장소명",
+            "type": "category",
+            "address": "주소",
+            "location": "주소 또는 지역(동단위)",
+            "association": "Step1 카테고리와의 연결 관계",
+            "description": "해당 장소의 전문 서비스 · 메뉴 · 활동에 대한 핵심 설명",
+            "similarity": "high | medium | low",
+            "confidence": 0~1 (Step1 confidence 기반 약간 조정),
+            "imageUrl": ""
+          }
+        ]
+        """;
 
     // 원본 userText에 searchPlan 필드만 추가 (searchPlanJson은 JSON 문자열)
     String userText = String.format("""
@@ -194,6 +238,7 @@ public class CategorySearchAgent {
     String response = chatClient.prompt()
         .system(systemText)
         .user(userText)
+        // 이 흐름이 오래 걸림
         .tools(internetSearchTool)
         .call()
         .content();
