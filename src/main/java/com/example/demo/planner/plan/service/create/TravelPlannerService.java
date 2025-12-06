@@ -42,7 +42,6 @@ public class TravelPlannerService implements AiAgent {
     private final DaySplitService daySplitService;
     private final RegionService regionService;
     private final StartDateNormalizerAgent startDateNormalizerAgent;
-    private final PlanService planService;
     private final PlanAssemblerService planAssemblerService;
     
 
@@ -102,7 +101,7 @@ public class TravelPlannerService implements AiAgent {
         // Day 분할
         log.info("▷▷ 9. 일정 분배");
         List<DayPlanResult> dayPlans = daySplitService.split(clusters, duration, strategy);
-        // logDayPlans(dayPlans);
+        logDayPlans(dayPlans);
 
         log.info("▷▷ 10. 최종 일정 배치 후 저장 및 응답");
         planAssemblerService.createAndSavePlan(dayPlans, arguments, null);

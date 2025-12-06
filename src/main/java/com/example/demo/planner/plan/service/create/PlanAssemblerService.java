@@ -17,9 +17,11 @@ import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
 import com.example.demo.planner.plan.dto.entity.TravelPlaces;
 import com.example.demo.planner.plan.dto.response.DayPlanResult;
 import com.example.demo.planner.plan.dto.response.PlanScheduleResult;
+import com.example.demo.planner.plan.service.PlanSnapshotService;
 import com.example.demo.planner.plan.utils.DateTimeUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -33,6 +35,7 @@ public class PlanAssemblerService {
 
     private final PlanSchedulerAgent planSchedulerAgent;
     private final ObjectMapper objectMapper;
+    private final PlanSnapshotService planSnapshotService;
     private final PlanDao planDao;
     private final PlanDayDao planDayDao;
     private final PlanPlaceDao planPlaceDao;
@@ -66,15 +69,19 @@ public class PlanAssemblerService {
         List<Long> planDaysIds = planDayDao.selectPlanDayIdsByPlanId(plan.getId());
         
 
-        // 3) 각 날짜 엔티티 생성
+        // 4) 각 날짜 엔티티 생성
         List<PlanPlace> scheduledPlanPlaces = createPlanPlaceEntity(planDaysIds, scheduleResult, startDate, placeInfoMap);
-        for(PlanPlace planPlace : scheduledPlanPlaces){
-            System.out.println(planPlace.toString());
-            System.err.println(" >>>");
-        }
+        // for(PlanPlace planPlace : scheduledPlanPlaces){
+        //     System.out.println(planPlace.toString());
+        //     System.err.println(" >>>");
+        // }
         planPlaceDao.insertPlanPlaceBatch(scheduledPlanPlaces);
         
-
+        try {
+            PlanSnapshot snapShot = planSnapshotService.savePlanSnapshot(plan, days, scheduledPlanPlaces);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 

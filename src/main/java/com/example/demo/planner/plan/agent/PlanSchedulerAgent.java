@@ -182,7 +182,7 @@ public class PlanSchedulerAgent {
                 .user(userPrompt)
                 .options(ChatOptions.builder().temperature(0.2).build()).call().content();
 
-        System.out.println(response);
+        // System.out.println(response);
         return response;
 
     }
