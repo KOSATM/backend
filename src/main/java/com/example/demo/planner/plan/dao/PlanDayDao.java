@@ -1,10 +1,10 @@
 package com.example.demo.planner.plan.dao;
 
+import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 
 import com.example.demo.planner.plan.dto.entity.PlanDay;
-
-import java.util.List;
 
 /**
  * 여행 날짜 DAO
@@ -22,6 +22,11 @@ public interface PlanDayDao {
      */
     PlanDay selectPlanDayById(Long id);
     PlanDay selectPlanDayByPlanId(Long id);
+
+    /*
+        plandDayId를 조회합니다.
+    */
+    List<Long> selectPlanDayIdsByPlanId(Long planId);
     
     /**
      * 여행 계획의 모든 날짜를 조회합니다.
@@ -33,6 +38,11 @@ public interface PlanDayDao {
      * 여행 날짜를 생성합니다.
      */
     int insertPlanDay(PlanDay planDay);
+
+    /**
+     * 여행 날짜들을 생성합니다.
+     */
+    int insertPlanDayBatch(List<PlanDay> days);
     
     /**
      * 여행 날짜를 수정합니다.

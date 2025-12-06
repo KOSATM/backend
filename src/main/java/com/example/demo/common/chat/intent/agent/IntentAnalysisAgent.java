@@ -63,7 +63,7 @@ public class IntentAnalysisAgent {
             - 값의 형식을 강제하지 않습니다.(숫자/정규화/전처리 등 하지 않음)
 
             - 예시:
-                - travel_plan → { "location": "...", "duration": "..." }
+                - travel_plan → { "location": "...", "theme": "...", "duration": "...", "startDate": "..." }
                 - plan_add → { "date": "...", "place": "..." }
                 - plan_modify → { "oldPlace": "...", "newPlace": "...", "day": "..." }
                 - attraction_recommend → { "location": "..." }

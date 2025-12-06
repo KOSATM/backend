@@ -5,9 +5,11 @@ import java.time.OffsetDateTime;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 @Builder
 @Getter
+@ToString
 public class PlanPlace {
     private Long id;
     private Long dayId;

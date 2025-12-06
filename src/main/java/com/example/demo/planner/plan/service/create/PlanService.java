@@ -1,4 +1,4 @@
-package com.example.demo.planner.plan.service;
+package com.example.demo.planner.plan.service.create;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

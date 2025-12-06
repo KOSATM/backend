@@ -7,7 +7,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.planner.plan.dto.Cluster;
-import com.example.demo.planner.travel.cluster.GeoUtils;
+import com.example.demo.planner.plan.utils.GeoUtils;
 
 @Service
 public class ClusterSortService {

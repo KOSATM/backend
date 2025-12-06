@@ -18,17 +18,45 @@
   </select>
 
   <select id="selectPlanPlacesByPlanId" parameterType="long" resultType="PlanPlace">
-    SELECT tp.id, tp.day_id, tp.title, tp.start_at, tp.end_at, tp.place_name, tp.address, tp.lat, tp.lng, tp.expected_cost
+    SELECT tplace.id, tplace.day_id, tplace.title, tplace.start_at, tplace.end_at, tplace.place_name, tplace.address, tplace.lat, tplace.lng, tplace.expected_cost
     FROM plan_places tp
-    INNER JOIN plan_days td ON tp.day_id = td.id
+    INNER JOIN plan_days td ON tplace.day_id = td.id
     WHERE td.plan_id = #{planId}
-    ORDER BY td.day_index ASC, tp.start_at ASC
+    ORDER BY td.day_index ASC, tplace.start_at ASC
   </select>
 
   <insert id="insertPlanPlace" parameterType="PlanPlace" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO plan_places (day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost)
     VALUES (#{dayId}, #{title}, #{startAt}, #{endAt}, #{placeName}, #{address}, #{lat}, #{lng}, #{expectedCost})
   </insert>
+
+  <insert id="insertPlanPlaceBatch">
+    INSERT INTO plan_places (
+        day_id,
+        title,
+        start_at,
+        end_at,
+        place_name,
+        address,
+        lat,
+        lng,
+        expected_cost
+    )
+    VALUES
+    <foreach collection="list" item="place" separator=",">
+        (
+            #{place.dayId},
+            #{place.title},
+            #{place.startAt},
+            #{place.endAt},
+            #{place.placeName},
+            #{place.address},
+            #{place.lat},
+            #{place.lng},
+            #{place.expectedCost}
+        )
+    </foreach>
+</insert>
 
   <update id="updatePlanPlace" parameterType="PlanPlace">
     UPDATE plan_places

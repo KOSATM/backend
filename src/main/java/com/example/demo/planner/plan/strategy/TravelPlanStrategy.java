@@ -1,4 +1,4 @@
-package com.example.demo.planner.travel.strategy;
+package com.example.demo.planner.plan.strategy;
 
 public interface TravelPlanStrategy {
     DayRequirement getDayRequirement(int dayIndex, int duration);

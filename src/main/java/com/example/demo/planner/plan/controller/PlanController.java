@@ -18,7 +18,7 @@ import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
 import com.example.demo.planner.plan.dto.response.PlanDetail;
-import com.example.demo.planner.plan.service.PlanService;
+import com.example.demo.planner.plan.service.create.PlanService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

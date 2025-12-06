@@ -9,7 +9,7 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
 import com.example.demo.planner.plan.dto.entity.Plan;
-import com.example.demo.planner.plan.service.PlanService;
+import com.example.demo.planner.plan.service.create.PlanService;
 
 import lombok.extern.slf4j.Slf4j;
 

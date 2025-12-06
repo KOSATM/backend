@@ -10,6 +10,12 @@
     WHERE id = #{id}
   </select>
 
+  <select id="selectPlanDayIdsByPlanId" parameterType="Long" resultType="Long">
+    SELECT id
+    FROM plan_days
+    WHERE plan_id = #{id}
+  </select>
+
   <select id="selectPlanDaysByPlanId" parameterType="long" resultType="PlanDay">
     SELECT id, plan_id, day_index, title, plan_date
     FROM plan_days
@@ -20,6 +26,14 @@
   <insert id="insertPlanDay" parameterType="PlanDay" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO plan_days (plan_id, day_index, title, plan_date)
     VALUES (#{planId}, #{dayIndex}, #{title}, #{planDate})
+  </insert>
+
+    <insert id="insertPlanDayBatch">
+  INSERT INTO plan_days (plan_id, day_index, plan_date)
+  VALUES
+  <foreach collection="list" item="days" separator=",">
+    (#{days.planId}, #{days.dayIndex}, #{days.planDate})
+  </foreach>
   </insert>
 
   <update id="updatePlanDay" parameterType="PlanDay">
