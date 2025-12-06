@@ -5,25 +5,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Service;
 
+import com.example.demo.planner.plan.agent.SeedQueryAgent;
+import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dto.TravelPlaceCandidate;
 import com.example.demo.planner.travel.utils.CategoryNames;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class CategoryFillService {
 
-    /**
-     * 카테고리별로 후보들을 분류하고,
-     * SPOT / FOOD 등 필수 카테고리가 최소 개수보다 부족한지 체크만 함.
-     *
-     * 실제 보강(추가 로딩)은 여기서 하지 않고 DaySplit 단계에서 처리.
-     */
+    private final SeedQueryAgent seedQueryAgent;
+    private final EmbeddingModel embeddingModel;
+    private final PlanDao planDao;
+
+    /* 카테고리별로 후보들을 분류하고, SPOT / FOOD 등 필수 카테고리가 최소 개수보다 부족한지 체크만 함. */
     public Map<String, List<TravelPlaceCandidate>> fill(
-            List<TravelPlaceCandidate> candidates,
+            List<TravelPlaceCandidate> candidates, Map<String, Object> arguments,
             int minFood,
             int minSpot) {
 
@@ -48,8 +52,9 @@ public class CategoryFillService {
         log.info("=== [2] 필수 카테고리 개수 체크 ===");
 
         // SPOT / FOOD는 필수 → 부족하면 다음 단계에서 보강 필요성만 알려줌
-        strengthen(map, CategoryNames.FOOD, minFood);
-        strengthen(map, CategoryNames.SPOT, minSpot);
+        strengthen(map, arguments, CategoryNames.FOOD, minFood);
+        strengthen(map, arguments, CategoryNames.SPOT, minSpot);
+        arguments.remove("category");
 
         printCategoryCount(map);
 
@@ -87,14 +92,12 @@ public class CategoryFillService {
         return map;
     }
 
-    /**
-     * 특정 카테고리가 최소 갯수보다 부족하면 로그로 알려줌
-     * → 실제 보강(searchMissingCategoryByVector)은 여기서 하지 않음
-     */
-    private void strengthen(Map<String, List<TravelPlaceCandidate>> map,
+    /* 특정 카테고리가 최소 갯수보다 부족하면 로그로 알려줌 */
+    private void strengthen(Map<String, List<TravelPlaceCandidate>> map, Map<String, Object> arguments,
             String category,
             int minCount) {
 
+        List<TravelPlaceCandidate> currentList = map.get(category);
         int current = map.get(category).size();
 
         if (current >= minCount) {
@@ -103,10 +106,30 @@ public class CategoryFillService {
         }
 
         int lacking = minCount - current;
-        log.warn("[{}] 부족 → {}개 부족", category, lacking);
+        log.warn("[{}] 부족 → {}개 → 전역 DB 보강 시작", category, lacking);
 
-        // 실제 보강은 DaySplit 단계가 담당
-        // 여기서는 통계 + 상태만 기록
+        // 1) Seed Query 생성 (category 모드)
+        arguments.put("category", category); // category 모드 유도
+        String seedQuery = seedQueryAgent.generateSeedQuery(arguments);
+
+        // 2) embedding 생성
+        float[] embedding = embeddingModel.embed(seedQuery);
+
+        List<Long> excludedIds = currentList.stream()
+                .map(c -> c.getTravelPlaces().getId())
+                .toList();
+
+        // 4) 전역 DB에서 카테고리 보강 검색
+        List<TravelPlaceCandidate> fetched = planDao.searchMissingCategoryByVector(
+                Map.of("category", category, "embedding", embedding, "excludedIds", excludedIds, "limit", lacking));
+
+        // 5) 보강 append
+        currentList.addAll(fetched);
+
+        log.info("[{}] 보강 완료 → {}개 추가, 최종 {}개",
+                category,
+                fetched.size(),
+                currentList.size());
     }
 
     /**

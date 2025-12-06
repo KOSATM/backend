@@ -1,5 +1,6 @@
 package com.example.demo.planner.plan.service.create;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +13,9 @@ import com.example.demo.common.chat.intent.dto.IntentCommand;
 import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.planner.plan.agent.DurationNormalizerAgent;
+import com.example.demo.planner.plan.agent.PlanSchedulerAgent;
 import com.example.demo.planner.plan.agent.SeedQueryAgent;
+import com.example.demo.planner.plan.agent.StartDateNormalizerAgent;
 import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dto.Cluster;
 import com.example.demo.planner.plan.dto.ClusterBundle;
@@ -22,8 +25,10 @@ import com.example.demo.planner.plan.dto.response.DayPlanResult;
 import com.example.demo.planner.travel.strategy.StandardTravelStrategy;
 import com.example.demo.planner.travel.strategy.TravelPlanStrategy;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@RequiredArgsConstructor
 @Component
 @Slf4j
 public class TravelPlannerService implements AiAgent {
@@ -36,20 +41,8 @@ public class TravelPlannerService implements AiAgent {
     private final CategoryFillService categoryFillService;
     private final DaySplitService daySplitService;
     private final RegionService regionService;
-
-    public TravelPlannerService(EmbeddingModel embeddingModel, SeedQueryAgent seedQueryAgent,
-            DurationNormalizerAgent durationNormalizerAgent, PlanDao planDao,
-            KMeansClusterService kMeansClusterService,
-            CategoryFillService categoryFillService, DaySplitService daySplitService, RegionService regionService) {
-        this.embeddingModel = embeddingModel;
-        this.seedQueryAgent = seedQueryAgent;
-        this.durationNormalizerAgent = durationNormalizerAgent;
-        this.planDao = planDao;
-        this.kMeansClusterService = kMeansClusterService;
-        this.categoryFillService = categoryFillService;
-        this.daySplitService = daySplitService;
-        this.regionService = regionService;
-    }
+    private final PlanSchedulerAgent planSchedulerAgent;
+    private final StartDateNormalizerAgent startDateNormalizerAgent;
 
     @Override
     public AiAgentResponse execute(IntentCommand command) {
@@ -62,8 +55,9 @@ public class TravelPlannerService implements AiAgent {
         log.info("  선택된 전략: {}", strategy.getClass().getSimpleName());
 
         // Duration 정규화
-        log.info("▷▷ 2. Duration 정규화");
-        int duration = normalizeDuration(arguments);
+        log.info("▷▷ 2. 입력값 정규화");
+        normalizeDuration(arguments);
+        int duration = (int) arguments.get("duration");
         String location = (String) arguments.getOrDefault("location", "서울");
 
         int minSpot = strategy.getTotalMinSpot(duration);
@@ -90,7 +84,7 @@ public class TravelPlannerService implements AiAgent {
 
         // 카테고리 보강
         log.info("▷▷ 6. 카테고리 보강");
-        Map<String, List<TravelPlaceCandidate>> categoryMap = categoryFillService.fill(filtered, minFood, minSpot);
+        Map<String, List<TravelPlaceCandidate>> categoryMap = categoryFillService.fill(filtered, arguments, minFood, minSpot);
 
         // 병합
         log.info("▷▷ 7. 카테고리 병합");
@@ -108,13 +102,18 @@ public class TravelPlannerService implements AiAgent {
         List<DayPlanResult> dayPlans = daySplitService.split(clusters, duration, strategy);
         // logDayPlans(dayPlans);
 
-        log.info("▷▷ 10. 최종 일정 반환");
+        log.info("▷▷ 10. 일정 배치");
+        String response = planSchedulerAgent.createTravelPlan(dayPlans, arguments);
 
-        log.info("▷▷ 11. TravelPlannerAgent 완료");
+        log.info("▷▷ 11. 최종 일정 반환");
+        
+
+        log.info("▷▷ 12. TravelPlannerAgent 완료");
 
         printDayPlans(dayPlans);
 
-        return AiAgentResponse.of(buildResponse(dayPlans));
+        // return AiAgentResponse.of(buildResponse(dayPlans));
+        return AiAgentResponse.of(response);
 
     }
 
@@ -125,10 +124,14 @@ public class TravelPlannerService implements AiAgent {
         return new StandardTravelStrategy();
     }
 
-    // Duration 정규화
-    private int normalizeDuration(Map<String, Object> args) {
-        String normalized = durationNormalizerAgent.durationNormalized(args);
-        return Integer.parseInt(normalized);
+    // 정규화
+    private void normalizeDuration(Map<String, Object> arguments) {
+        String duration = durationNormalizerAgent.normalized(arguments);
+        String startDate = arguments.containsKey("startDate") != false ? startDateNormalizerAgent.normalized(arguments)
+                : (LocalDate.now().plusDays(7)).toString();
+        arguments.put("duration", Integer.parseInt(duration));
+        arguments.put("startDate", startDate);
+        return;
     }
 
     // 벡터 검색 & 셔플

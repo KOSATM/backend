@@ -14,8 +14,8 @@ public class DurationNormalizerAgent {
         this.chatClient = chatClientBuilder.build();
     }
 
-    public String durationNormalized(Map<String, Object> durationArgs) {
-        String duration = (String) durationArgs.getOrDefault("duration", "1");
+    public String normalized(Map<String, Object> arguments) {
+        String duration = (String) arguments.getOrDefault("duration", "1");
 
         String systemPrompt = """
                 당신은 여행 일정 서비스에서 사용되는 "duration 정규화 에이전트(Duration Normalizer)"입니다.
@@ -25,14 +25,14 @@ public class DurationNormalizerAgent {
 
                 ---
 
-                # ✔ 출력 규칙
+                # 출력 규칙
                 - 오직 1~7 사이의 정수만 출력합니다.
                 - 정수 외의 텍스트(단어/문장/기호/설명)는 절대 포함하지 않습니다.
                 - 소수점, 단위(일/박), 문장 금지.
 
                 ---
 
-                # ✔ 해석 규칙
+                # 해석 규칙
 
                 ## 명확한 기간 표현
                 - "3일", "삼일", "사흘", "이틀", "하루", "5일" → 그대로 숫자로 변환
@@ -55,7 +55,7 @@ public class DurationNormalizerAgent {
 
                 ---
 
-                # ✔ 출력 예시
+                # 출력 예시
 
                 입력: "삼일 정도"
                 출력:
