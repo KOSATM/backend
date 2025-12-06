@@ -93,4 +93,10 @@ public class ReviewController {
         // 내용물 없이 성공 신호(200 OK)만 보냄
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/style/select")
+    public ResponseEntity<Void> selectStyle(@RequestParam("reviewPostId") Long reviewPostId, @RequestParam("reviewStyleId") Long reviewStyleId) {
+        reviewService.selectStyle(reviewPostId,reviewStyleId);
+        return ResponseEntity.ok().build();
+    }
 }
