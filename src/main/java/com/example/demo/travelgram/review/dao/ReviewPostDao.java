@@ -11,7 +11,7 @@ public interface ReviewPostDao {
     void updateReviewPostMood(Long photoGroupId, String overallMoods, String travelType);
     ReviewPost selectReviewPostById(Long reviewPostId);
     void updateReviewPostStyleIdById(Long reviewPostId, Long reviewStyleId);
-
+    void updateReviewPostCaptionIdById(Long reviewPostId, String caption);
     
 
     

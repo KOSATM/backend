@@ -1,16 +1,18 @@
 package com.example.demo.travelgram.review.dao;
 
-import org.apache.ibatis.annotations.Mapper;
+import java.util.List;
 
-import com.example.demo.travelgram.review.dto.entity.ReviewHashtag;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
 import com.example.demo.travelgram.review.dto.entity.ReviewHashtagGroup;
 
 
 @Mapper
 public interface ReviewHashtagDao {
     void insertHashtagGroup(ReviewHashtagGroup group);
-    void insertHashtag(ReviewHashtag hashtag);
-
-
+    void insertHashtagList(@Param("hashtagGroupId") Long hashtagGroupId, 
+                           @Param("names") List<String> names);
+    void deleteHashtagsByHashtagGroupId(@Param("hashtagGroupId") Long hashtagGroupId);
     
 }
