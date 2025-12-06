@@ -130,6 +130,7 @@ public class AiReviewService {
                     .reviewAnalysisId(analysis.getId())
                     .name(item.getToneName()) 
                     .toneCode(item.getToneCode())
+                    .createdAt(OffsetDateTime.now())
                     .caption(item.getCaption()) // Make sure this matches your DB column
                     .build();
             

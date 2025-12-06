@@ -6,7 +6,7 @@
 
   <insert id="insertAiReviewAnalysis" parameterType="AiReviewAnalysis" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO ai_review_analysis (input_json, output_json, created_at, review_post_id)
-    VALUES (#{inputJson}::jsonb, #{outputJson}::jsonb, now(), #{reviewPostId})
+    VALUES (#{inputJson}::jsonb, #{outputJson}::jsonb, created_at, #{reviewPostId})
   </insert>
 
   <select id="selectAiReviewAnalysisById" resultType="AiReviewAnalysis">
