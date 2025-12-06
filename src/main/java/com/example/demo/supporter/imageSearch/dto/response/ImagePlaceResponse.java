@@ -4,6 +4,8 @@ import lombok.Data;
 
 @Data
 public class ImagePlaceResponse {
+    private Long id; //PK
+
     private String name;
     private String address;
     private double lat; // 위도

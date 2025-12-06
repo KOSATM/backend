@@ -45,4 +45,15 @@ public class AiReviewController {
         return ResponseEntity.ok(title);
     }
 
+    @PostMapping("/generate-styles")
+    public ResponseEntity<?> generateStyles(
+            @RequestParam("planId") Long planId,
+            @RequestParam("reviewPostId") Long reviewPostId) {
+
+        // 생성 및 저장 수행
+        var styles = aiReviewService.createAndSaveStyles(planId, reviewPostId);
+
+        return ResponseEntity.ok(styles);
+    }
+
 }

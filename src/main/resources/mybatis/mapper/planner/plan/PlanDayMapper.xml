@@ -55,4 +55,16 @@
     WHERE plan_id = #{planId}
   </delete>
 
+  <select id="selectPlanDayByPlanIdAndDayIndex" resultType="PlanDay">
+    SELECT id, plan_id, day_index, title, plan_date
+    FROM plan_days
+    WHERE plan_id = #{planId} AND day_index = #{dayIndex}
+  </select>
+
+  <select id="selectMaxDayIndexByPlanId" parameterType="long" resultType="Integer">
+    SELECT MAX(day_index)
+    FROM plan_days
+    WHERE plan_id = #{planId}
+  </select>
+
 </mapper>

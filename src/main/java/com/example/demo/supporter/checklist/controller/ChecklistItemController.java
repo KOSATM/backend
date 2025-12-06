@@ -39,4 +39,10 @@ public class ChecklistItemController {
     public ResponseEntity<Integer> delete(@PathVariable Long id) {
         return ResponseEntity.ok(service.delete(id));
     }
+
+    // userId로 모든 체크리스트 항목 조회
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<ChecklistItem>> listByUserId(@PathVariable("userId") Long userId) {
+        return ResponseEntity.ok(service.getAllByUserId(userId));
+    }
 }

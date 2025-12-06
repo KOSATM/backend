@@ -5,8 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.common.s3.service.S3Service;
@@ -41,6 +44,7 @@ public class ReviewService {
     private final ReviewHashtagDao reviewHashtagDao;
 
     private final ReviewImageAnalysisAgent reviewImageAnalysisAgent;
+    private final ReviewAnalysisService reviewAnalysisService;
     private final ObjectMapper objectMapper;
 
     // ======================================
@@ -68,7 +72,7 @@ public class ReviewService {
         reviewPhotoDao.insertReviewPhotoGroup(photoGroup);
         reviewHashtagDao.insertHashtagGroup(hashtagGroup);
         // 5. 리뷰 포스트에 그룹 아이디 업데이트
-        reviewPostDao.updateReviewPostGroupId(post.getId(),photoGroup.getId(), hashtagGroup.getId());
+        reviewPostDao.updateReviewPostGroupId(post.getId(), photoGroup.getId(), hashtagGroup.getId());
 
         // 결과 리턴
         return new ReviewCreateResponse(post.getId(), photoGroup.getId(), hashtagGroup.getId());
@@ -77,7 +81,6 @@ public class ReviewService {
     // ======================================
     // 2) 사진 업로드 (JSON 파싱 로직 완전 삭제 버전)
     // ======================================
-    @Transactional
     public List<ReviewPhotoUploadResponse> uploadPhotosBatch(
             List<MultipartFile> files,
             Long photoGroupId, // 👈 JSON 대신 그냥 받음
@@ -110,14 +113,6 @@ public class ReviewService {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("file is empty");
         }
-        String summary;
-        try {
-            // file.getBytes() throws IOException, so we must catch it
-            summary = reviewImageAnalysisAgent.analyzeReviewImage(file.getContentType(), file.getBytes());
-        } catch (IOException e) {
-            log.error("Failed to read bytes from file", e);
-            throw new RuntimeException("Failed to process file for analysis", e);
-        }
         // 2) 확장자 추출
         String originalName = file.getOriginalFilename();
 
@@ -133,30 +128,41 @@ public class ReviewService {
         }
         String storedName = folder + UUID.randomUUID().toString() + ext;
         // 4) S3 업로드
-        String s3Url = null;
+        String s3Url;
         try {
-            log.info("Attempting S3 upload via s3Service...");
-            s3Url = s3Service.uploadFile(file, storedName); // S3 업로드
-            log.info("S3 upload successful. URL: {}", s3Url);
+            s3Url = s3Service.uploadFile(file, storedName);
         } catch (Exception e) {
-            log.error("🛑 CRITICAL S3 UPLOAD FAILURE for file {}", storedName, e);
-            // S3 업로드 실패 시 Custom Exception을 던지거나, RuntimeException으로 변환하여 상위로 전달
-            throw new RuntimeException("S3 file upload failed", e);
+            throw new RuntimeException("S3 upload failed", e);
         }
 
-        // 5) DB에 저장할 엔티티 생성
+        // 2. DB 저장 (AI 요약(summary)은 일단 null 또는 "분석 중..."으로 저장)
         ReviewPhoto photo = ReviewPhoto.builder()
                 .photoGroupId(photoGroupId)
                 .orderIndex(orderIndex)
                 .fileUrl(s3Url)
-                .summary(summary)
+                .summary(null) // 나중에 채워짐
                 .build();
 
-        // 6) DB 저장
         reviewPhotoDao.insertReviewPhoto(photo);
+
+        // 3. ★ 비동기 AI 분석 요청 (기다리지 않고 바로 넘어감)
+        try {
+            reviewAnalysisService.analyzePhotoAndUpdateDb(
+                    photo.getId(),
+                    file.getContentType(),
+                    file.getBytes() // IO 발생하므로 주의, 파일이 너무 크면 InputStream 방식 고려
+            );
+        } catch (IOException e) {
+            log.error("이미지 바이트 읽기 실패", e);
+        }
 
         return new ReviewPhotoUploadResponse(photo.getId(), photo.getFileUrl(), photo.getOrderIndex());
 
+    }
+
+
+    public List<ReviewPhoto> getReviewPhotos(Long photoGroupId) {
+        return reviewPhotoDao.selectReviewPhotosByPhotoGroupId(photoGroupId);
     }
 
     @Transactional
@@ -192,5 +198,13 @@ public class ReviewService {
 
         log.info("📊 여행 분석 완료: Type={}, Mood={}", result.getTravelType(), result.getOverallMood());
 
+    }
+
+    @Transactional
+    public void selectStyle(Long reviewPostId, Long reviewStyleId) {
+        log.info("리뷰 스타일 선택 업데이트 - reviewPostId: {}, reviewStyleId: {}", reviewPostId, reviewStyleId);
+        
+        // DAO 호출하여 업데이트 수행
+        reviewPostDao.updateReviewPostStyleIdById(reviewPostId, reviewStyleId);
     }
 }

@@ -184,7 +184,7 @@ public class TravelPlannerService implements AiAgent {
 
     // 응답 메시지 생성
     private String buildResponse(List<DayPlanResult> dayPlans) {
-        return "총 " + dayPlans.size() + "일 일정이 생성되었습니다.";
+        return "총 " + dayPlans.size() + "일 일정이 생성되었습니다. " + "\n 화면 우측에 있는 일정을 보고 수정하시고 싶은 부분이 있다면 말씀해주세요!";
     }
 
     private void printDayPlans(List<DayPlanResult> dayPlans) {

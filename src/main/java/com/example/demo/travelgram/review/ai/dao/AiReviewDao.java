@@ -13,7 +13,7 @@ public interface AiReviewDao {
     void insertAiReviewAnalysis(AiReviewAnalysis analysis);
     void insertAiReviewStyle(AiReviewStyle style);
     void insertAiReviewHashtag(AiReviewHashtag tag);
-    AiReviewStyle findStyleByAnalysisId(Long id);
-
+    List<AiReviewStyle> selectAllStylesByAnalysisId(Long reviewAnalysisId);
+    List<AiReviewHashtag> selectHashtagsByStyleId(Long styleId);
 }
 
