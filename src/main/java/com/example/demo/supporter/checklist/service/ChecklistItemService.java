@@ -20,6 +20,13 @@ public class ChecklistItemService {
         return dao.selectChecklistItemsByChecklistId(checklistId);
     }
 
+    /**
+     * userId로 모든 체크리스트 항목 조회
+     */
+    public List<ChecklistItem> getAllByUserId(Long userId) {
+        return dao.selectChecklistItemsByUserId(userId);
+    }
+
     @Transactional
     public Long create(ChecklistItem item) {
         dao.insertChecklistItem(item);
