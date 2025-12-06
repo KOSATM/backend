@@ -41,8 +41,10 @@ public class TravelPlannerService implements AiAgent {
     private final CategoryFillService categoryFillService;
     private final DaySplitService daySplitService;
     private final RegionService regionService;
-    private final PlanSchedulerAgent planSchedulerAgent;
     private final StartDateNormalizerAgent startDateNormalizerAgent;
+    private final PlanService planService;
+    private final PlanAssemblerService planAssemblerService;
+    
 
     @Override
     public AiAgentResponse execute(IntentCommand command) {
@@ -102,18 +104,16 @@ public class TravelPlannerService implements AiAgent {
         List<DayPlanResult> dayPlans = daySplitService.split(clusters, duration, strategy);
         // logDayPlans(dayPlans);
 
-        log.info("▷▷ 10. 일정 배치");
-        String response = planSchedulerAgent.createTravelPlan(dayPlans, arguments);
-
-        log.info("▷▷ 11. 최종 일정 반환");
+        log.info("▷▷ 10. 최종 일정 배치 후 저장 및 응답");
+        planAssemblerService.createAndSavePlan(dayPlans, arguments, null);
         
 
-        log.info("▷▷ 12. TravelPlannerAgent 완료");
+        log.info("▷▷ 11. TravelPlannerAgent 완료");
 
         printDayPlans(dayPlans);
 
         // return AiAgentResponse.of(buildResponse(dayPlans));
-        return AiAgentResponse.of(response);
+        return AiAgentResponse.of(null);
 
     }
 

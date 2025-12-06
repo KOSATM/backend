@@ -40,7 +40,7 @@
 
   <insert id="insertPlan" parameterType="Plan" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO plans (user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title)
-    VALUES (#{userId}, #{budget}, #{startDate}, #{endDate}, now(), null, #{isEnded}, #{title})
+    VALUES (#{userId}, #{budget}, #{startDate}, #{endDate}, now(), now(), #{isEnded}, #{title})
   </insert>
 
   <update id="updatePlan" parameterType="Plan">

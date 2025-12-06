@@ -4,9 +4,11 @@ import java.time.LocalDate;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 @Builder
 @Getter
+@ToString
 public class PlanDay {
     private Long id;
     private Long planId;

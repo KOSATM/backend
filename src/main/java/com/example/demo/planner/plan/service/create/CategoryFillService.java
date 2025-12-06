@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import com.example.demo.planner.plan.agent.SeedQueryAgent;
 import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dto.TravelPlaceCandidate;
-import com.example.demo.planner.travel.utils.CategoryNames;
+import com.example.demo.planner.plan.utils.CategoryNames;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
