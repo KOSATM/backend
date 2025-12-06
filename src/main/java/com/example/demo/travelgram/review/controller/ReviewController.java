@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.common.global.annotation.NoWrap;
 import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
+import com.example.demo.travelgram.review.dto.request.HashtagUpdateRequest;
 import com.example.demo.travelgram.review.dto.request.ReviewCreateRequest;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoOrderUpdateRequest;
 import com.example.demo.travelgram.review.dto.response.PhotoAnalysisResult;
@@ -78,6 +79,7 @@ public class ReviewController {
         List<ReviewPhoto> photos = reviewService.getReviewPhotos(photoGroupId);
         return ResponseEntity.ok(photos);
     }
+
     @PutMapping("/photo/order")
     public ResponseEntity<?> updatePhotoOrder(@RequestBody ReviewPhotoOrderUpdateRequest request) {
         reviewService.updatePhotoOrder(request);
@@ -95,8 +97,25 @@ public class ReviewController {
     }
 
     @PostMapping("/style/select")
-    public ResponseEntity<Void> selectStyle(@RequestParam("reviewPostId") Long reviewPostId, @RequestParam("reviewStyleId") Long reviewStyleId) {
-        reviewService.selectStyle(reviewPostId,reviewStyleId);
+    public ResponseEntity<Void> selectStyle(@RequestParam("reviewPostId") Long reviewPostId,
+            @RequestParam("reviewStyleId") Long reviewStyleId) {
+        reviewService.selectStyle(reviewPostId, reviewStyleId);
         return ResponseEntity.ok().build();
     }
+
+    // List<Hastags> 업데이트.....
+    @PostMapping("/hashtag/update")
+    public ResponseEntity<Void> updateHashtag(@RequestBody HashtagUpdateRequest request) {
+        // request.getNames()는 ["감성", "여행", "맛집"] 같은 리스트입니다.
+        reviewService.updateHashtags(request.getHashtagGroupId(), request.getNames());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/caption/update")
+    public ResponseEntity<Void> updateCaption(@RequestParam("reviewPostId") Long reviewPostId,
+            @RequestParam("caption") String caption) {
+        reviewService.updateCaption(reviewPostId, caption);
+        return ResponseEntity.ok().build();
+    }
+
 }
