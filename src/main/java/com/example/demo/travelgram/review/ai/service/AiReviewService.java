@@ -88,7 +88,7 @@ public class AiReviewService {
      */
     @Transactional
     public List<AiReviewStyleResponse> createAndSaveStyles(Long planId, Long reviewPostId) {
-        
+
         // 1. 여행 데이터 JSON 생성 (기존 Builder 활용)
         ObjectNode inputNode = createPlanInputJson(planId);
         String inputJson = inputNode.toPrettyString();
@@ -115,6 +115,7 @@ public class AiReviewService {
 
         AiReviewAnalysis analysis = AiReviewAnalysis.builder()
                 .reviewPostId(reviewPostId)
+                .createdAt(OffsetDateTime.now())
                 .inputJson(inputJson)
                 .outputJson(outputJsonString)
                 .build();
@@ -124,17 +125,21 @@ public class AiReviewService {
         List<AiReviewStyleResponse> resultList = new ArrayList<>();
         // 5. Save Styles & Hashtags
         for (GeneratedStyleResponse.StyleItem item : aiResponse.getStyles()) {
-            
+            // 💡 [추가] 캡션 문자열 내에 있는 해시태그(#단어) 제거 로직
+            // #으로 시작하고 공백 전까지 이어지는 단어들을 모두 빈 문자열로 치환
+            String cleanCaption = item.getCaption()
+                    .replaceAll("#[\\w가-힣]+", "") // 해시태그 패턴 제거
+                    .trim();
             // 5-1. Save Style
             AiReviewStyle style = AiReviewStyle.builder()
                     .reviewAnalysisId(analysis.getId())
-                    .name(item.getToneName()) 
+                    .name(item.getToneName())
                     .toneCode(item.getToneCode())
                     .createdAt(OffsetDateTime.now())
-                    .caption(item.getCaption()) // Make sure this matches your DB column
+                    .caption(cleanCaption) // Make sure this matches your DB column
                     .build();
-            
-            aiReviewDao.insertAiReviewStyle(style); 
+
+            aiReviewDao.insertAiReviewStyle(style);
 
             // 5-2. Save Hashtags
             List<AiReviewHashtag> savedHashtags = new ArrayList<>();
@@ -152,7 +157,7 @@ public class AiReviewService {
             // 5-3. Add to Result List
             resultList.add(new AiReviewStyleResponse(style, savedHashtags));
         }
-        
+
         return resultList;
     }
 }

@@ -35,15 +35,17 @@ public class ReviewStyleGenerateAgent {
             2. **INFORMATIVE**: Focus on tips, costs, location names, and efficient routes. Helpful tone.
             3. **WITTY**: Fun, short, usage of slang or emojis, humorous complaints or joy.
             4. **SIMPLE**: Very short, chic, hashtags-focused. Minimalist.
-
+            
             ## Rules
-            - Language: ONLY ENGLISH.
-            - Hashtags: Generate exactly **10 relevant hashtags** for each style.
-            - Content:
+            1. **Language**: ONLY ENGLISH.
+            2. **Hashtags**: Generate exactly 10 relevant English hashtags in the 'hashtags' list.
+            3. **Content (Crucial)**: 
                 - Use the 'memo' and 'place_name' from input data effectively.
-                - The 'caption' field must contain ONLY the main text.
-                - DO NOT include hashtags in the 'caption' field. (They must go into the 'hashtags' array).
-            - Do NOT fabricate places not in the data.
+                - Do NOT fabricate places not in the data.
+                - The 'caption' field must contain **ONLY the narrative text**.
+                - **ABSOLUTELY DO NOT** include hashtags inside the 'caption' string.
+                - Bad Example: "Seoul is great! #Seoul #Fun"
+                - Good Example: "Seoul is great!" (Hashtags go to 'hashtags' array)
 
             ## JSON Structure
             {
