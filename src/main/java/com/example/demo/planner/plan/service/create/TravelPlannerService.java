@@ -22,8 +22,8 @@ import com.example.demo.planner.plan.dto.ClusterBundle;
 import com.example.demo.planner.plan.dto.ClusterPlace;
 import com.example.demo.planner.plan.dto.TravelPlaceCandidate;
 import com.example.demo.planner.plan.dto.response.DayPlanResult;
-import com.example.demo.planner.travel.strategy.StandardTravelStrategy;
-import com.example.demo.planner.travel.strategy.TravelPlanStrategy;
+import com.example.demo.planner.plan.strategy.StandardTravelStrategy;
+import com.example.demo.planner.plan.strategy.TravelPlanStrategy;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

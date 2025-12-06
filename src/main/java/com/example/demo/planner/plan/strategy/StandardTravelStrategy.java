@@ -1,4 +1,4 @@
-package com.example.demo.planner.travel.strategy;
+package com.example.demo.planner.plan.strategy;
 
 public class StandardTravelStrategy implements TravelPlanStrategy {
 
