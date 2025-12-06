@@ -12,6 +12,7 @@ import com.example.demo.common.chat.dto.TravelChatSendResponse;
 import com.example.demo.common.chat.intent.agent.IntentAnalysisAgent;
 import com.example.demo.common.chat.intent.dto.request.IntentRequest;
 import com.example.demo.common.chat.pipeline.DefaultChatPipeline;
+import com.example.demo.common.chat.pipeline.PipelineResult;
 import com.example.demo.planner.plan.agent.PlanAgent;
 
 import lombok.RequiredArgsConstructor;
@@ -39,10 +40,10 @@ public class ChatController {
     }
 
     @GetMapping("/test")
-    public String getMethodNam1e(@RequestParam("msg") String msg) {
+    public ResponseEntity<PipelineResult> test(@RequestParam("msg") String msg) {
         IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").userMessage(msg).build();
         
-        return defaultChatPipeline.execute(intentRequest).toString();
+        return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest));
     }
 
     /**
