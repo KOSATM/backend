@@ -104,7 +104,7 @@ public class ReviewController {
     }
 
     // List<Hastags> 업데이트.....
-    @PostMapping("/hashtag/update")
+    @PostMapping("/hashtags/create")
     public ResponseEntity<Void> updateHashtag(@RequestBody HashtagUpdateRequest request) {
         // request.getNames()는 ["감성", "여행", "맛집"] 같은 리스트입니다.
         reviewService.updateHashtags(request.getHashtagGroupId(), request.getNames());
