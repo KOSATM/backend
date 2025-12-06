@@ -1,11 +1,14 @@
 package com.example.demo.travelgram.review.ai.agent;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
@@ -23,7 +26,6 @@ public class ReviewImageAnalysisAgent {
   private final ChatClient chatClient;
   private final ObjectMapper objectMapper;
 
-
   public ReviewImageAnalysisAgent(ChatClient.Builder chatClientBuilder, ObjectMapper objectMapper) {
     this.chatClient = chatClientBuilder.build();
     this.objectMapper = objectMapper;
@@ -34,7 +36,6 @@ public class ReviewImageAnalysisAgent {
   // ======================================================
   public String analyzeReviewImage(String contentType, byte[] bytes) {
     log.info("📸 Review Image Analysis Start...");
-
     // 1. 시스템 프롬프트: 여행스타그램 리뷰어 페르소나 부여
     SystemMessage systemMessage = new SystemMessage(
         """
@@ -111,29 +112,29 @@ public class ReviewImageAnalysisAgent {
         "Here are the photo summaries:\n- " + combinedSummaries);
 
     try {
-            // 1. LLM에게 응답 받기 (아직은 String 상태)
-            String jsonResponse = chatClient.prompt()
-                .messages(systemMessage, userMessage)
-                .call()
-                .content();
+      // 1. LLM에게 응답 받기 (아직은 String 상태)
+      String jsonResponse = chatClient.prompt()
+          .messages(systemMessage, userMessage)
+          .call()
+          .content();
 
-            log.info("🤖 AI Raw JSON: {}", jsonResponse);
+      log.info("🤖 AI Raw JSON: {}", jsonResponse);
 
-            // 2. [중요] 마크다운 코드 블록 제거 (```json ... ```)
-            // LLM이 친절하게 코드 블록을 씌워줄 때가 있는데, 파싱 에러나니 벗겨야 함
-            if (jsonResponse.startsWith("```")) {
-                jsonResponse = jsonResponse.replaceAll("^```json", "").replaceAll("^```", "").replaceAll("```$", "");
-            }
-            
-            // 3. ObjectMapper로 String -> Object 변환 (핵심!)
-            // readValue(JSON문자열, 변환할클래스.class)
-            PhotoAnalysisResult result = objectMapper.readValue(jsonResponse, PhotoAnalysisResult.class);
-            
-            return result;
+      // 2. [중요] 마크다운 코드 블록 제거 (```json ... ```)
+      // LLM이 친절하게 코드 블록을 씌워줄 때가 있는데, 파싱 에러나니 벗겨야 함
+      if (jsonResponse.startsWith("```")) {
+        jsonResponse = jsonResponse.replaceAll("^```json", "").replaceAll("^```", "").replaceAll("```$", "");
+      }
 
-        } catch (Exception e) {
-            log.error("Trip Context Analysis Failed", e);
-            return new PhotoAnalysisResult(); // 실패 시 빈 객체 반환
-        }
+      // 3. ObjectMapper로 String -> Object 변환 (핵심!)
+      // readValue(JSON문자열, 변환할클래스.class)
+      PhotoAnalysisResult result = objectMapper.readValue(jsonResponse, PhotoAnalysisResult.class);
+
+      return result;
+
+    } catch (Exception e) {
+      log.error("Trip Context Analysis Failed", e);
+      return new PhotoAnalysisResult(); // 실패 시 빈 객체 반환
+    }
   }
 }

@@ -36,4 +36,7 @@
   <update id="updatePhotoOrder"> UPDATE review_photos SET order_index = #{orderIndex} WHERE id =
     #{photoId} AND photo_group_id = #{photoGroupId} </update>
 
+  <update id="updatePhotoSummary"> UPDATE review_photos SET summary = #{summary} WHERE id =
+    #{photoId} </update>
+
 </mapper>
