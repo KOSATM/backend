@@ -12,7 +12,7 @@
   <select id="selectHashtagsByStyleId" resultType="AiReviewHashtag">
     SELECT id, name, created_at, review_style_id
     FROM ai_review_hashtags
-    WHERE review_style_id = #{styleId}
+    WHERE review_style_id = #{reviewStyleId}
 </select>
   <select id="selectAiReviewHashtagById" resultType="AiReviewHashtag">
     SELECT id, name, created_at, review_style_id
