@@ -12,9 +12,7 @@
   </resultMap>
 
     <!-- INSERT -->
-    <insert id="insert"
-            parameterType="ImageSearchCandidate"
-            useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.example.demo.supporter.imageSearch.dto.response.ImageSearchCandidateResponse">
         INSERT INTO image_search_candidates (image_search_session_id, image_place_id, is_selected, rank)
         VALUES (#{imageSearchSessionId}, #{imagePlaceId}, #{isSelected}, #{rank})
     </insert>
@@ -24,6 +22,37 @@
         SELECT *
         FROM image_search_candidates
         WHERE id = #{id}
+    </select>
+
+    <!-- SELECT BY SESSION ID -->
+    <select id="selectBySessionId" resultMap="ImageSearchCandidateResultMap">
+        SELECT *
+        FROM image_search_candidates
+        WHERE image_search_session_id = #{sessionId}
+        ORDER BY rank ASC
+    </select>
+
+    <!-- SELECT WITH PLACE BY SESSION ID -->
+    <select id="selectWithPlaceBySessionId" resultType="com.example.demo.supporter.imageSearch.dto.response.CandidateWithPlaceResponse">
+        SELECT 
+            c.id as candidateId,
+            c.is_selected as isSelected,
+            c.rank as rank,
+            p.id as "place.id",
+            p.name as "place.name",
+            p.address as "place.address",
+            p.lat as "place.lat",
+            p.lng as "place.lng",
+            p.place_type as "place.placeType",
+            p.content as "place.description",
+            p.internal_original_url as "place.internalOriginalUrl",
+            p.internal_thumbnail_url as "place.internalThumbnailUrl",
+            p.external_image_url as "place.externalImageUrl",
+            p.image_status as "place.imageStatus"
+        FROM image_search_candidates c
+        JOIN image_places p ON c.image_place_id = p.id
+        WHERE c.image_search_session_id = #{sessionId}
+        ORDER BY c.rank ASC
     </select>
 
     <!-- SELECT ALL BY image_search_place_id -->
@@ -50,6 +79,12 @@
     <delete id="delete" parameterType="long">
         DELETE FROM image_search_candidates
         WHERE id = #{id}
+    </delete>
+
+    <!-- DELETE BY SESSION ID -->
+    <delete id="deleteBySessionId" parameterType="long">
+        DELETE FROM image_search_candidates
+        WHERE image_search_session_id = #{sessionId}
     </delete>
 
 </mapper>

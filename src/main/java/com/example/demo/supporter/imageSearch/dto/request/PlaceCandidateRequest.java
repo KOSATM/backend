@@ -1,12 +1,15 @@
 package com.example.demo.supporter.imageSearch.dto.request;
 
 
+import com.example.demo.supporter.imageSearch.dto.entity.ActionType;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class PlaceCandidateRequest {
+    //Place 정보
     @NotBlank
     private String name;
     @NotBlank
@@ -23,4 +26,14 @@ public class PlaceCandidateRequest {
     private String imageUrl;
     @NotNull
     private String imageStatus; //PENDING, READY, FAILED
+
+    //Candidate 정보
+    @NotBlank
+    private Boolean isSelected;
+    @NotBlank
+    private Integer rank; //1,2,3
+
+    //Session 정보
+    @NotNull
+    private String actionType;
 }

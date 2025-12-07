@@ -3,15 +3,21 @@ package com.example.demo.supporter.imageSearch.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.demo.supporter.imageSearch.dto.entity.ImageSearchCandidate;
 import com.example.demo.supporter.imageSearch.dto.request.PlaceCandidateRequest;
 import com.example.demo.supporter.imageSearch.dto.response.PlaceCandidateResponse;
+import com.example.demo.supporter.imageSearch.dto.response.SessionWithCandidatesResponse;
 import com.example.demo.supporter.imageSearch.service.ImageSearchService;
 
 import lombok.RequiredArgsConstructor;
@@ -35,9 +41,30 @@ public class ImageSearchController {
 
     //후보자 저장
     @PostMapping("/save")
-    public ResponseEntity<Void> savePlaceCandidates(@RequestBody List<PlaceCandidateRequest> candidates) {
-        service.savePlaceCandidates(candidates);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Long> savePlaceCandidates(
+        @RequestParam("userId") Long userId,
+        @RequestBody List<PlaceCandidateRequest> candidates) {
+
+        Long sessionId = service.savePlaceCandidates(userId, candidates);
+        return ResponseEntity.ok(sessionId);
+    }
+
+    @PutMapping("/{candidateId}/action-type")
+    public ResponseEntity<Integer> alterActionType(
+        @PathVariable("candidateId") Long candidateId,
+        @RequestParam("actionType") String actionType) {
+        return ResponseEntity.ok(service.updateSessionActionType(candidateId, actionType));
+    }
+
+    @DeleteMapping("/{candidateId}")
+    public ResponseEntity<Integer> delete(@PathVariable("candidateId") Long candidateId) {
+        return ResponseEntity.ok(service.delete(candidateId));
+    }
+
+    @GetMapping("/sessions")
+    public ResponseEntity<List<SessionWithCandidatesResponse>> getSessionsByUserId(
+        @RequestParam("userId") Long userId) {
+        return ResponseEntity.ok(service.getSessionsByUserId(userId));
     }
 
     // @GetMapping("/{id}")
@@ -53,17 +80,5 @@ public class ImageSearchController {
     // @PostMapping
     // public ResponseEntity<Long> create(@RequestBody ImageSearchCandidate r) {
     // return ResponseEntity.ok(service.create(r));
-    // }
-
-    // @PutMapping("/{id}")
-    // public ResponseEntity<Integer> update(@PathVariable Long id, @RequestBody
-    // ImageSearchCandidate r) {
-    // r.setId(id);
-    // return ResponseEntity.ok(service.update(r));
-    // }
-
-    // @DeleteMapping("/{id}")
-    // public ResponseEntity<Integer> delete(@PathVariable Long id) {
-    // return ResponseEntity.ok(service.delete(id));
     // }
 }
