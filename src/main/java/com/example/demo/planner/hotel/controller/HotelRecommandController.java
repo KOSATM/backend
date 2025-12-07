@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.planner.hotel.agent.HotelBookingAgent;
@@ -31,28 +32,32 @@ public class HotelRecommandController {
      * 여행 일정을 받아서 LLM이 추천하는 호텔을 반환한다.
      */
     @PostMapping("/recommend")
-    public Map<String, Object> recommendHotel(@RequestBody TripPlanRequest tripPlan) {
+    public Map<String, Object> recommendHotel(
+            @RequestBody TripPlanRequest tripPlan,
+            @RequestParam(required = false) String userPreferences) {
         log.info("🔍 Hotel recommendation request for trip: {} to {}", 
             tripPlan.getStartDate(), tripPlan.getEndDate());
         
+        Long userId = tripPlan.getUserId();
         int adults = 2;
         int children = 0;
         String guestName = "Guest";
         String guestEmail = "guest@example.com";
         String guestPhone = "+82-10-0000-0000";
         
-        // 사용자 선호도 (요청본문에서 받기)
-        String userPreferences = tripPlan.getPreferences() != null ? tripPlan.getPreferences() : "";
+        // userPreferences가 null이면 빈 문자열로 처리
+        String preferences = userPreferences != null ? userPreferences : "";
         
         try {
             List<HotelBookingRequest> recommendations = hotelBookingAgent.createBookingFromItinerary(
+                userId,
                 tripPlan,
                 adults,
                 children,
                 guestName,
                 guestEmail,
                 guestPhone,
-                userPreferences
+                preferences
             );
             
             if (recommendations == null || recommendations.isEmpty()) {

@@ -15,6 +15,7 @@ import com.example.demo.planner.hotel.dto.entity.HotelRatePlanCandidate;
 import com.example.demo.planner.hotel.dto.request.HotelBookingRequest;
 import com.example.demo.planner.hotel.dto.request.TripPlanRequest;
 import com.example.demo.planner.hotel.service.HotelCandidateService;
+import com.example.demo.planner.plan.service.create.PlanService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ public class HotelBookingAgent {
 
     private ChatClient chatClient;
     private HotelCandidateService hotelCandidateService;
+    private PlanService planService;
     private ObjectMapper objectMapper;
     private List<HotelRatePlanCandidate> candidates;
 
@@ -32,20 +34,26 @@ public class HotelBookingAgent {
     public HotelBookingAgent(
             ChatClient.Builder chatClientBuilder,
             HotelCandidateService hotelCandidateService,
-            ObjectMapper objectMapper) {
+            PlanService planService,
+            ObjectMapper objectMapper
+            
+    ) {
         this.chatClient = chatClientBuilder.build();
         this.hotelCandidateService = hotelCandidateService;
+        this.planService = planService;
         this.objectMapper = objectMapper;
     }
 
     public List<HotelBookingRequest> createBookingFromItinerary(
+            Long userId,
             TripPlanRequest tripPlan,
             int adults,
             int children,
             String guestName,
             String guestEmail,
             String guestPhone,
-            String userPreferences) {
+            String userPreferences // 클라이언트가 입력해서 보내는 추가 요청사항
+    ) {
         try {
             LocalDate startDate = tripPlan.getStartDate();
             LocalDate endDate = tripPlan.getEndDate();
@@ -69,6 +77,19 @@ public class HotelBookingAgent {
 
             log.info("📊 Found {} hotel candidates from DB", candidates.size());
 
+            // 🔄 활성 Plan 정보 조회
+            log.info("🔍 활성 Plan 정보 조회 중: userId={}", userId);
+            com.example.demo.planner.plan.dto.response.PlanDetail activePlan = null;
+            String planContext = "";
+            try {
+                activePlan = planService.getLatestPlanDetail(userId);
+                planContext = buildPlanContext(activePlan);
+                log.info("✅ 활성 Plan 정보 조회 완료");
+            } catch (Exception e) {
+                log.warn("⚠️ 활성 Plan 조회 실패: {}", e.getMessage());
+                planContext = "사용자의 활성 여행 계획 정보를 사용할 수 없습니다.";
+            }
+
             // 2) LLM으로 호텔 선택 (Tool 사용)
             log.info("🤖 Calling LLM to select top 3 hotels...");
             String llmResponse = chatClient.prompt()
@@ -76,11 +97,15 @@ public class HotelBookingAgent {
                             사용자의 여행 일정에 맞는 호텔 3개를 추천하세요.
                             반드시 사용자의 요청사항을 만족하는 호텔만 선택하세요.
 
+                            [현재 여행 계획]
+                            """ + planContext + """
+
                             선택 기준:
                             1. 사용자 요청사항 필수 만족
-                            2. 거리가 가까운 호텔
-                            3. 가격이 합리적
-                            4. 평점이 높음
+                            2. 여행 일정 및 방문 장소와의 거리 고려
+                            3. 거리가 가까운 호텔
+                            4. 가격이 합리적
+                            5. 평점이 높음
 
                             getHotelCandidates 도구를 사용해서 호텔 목록을 조회하고 3개를 선택하세요.
                             선택한 호텔의 hotelId, roomTypeId, ratePlanId를 JSON 형식으로 반환하세요:
@@ -251,6 +276,39 @@ public class HotelBookingAgent {
         }
 
         return bookingRequests;
+    }
+
+    private String buildPlanContext(com.example.demo.planner.plan.dto.response.PlanDetail planDetail) {
+        if (planDetail == null || planDetail.getPlan() == null) {
+            return "여행 계획 정보 없음";
+        }
+
+        StringBuilder context = new StringBuilder();
+        com.example.demo.planner.plan.dto.entity.Plan plan = planDetail.getPlan();
+
+        context.append("📅 여행 기간: ").append(plan.getStartDate()).append(" ~ ").append(plan.getEndDate()).append("\n");
+        context.append("💰 예산: ").append(plan.getBudget()).append("\n");
+        context.append("🎯 방문 장소 (좌표 포함):\n");
+
+        if (planDetail.getDays() != null && !planDetail.getDays().isEmpty()) {
+            for (com.example.demo.planner.plan.dto.response.PlanDayWithPlaces dayWithPlaces : planDetail.getDays()) {
+                context.append("  📍 Day ").append(dayWithPlaces.getDay().getDayIndex()).append(" (")
+                       .append(dayWithPlaces.getDay().getPlanDate()).append("): \n");
+                
+                if (dayWithPlaces.getPlaces() != null && !dayWithPlaces.getPlaces().isEmpty()) {
+                    for (com.example.demo.planner.plan.dto.entity.PlanPlace place : dayWithPlaces.getPlaces()) {
+                        String placeName = place.getPlaceName() != null ? place.getPlaceName() : place.getTitle();
+                        context.append("     - ").append(placeName)
+                               .append(" (위도: ").append(place.getLat())
+                               .append(", 경도: ").append(place.getLng()).append(")\n");
+                    }
+                } else {
+                    context.append("     - 계획된 장소 없음\n");
+                }
+            }
+        }
+
+        return context.toString();
     }
 
     class HotelSelectionTools {
