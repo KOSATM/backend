@@ -29,16 +29,20 @@ public class HotelRecommandController {
      * userId로 활성 여행 계획을 조회하고 LLM이 추천하는 호텔을 반환한다.
      */
     @GetMapping("/recommend")
-    public Map<String, Object> recommendHotel(@RequestParam(name = "userId") Long userId) {
+    public Map<String, Object> recommendHotel(
+            @RequestParam(name = "userId") Long userId,
+            @RequestParam(name = "preferences", required = false) String userPreferences) {
         
-        log.info("🔍 Hotel recommendation request - userId: {}", userId);
+        log.info("🔍 Hotel recommendation request - userId: {}, preferences: {}", userId, userPreferences);
         
         int adults = 2;
         int children = 0;
         String guestName = "Guest";
         String guestEmail = "guest@example.com";
         String guestPhone = "+82-10-0000-0000";
-        String userPreferences = "";
+        
+        // userPreferences가 null이면 빈 문자열로 처리
+        String preferences = userPreferences != null ? userPreferences : "";
         
         try {
             // TripPlanRequest는 더미 객체 (userId만 필요)
@@ -53,7 +57,7 @@ public class HotelRecommandController {
                 guestName,
                 guestEmail,
                 guestPhone,
-                userPreferences
+                preferences
             );
             
             if (recommendations == null || recommendations.isEmpty()) {

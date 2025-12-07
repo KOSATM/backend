@@ -92,19 +92,6 @@ public class HotelBookingAgent {
 
             log.info("📊 Found {} hotel candidates from DB", candidates.size());
 
-            // 🔄 활성 Plan 정보 조회
-            log.info("🔍 활성 Plan 정보 조회 중: userId={}", userId);
-            com.example.demo.planner.plan.dto.response.PlanDetail activePlan2 = null;
-            String planContext2 = "";
-            try {
-                activePlan2 = planService.getLatestPlanDetail(userId);
-                planContext2 = buildPlanContext(activePlan2);
-                log.info("✅ 활성 Plan 정보 조회 완료");
-            } catch (Exception e) {
-                log.warn("⚠️ 활성 Plan 조회 실패: {}", e.getMessage());
-                planContext2 = "사용자의 활성 여행 계획 정보를 사용할 수 없습니다.";
-            }
-
             // 2) LLM으로 호텔 선택 (Tool 사용)
             log.info("🤖 Calling LLM to select top 3 hotels...");
             String llmResponse = chatClient.prompt()
