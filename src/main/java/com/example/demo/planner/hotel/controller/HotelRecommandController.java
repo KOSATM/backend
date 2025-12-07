@@ -1,20 +1,18 @@
 package com.example.demo.planner.hotel.controller;
 
+import java.time.LocalDate;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.planner.hotel.agent.HotelBookingAgent;
-import com.example.demo.planner.hotel.dto.entity.HotelRatePlanCandidate;
 import com.example.demo.planner.hotel.dto.request.HotelBookingRequest;
 import com.example.demo.planner.hotel.dto.request.TripPlanRequest;
-import com.example.demo.planner.hotel.service.HotelCandidateService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,12 +26,14 @@ public class HotelRecommandController {
     private final HotelBookingAgent hotelBookingAgent;
 
     /**
-     * 여행 일정을 받아서 LLM이 추천하는 호텔을 반환한다.
+     * userId로 활성 여행 계획을 조회하고 LLM이 추천하는 호텔을 반환한다.
      */
-    @PostMapping("/recommend")
-    public Map<String, Object> recommendHotel(@RequestBody TripPlanRequest tripPlan) {
-        log.info("🔍 Hotel recommendation request for trip: {} to {}", 
-            tripPlan.getStartDate(), tripPlan.getEndDate());
+    @GetMapping("/recommend")
+    public Map<String, Object> recommendHotel(
+            @RequestParam(name = "userId") Long userId,
+            @RequestParam(name = "preferences", required = false) String userPreferences) {
+        
+        log.info("🔍 Hotel recommendation request - userId: {}, preferences: {}", userId, userPreferences);
         
         int adults = 2;
         int children = 0;
@@ -41,18 +41,23 @@ public class HotelRecommandController {
         String guestEmail = "guest@example.com";
         String guestPhone = "+82-10-0000-0000";
         
-        // 사용자 선호도 (요청본문에서 받기)
-        String userPreferences = tripPlan.getPreferences() != null ? tripPlan.getPreferences() : "";
+        // userPreferences가 null이면 빈 문자열로 처리
+        String preferences = userPreferences != null ? userPreferences : "";
         
         try {
+            // TripPlanRequest는 더미 객체 (userId만 필요)
+            TripPlanRequest tripPlan = new TripPlanRequest();
+            tripPlan.setUserId(userId);
+            
             List<HotelBookingRequest> recommendations = hotelBookingAgent.createBookingFromItinerary(
+                userId,
                 tripPlan,
                 adults,
                 children,
                 guestName,
                 guestEmail,
                 guestPhone,
-                userPreferences
+                preferences
             );
             
             if (recommendations == null || recommendations.isEmpty()) {
