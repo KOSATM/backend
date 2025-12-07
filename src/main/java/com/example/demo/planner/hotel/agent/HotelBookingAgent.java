@@ -55,8 +55,23 @@ public class HotelBookingAgent {
             String userPreferences // 클라이언트가 입력해서 보내는 추가 요청사항
     ) {
         try {
-            LocalDate startDate = tripPlan.getStartDate();
-            LocalDate endDate = tripPlan.getEndDate();
+            // 🔄 활성 Plan 정보 조회 (최우선)
+            log.info("🔍 활성 Plan 정보 조회 중: userId={}", userId);
+            com.example.demo.planner.plan.dto.response.PlanDetail activePlan = null;
+            String planContext = "";
+            try {
+                activePlan = planService.getLatestPlanDetail(userId);
+                planContext = buildPlanContext(activePlan);
+                log.info("✅ 활성 Plan 정보 조회 완료");
+            } catch (Exception e) {
+                log.warn("⚠️ 활성 Plan 조회 실패: {}", e.getMessage());
+                planContext = "사용자의 활성 여행 계획 정보를 사용할 수 없습니다.";
+                throw new RuntimeException("활성 Plan을 조회할 수 없습니다", e);
+            }
+
+            // DB에서 조회한 Plan의 날짜 정보 사용
+            LocalDate startDate = activePlan.getPlan().getStartDate();
+            LocalDate endDate = activePlan.getPlan().getEndDate();
             long nights = ChronoUnit.DAYS.between(startDate, endDate);
 
             OffsetDateTime checkin = startDate.atStartOfDay().atOffset(ZoneOffset.ofHours(9));
@@ -79,39 +94,45 @@ public class HotelBookingAgent {
 
             // 🔄 활성 Plan 정보 조회
             log.info("🔍 활성 Plan 정보 조회 중: userId={}", userId);
-            com.example.demo.planner.plan.dto.response.PlanDetail activePlan = null;
-            String planContext = "";
+            com.example.demo.planner.plan.dto.response.PlanDetail activePlan2 = null;
+            String planContext2 = "";
             try {
-                activePlan = planService.getLatestPlanDetail(userId);
-                planContext = buildPlanContext(activePlan);
+                activePlan2 = planService.getLatestPlanDetail(userId);
+                planContext2 = buildPlanContext(activePlan2);
                 log.info("✅ 활성 Plan 정보 조회 완료");
             } catch (Exception e) {
                 log.warn("⚠️ 활성 Plan 조회 실패: {}", e.getMessage());
-                planContext = "사용자의 활성 여행 계획 정보를 사용할 수 없습니다.";
+                planContext2 = "사용자의 활성 여행 계획 정보를 사용할 수 없습니다.";
             }
 
             // 2) LLM으로 호텔 선택 (Tool 사용)
             log.info("🤖 Calling LLM to select top 3 hotels...");
             String llmResponse = chatClient.prompt()
                     .system("""
-                            사용자의 여행 일정에 맞는 호텔 3개를 추천하세요.
-                            반드시 사용자의 요청사항을 만족하는 호텔만 선택하세요.
-
+                            당신은 호텔 추천 전문가입니다.
+                            사용자의 여행 일정에 맞는 호텔 3개를 반드시 JSON 형식으로만 추천하세요.
+                            
                             [현재 여행 계획]
                             """ + planContext + """
 
-                            선택 기준:
+                            [호텔 선택 기준]
                             1. 사용자 요청사항 필수 만족
                             2. 여행 일정 및 방문 장소와의 거리 고려
                             3. 거리가 가까운 호텔
                             4. 가격이 합리적
                             5. 평점이 높음
 
-                            getHotelCandidates 도구를 사용해서 호텔 목록을 조회하고 3개를 선택하세요.
-                            선택한 호텔의 hotelId, roomTypeId, ratePlanId를 JSON 형식으로 반환하세요:
+                            [필수 지시사항]
+                            - getHotelCandidates 도구를 사용하여 호텔 목록을 먼저 조회하세요.
+                            - 반드시 3개의 호텔을 선택하세요.
+                            - 응답은 JSON 배열 형식ONLY로 반환하세요.
+                            - 다른 설명이나 텍스트는 절대 포함하지 마세요.
+                            
+                            [JSON 응답 형식]
                             [
                               {"hotelId": 1, "roomTypeId": 2, "ratePlanId": 2},
-                              ...
+                              {"hotelId": 3, "roomTypeId": 4, "ratePlanId": 5},
+                              {"hotelId": 6, "roomTypeId": 7, "ratePlanId": 8}
                             ]
                             """)
                     .user("여행 일정: " + startDate + " ~ " + endDate +
