@@ -12,6 +12,7 @@ import com.example.demo.common.chat.intent.dto.IntentCommand;
 import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.planner.plan.dto.entity.Plan;
+import com.example.demo.planner.plan.dto.response.PlanDayWithPlaces;
 import com.example.demo.planner.plan.service.create.PlanService;
 import com.example.demo.planner.plan.validation.PlanModificationValidator;
 import com.example.demo.planner.plan.validation.PlanModificationValidator.PlanValidationException;
@@ -232,6 +233,95 @@ public class PlanAgent implements AiAgent {
 
         // ========== MODIFICATION INTENTS (수정) ==========
 
+        // PLAN_DAY_SWAP: 일차 통째로 교체 (이미 구현됨)
+        if ("PLAN_DAY_SWAP".equals(intentName)) {
+            Integer dayA = parseInteger(command.getArguments().get("dayIndexA"));
+            Integer dayB = parseInteger(command.getArguments().get("dayIndexB"));
+            if (dayA == null || dayB == null) {
+                return AiAgentResponse.of(getMessage(lang, "일차 번호를 정확히 이해하지 못했어요. 예: '1일차와 3일차 바꿔줘'",
+                    "I couldn't understand the day numbers. Example: 'swap day 1 and day 3'"));
+            }
+            Plan plan = planService.findActiveByUserId(userId);
+            if (plan == null) {
+                return AiAgentResponse.of(getMessage(lang, "현재 활성화된 여행 계획이 없어요.",
+                    "No active travel plan found."));
+            }
+            try {
+                planService.swapDay(plan.getId(), dayA, dayB);
+            } catch (Exception e) {
+                return AiAgentResponse.of(getMessage(lang, "일차 교체 중 오류가 발생했습니다: " + e.getMessage(),
+                    "Error swapping days: " + e.getMessage()));
+            }
+
+            // ✅ 변경된 두 일차만 조회하여 반환
+            try {
+                var day1 = planService.queryDay(plan.getId(), dayA);
+                var day2 = planService.queryDay(plan.getId(), dayB);
+                return AiAgentResponse.of(formatSwappedDays(day1, day2, dayA, dayB, lang));
+            } catch (Exception e) {
+                return AiAgentResponse.of(getMessage(lang,
+                    dayA + "일차와 " + dayB + "일차 일정을 서로 교체했어요!",
+                    "Day " + dayA + " and Day " + dayB + " have been swapped!"));
+            }
+        }
+
+        // PLACE_SWAP_INNER: 같은 날 내 장소 순서 교체
+        if ("PLACE_SWAP_INNER".equals(intentName)) {
+            Integer dayIndex = parseInteger(command.getArguments().get("dayIndex"));
+            Integer placeIndexA = parseInteger(command.getArguments().get("placeIndexA"));
+            Integer placeIndexB = parseInteger(command.getArguments().get("placeIndexB"));
+
+            if (dayIndex == null || placeIndexA == null || placeIndexB == null) {
+                return AiAgentResponse.of(getMessage(lang, "일차와 장소 번호를 정확히 이해하지 못했어요. 예: '2일차 첫번째와 두번째 바꿔줘'",
+                    "I couldn't understand the day and place numbers. Example: 'swap first and second places on day 2'"));
+            }
+
+            Plan plan = planService.findActiveByUserId(userId);
+            if (plan == null) {
+                return AiAgentResponse.of(getMessage(lang, "현재 활성화된 여행 계획이 없어요.",
+                    "No active travel plan found."));
+            }
+
+            try {
+                PlanDayWithPlaces updatedDay = planService.swapPlacesInSameDay(plan.getId(), dayIndex, placeIndexA, placeIndexB);
+                // ✅ 변경된 일차만 간결하게 출력
+                return AiAgentResponse.of(formatDaySchedule(updatedDay, dayIndex, lang));
+            } catch (Exception e) {
+                return AiAgentResponse.of(getMessage(lang, "장소 교체 중 오류가 발생했습니다: " + e.getMessage(),
+                    "Error swapping places: " + e.getMessage()));
+            }
+        }
+
+        // PLACE_SWAP_BETWEEN_DAYS: 다른 날 간 장소 교체
+        if ("PLACE_SWAP_BETWEEN_DAYS".equals(intentName)) {
+            Integer day1Index = parseInteger(command.getArguments().get("day1Index"));
+            Integer place1Index = parseInteger(command.getArguments().get("place1Index"));
+            Integer day2Index = parseInteger(command.getArguments().get("day2Index"));
+            Integer place2Index = parseInteger(command.getArguments().get("place2Index"));
+
+            if (day1Index == null || place1Index == null || day2Index == null || place2Index == null) {
+                return AiAgentResponse.of(getMessage(lang, "일차와 장소 번호를 정확히 이해하지 못했어요. 예: '1일차 첫번째와 2일차 두번째 바꿔줘'",
+                    "I couldn't understand the day and place numbers. Example: 'swap day 1 first place with day 2 second place'"));
+            }
+
+            Plan plan = planService.findActiveByUserId(userId);
+            if (plan == null) {
+                return AiAgentResponse.of(getMessage(lang, "현재 활성화된 여행 계획이 없어요.",
+                    "No active travel plan found."));
+            }
+
+            try {
+                java.util.List<PlanDayWithPlaces> updatedDays = planService.swapPlacesBetweenDays(
+                    plan.getId(), day1Index, place1Index, day2Index, place2Index);
+                // ✅ 변경된 두 일차만 출력
+                return AiAgentResponse.of(formatSwappedDays(
+                    updatedDays.get(0), updatedDays.get(1), day1Index, day2Index, lang));
+            } catch (Exception e) {
+                return AiAgentResponse.of(getMessage(lang, "장소 교체 중 오류가 발생했습니다: " + e.getMessage(),
+                    "Error swapping places: " + e.getMessage()));
+            }
+        }
+
         // ========== EDIT INTENTS (수정) ==========
 
         // PLAN_DATE_UPDATE: 여행 전체 기간 변경
@@ -322,12 +412,24 @@ public class PlanAgent implements AiAgent {
                         // Same day → INNER swap
                         validator.validatePlaceSwapInner(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getOrder());
                         planService.swapPlaceOrdersInner(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getOrder());
-                        return AiAgentResponse.of("\"" + placeNameA + "\" and \"" + placeNameB + "\" have been swapped.");
+
+                        // Get updated day schedule with highlights
+                        var dayWithPlaces = planService.queryDay(plan.getId(), positionA.getDayIndex());
+                        String summary = "\"" + placeNameA + "\" and \"" + placeNameB + "\" have been swapped.";
+                        String fullSchedule = formatDaySchedule(dayWithPlaces, positionA.getDayIndex(), "en");
+                        return AiAgentResponse.of("⭐ " + summary + "\n\n" + fullSchedule);
                     } else {
                         // Different days → BETWEEN swap
                         validator.validatePlaceSwapBetween(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getDayIndex(), positionB.getOrder());
                         planService.swapPlacesBetweenDays(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getDayIndex(), positionB.getOrder());
-                        return AiAgentResponse.of("\"" + placeNameA + "\" (Day " + positionA.getDayIndex() + ") and \"" + placeNameB + "\" (Day " + positionB.getDayIndex() + ") have been swapped.");
+
+                        // Show both days
+                        var dayA = planService.queryDay(plan.getId(), positionA.getDayIndex());
+                        var dayB = planService.queryDay(plan.getId(), positionB.getDayIndex());
+                        String summary = "\"" + placeNameA + "\" (Day " + positionA.getDayIndex() + ") and \"" + placeNameB + "\" (Day " + positionB.getDayIndex() + ") have been swapped.";
+                        String scheduleA = formatDaySchedule(dayA, positionA.getDayIndex(), "en");
+                        String scheduleB = formatDaySchedule(dayB, positionB.getDayIndex(), "en");
+                        return AiAgentResponse.of("⭐ " + summary + "\n\n" + scheduleA + "\n\n" + scheduleB);
                     }
                 }
 
@@ -338,7 +440,14 @@ public class PlanAgent implements AiAgent {
 
                 validator.validatePlaceSwapInner(plan.getId(), dayIndex, placeIndexA, placeIndexB);
                 planService.swapPlaceOrdersInner(plan.getId(), dayIndex, placeIndexA, placeIndexB);
-                return AiAgentResponse.of("Swapped place " + placeIndexA + " and " + placeIndexB + " on Day " + dayIndex + ".");
+
+                // Get updated day schedule
+                var dayWithPlaces = planService.queryDay(plan.getId(), dayIndex);
+                String ordinalA = getOrdinal(placeIndexA);
+                String ordinalB = getOrdinal(placeIndexB);
+                String summary = "The " + ordinalA + " and " + ordinalB + " items on Day " + dayIndex + " have been swapped.";
+                String fullSchedule = formatDaySchedule(dayWithPlaces, dayIndex, "en");
+                return AiAgentResponse.of("⭐ " + summary + "\n\n" + fullSchedule);
 
             } catch (PlanValidationException e) {
                 return AiAgentResponse.of("❌ Validation Error: " + e.getMessage());
@@ -355,48 +464,66 @@ public class PlanAgent implements AiAgent {
             Integer placeA = parseInteger(command.getArguments().get("placeIndexA"));
             Integer dayB = parseInteger(command.getArguments().get("dayIndexB"));
             Integer placeB = parseInteger(command.getArguments().get("placeIndexB"));
-            
+
             Plan plan = planService.findActiveByUserId(userId);
             if (plan == null) {
                 return AiAgentResponse.of("No active travel plan found.");
             }
-            
+
             try {
                 // Case 1: Swap by place names (e.g., "명동교자랑 강남역 바꿔줘")
                 if (placeNameA != null && placeNameB != null) {
                     var positionA = planService.findPlacePosition(placeNameA, userId);
                     var positionB = planService.findPlacePosition(placeNameB, userId);
-                    
+
                     if (positionA == null) {
                         return AiAgentResponse.of("I couldn't find \"" + placeNameA + "\" in your travel plan.");
                     }
                     if (positionB == null) {
                         return AiAgentResponse.of("I couldn't find \"" + placeNameB + "\" in your travel plan.");
                     }
-                    
+
                     // Check if same day or different days
                     if (positionA.getDayIndex().equals(positionB.getDayIndex())) {
                         // Same day → INNER swap
                         validator.validatePlaceSwapInner(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getOrder());
                         planService.swapPlaceOrdersInner(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getOrder());
-                        return AiAgentResponse.of("\"" + placeNameA + "\" and \"" + placeNameB + "\" have been swapped.");
+
+                        var dayWithPlaces = planService.queryDay(plan.getId(), positionA.getDayIndex());
+                        String summary = "\"" + placeNameA + "\" and \"" + placeNameB + "\" have been swapped.";
+                        String fullSchedule = formatDaySchedule(dayWithPlaces, positionA.getDayIndex(), "en");
+                        return AiAgentResponse.of("⭐ " + summary + "\n\n" + fullSchedule);
                     } else {
                         // Different days → BETWEEN swap
                         validator.validatePlaceSwapBetween(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getDayIndex(), positionB.getOrder());
                         planService.swapPlacesBetweenDays(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getDayIndex(), positionB.getOrder());
-                        return AiAgentResponse.of("\"" + placeNameA + "\" (Day " + positionA.getDayIndex() + ") and \"" + placeNameB + "\" (Day " + positionB.getDayIndex() + ") have been swapped.");
+
+                        var dayAData = planService.queryDay(plan.getId(), positionA.getDayIndex());
+                        var dayBData = planService.queryDay(plan.getId(), positionB.getDayIndex());
+                        String summary = "\"" + placeNameA + "\" (Day " + positionA.getDayIndex() + ") and \"" + placeNameB + "\" (Day " + positionB.getDayIndex() + ") have been swapped.";
+                        String scheduleA = formatDaySchedule(dayAData, positionA.getDayIndex(), "en");
+                        String scheduleB = formatDaySchedule(dayBData, positionB.getDayIndex(), "en");
+                        return AiAgentResponse.of("⭐ " + summary + "\n\n" + scheduleA + "\n\n" + scheduleB);
                     }
                 }
-                
+
                 // Case 2: Swap by day + order (e.g., "1일차 첫번째랑 2일차 첫번째 바꿔줘")
                 if (dayA == null || placeA == null || dayB == null || placeB == null) {
                     return AiAgentResponse.of("Please specify either place names OR both days and place numbers.");
                 }
-                
+
                 validator.validatePlaceSwapBetween(plan.getId(), dayA, placeA, dayB, placeB);
                 planService.swapPlacesBetweenDays(plan.getId(), dayA, placeA, dayB, placeB);
-                return AiAgentResponse.of("Swapped Day " + dayA + " place " + placeA + " with Day " + dayB + " place " + placeB + ".");
-                
+
+                var dayAData = planService.queryDay(plan.getId(), dayA);
+                var dayBData = planService.queryDay(plan.getId(), dayB);
+                String ordinalA = getOrdinal(placeA);
+                String ordinalB = getOrdinal(placeB);
+                String summary = "Day " + dayA + " " + ordinalA + " item and Day " + dayB + " " + ordinalB + " item have been swapped.";
+                String scheduleA = formatDaySchedule(dayAData, dayA, "en");
+                String scheduleB = formatDaySchedule(dayBData, dayB, "en");
+                return AiAgentResponse.of("⭐ " + summary + "\n\n" + scheduleA + "\n\n" + scheduleB);
+
             } catch (PlanValidationException e) {
                 return AiAgentResponse.of("❌ Validation Error: " + e.getMessage());
             } catch (Exception e) {
@@ -628,6 +755,52 @@ public class PlanAgent implements AiAgent {
      */
     private String getMessage(String lang, String ko, String en) {
         return "en".equalsIgnoreCase(lang) ? en : ko;
+    }
+
+    /**
+     * 교체된 두 일차의 일정 포맷팅 (변경된 부분만 출력)
+     */
+    private String formatSwappedDays(PlanDayWithPlaces day1, PlanDayWithPlaces day2, int day1Index, int day2Index, String lang) {
+        StringBuilder sb = new StringBuilder();
+
+        // Day 1
+        sb.append("🔄 **").append(getMessage(lang, day1Index + "일차", "Day " + day1Index)).append("** — ");
+        sb.append(day1.getDay().getPlanDate()).append("\n\n");
+
+        var places1 = day1.getPlaces();
+        if (places1.isEmpty()) {
+            sb.append(getMessage(lang, "_장소 없음_", "_No places_"));
+        } else {
+            for (int i = 0; i < places1.size(); i++) {
+                var place = places1.get(i);
+                sb.append("  ").append(i + 1).append(". ");
+                if (place.getStartAt() != null) {
+                    sb.append(formatTime(place.getStartAt().toLocalTime())).append(" ");
+                }
+                sb.append(place.getPlaceName()).append("\n");
+            }
+        }
+        sb.append("\n");
+
+        // Day 2
+        sb.append("🔄 **").append(getMessage(lang, day2Index + "일차", "Day " + day2Index)).append("** — ");
+        sb.append(day2.getDay().getPlanDate()).append("\n\n");
+
+        var places2 = day2.getPlaces();
+        if (places2.isEmpty()) {
+            sb.append(getMessage(lang, "_장소 없음_", "_No places_"));
+        } else {
+            for (int i = 0; i < places2.size(); i++) {
+                var place = places2.get(i);
+                sb.append("  ").append(i + 1).append(". ");
+                if (place.getStartAt() != null) {
+                    sb.append(formatTime(place.getStartAt().toLocalTime())).append(" ");
+                }
+                sb.append(place.getPlaceName()).append("\n");
+            }
+        }
+
+        return sb.toString();
     }
 
     /**
@@ -1111,13 +1284,10 @@ public class PlanAgent implements AiAgent {
 
             가능한 기능:
             1. 여행 계획 생성: createPlan(userId=%d, days=X, budget=Y)
-            2. 사용자의 현재 계획 조회: getMyPlan(userId=%d) - "내 계획", "show my plan" 등
-            3. 특정 계획 조회: getPlan(planId=X) - planId를 알고 있을 때만
+            2. 특정 계획 조회: getPlan(planId=X) - planId를 알고 있을 때만 사용
 
             필수 규칙:
             - 모든 응답은 반드시 영어로만 작성하세요
-            - 사용자가 "내 계획" 또는 "my plan"을 요청하면 반드시 getMyPlan(userId=%d)을 사용하세요
-            - planId 없이 계획 조회 시에는 getPlan이 아닌 getMyPlan을 사용하세요
             - Tool을 사용하여 데이터베이스와 상호작용하세요
             - 친절하고 도움이 되는 태도를 유지하세요
 
@@ -1217,48 +1387,9 @@ public class PlanAgent implements AiAgent {
             }
         }
 
-        @Tool(description = """
-            사용자의 현재 활성화된 여행 계획을 조회합니다.
-            사용자가 "내 계획 보여줘", "show my plan", "현재 여행" 등으로 요청할 때 사용하세요.
-
-            파라미터:
-            - userId: 사용자 ID (필수)
-
-            반환: 현재 활성 계획의 상세 정보
-            """)
-        public String getMyPlan(@ToolParam(description = "사용자 ID") Long userId) {
-            log.info("Tool called: getMyPlan(userId={})", userId);
-
-            try {
-                Plan plan = planService.findActiveByUserId(userId);
-                if (plan == null) {
-                    return """
-                        📋 No active travel plan found.
-
-                        Would you like to create a new travel plan? Just let me know:
-                        - Where you want to go
-                        - How many days
-                        - Your budget (optional)
-                        """;
-                }
-
-                return String.format("""
-                    📋 Your Active Travel Plan
-
-                    Plan ID: #%d
-                    Duration: %s ~ %s
-                    Budget: ₩%,d
-                    Status: Active
-
-                    Need to see specific days? Ask me "show day 1" or "show day 2"!
-                    """, plan.getId(), plan.getStartDate(), plan.getEndDate(),
-                    plan.getBudget().longValue());
-
-            } catch (Exception e) {
-                log.error("Error getting my plan", e);
-                return "Failed to get your plan: " + e.getMessage();
-            }
-        }
+        // ❌ getMyPlan() 메서드 완전 삭제됨
+        // 사용자의 일정 조회는 IntentCommand의 VIEW_PLAN을 통해 execute()에서 처리됨
+        // "일정 보여줘", "show my plan" 등 모든 일정 조회는 VIEW_PLAN Intent로 통합
 
         @Tool(description = """
             특정 여행 계획의 상세 정보를 조회합니다.

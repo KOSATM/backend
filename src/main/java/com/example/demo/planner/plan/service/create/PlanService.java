@@ -53,6 +53,94 @@ public class PlanService {
   }
 
   /**
+   * 같은 Day 내에서 두 장소의 순서(order) 교체
+   * @param planId 여행 계획 ID
+   * @param dayIndex 일차 (1부터 시작)
+   * @param placeIndexA 첫번째 장소 순서 (1부터 시작)
+   * @param placeIndexB 두번째 장소 순서 (1부터 시작)
+   */
+  @Transactional
+  public PlanDayWithPlaces swapPlacesInSameDay(Long planId, int dayIndex, int placeIndexA, int placeIndexB) {
+    if (placeIndexA == placeIndexB) {
+      return queryDay(planId, dayIndex);
+    }
+
+    log.info("같은 Day 내 장소 교체: planId={}, dayIndex={}, {} ↔ {}", planId, dayIndex, placeIndexA, placeIndexB);
+
+    PlanDay day = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndex);
+    if (day == null) {
+      throw new IllegalArgumentException(dayIndex + "일차가 존재하지 않습니다.");
+    }
+
+    java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+
+    if (placeIndexA < 1 || placeIndexA > places.size() || placeIndexB < 1 || placeIndexB > places.size()) {
+      throw new IllegalArgumentException("유효하지 않은 장소 순서입니다.");
+    }
+
+    PlanPlace p1 = places.get(placeIndexA - 1);
+    PlanPlace p2 = places.get(placeIndexB - 1);
+
+    // order 교체
+    int tempOrder = p1.getOrder();
+    planPlaceDao.updatePlaceOrder(p1.getId(), p2.getOrder());
+    planPlaceDao.updatePlaceOrder(p2.getId(), tempOrder);
+
+    log.info("장소 교체 완료: {} ↔ {}", p1.getPlaceName(), p2.getPlaceName());
+
+    // 변경된 day 반환
+    return queryDay(planId, dayIndex);
+  }
+
+  /**
+   * 서로 다른 Day 간 장소 교체
+   * @param planId 여행 계획 ID
+   * @param day1Index 첫번째 일차 (1부터 시작)
+   * @param place1Index 첫번째 장소 순서 (1부터 시작)
+   * @param day2Index 두번째 일차 (1부터 시작)
+   * @param place2Index 두번째 장소 순서 (1부터 시작)
+   * @return 변경된 두 개의 Day 정보
+   */
+  @Transactional
+  public java.util.List<PlanDayWithPlaces> swapPlacesBetweenDays(
+      Long planId,
+      int day1Index, int place1Index,
+      int day2Index, int place2Index) {
+
+    log.info("Day 간 장소 교체: planId={}, {}일차 {}번째 ↔ {}일차 {}번째",
+        planId, day1Index, place1Index, day2Index, place2Index);
+
+    PlanDay d1 = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, day1Index);
+    PlanDay d2 = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, day2Index);
+
+    if (d1 == null || d2 == null) {
+      throw new IllegalArgumentException("해당 일차가 존재하지 않습니다.");
+    }
+
+    java.util.List<PlanPlace> places1 = planPlaceDao.selectPlanPlacesByPlanDayId(d1.getId());
+    java.util.List<PlanPlace> places2 = planPlaceDao.selectPlanPlacesByPlanDayId(d2.getId());
+
+    if (place1Index < 1 || place1Index > places1.size() || place2Index < 1 || place2Index > places2.size()) {
+      throw new IllegalArgumentException("유효하지 않은 장소 순서입니다.");
+    }
+
+    PlanPlace p1 = places1.get(place1Index - 1);
+    PlanPlace p2 = places2.get(place2Index - 1);
+
+    // day_id와 order를 서로 교체
+    planPlaceDao.updatePlanDayIdAndOrder(p1.getId(), d2.getId(), place2Index);
+    planPlaceDao.updatePlanDayIdAndOrder(p2.getId(), d1.getId(), place1Index);
+
+    log.info("Day 간 장소 교체 완료: {} ↔ {}", p1.getPlaceName(), p2.getPlaceName());
+
+    // 변경된 두 day 반환
+    return java.util.List.of(
+        queryDay(planId, day1Index),
+        queryDay(planId, day2Index)
+    );
+  }
+
+  /**
    * 사용자의 활성(진행 중인) 여행 계획 조회
    * isEnded=false 또는 NULL인 Plan 반환
    */
@@ -1196,43 +1284,7 @@ public class PlanService {
     log.info("Swapped order: {} ↔ {}", placeA.getOrder(), placeB.getOrder());
   }
 
-  /**
-   * 서로 다른 날짜 간 장소 교환 (Place Swap Between Days)
-   * - dayA의 placeA ↔ dayB의 placeB
-   * - plan_day_id와 order 모두 교환
-   */
-  @Transactional
-  public void swapPlacesBetweenDays(Long planId, int dayIndexA, int placeIndexA, int dayIndexB, int placeIndexB) {
-    log.info("날짜 간 장소 교환: day{}[{}] ↔ day{}[{}]", dayIndexA, placeIndexA, dayIndexB, placeIndexB);
 
-    PlanDay dayA = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndexA);
-    PlanDay dayB = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndexB);
-
-    if (dayA == null || dayB == null) {
-      throw new IllegalArgumentException("One or both days not found");
-    }
-
-    java.util.List<PlanPlace> placesA = planPlaceDao.selectPlanPlacesByPlanDayId(dayA.getId());
-    java.util.List<PlanPlace> placesB = planPlaceDao.selectPlanPlacesByPlanDayId(dayB.getId());
-
-    if (placeIndexA < 1 || placeIndexA > placesA.size() || placeIndexB < 1 || placeIndexB > placesB.size()) {
-      throw new IllegalArgumentException("Invalid place indices");
-    }
-
-    PlanPlace placeA = placesA.get(placeIndexA - 1);
-    PlanPlace placeB = placesB.get(placeIndexB - 1);
-
-    // plan_day_id와 order 교환
-    Long tempDayId = dayA.getId();
-    int tempOrder = placeA.getOrder();
-
-    planPlaceDao.updatePlanDayIdAndOrder(placeA.getId(), dayB.getId(), placeB.getOrder());
-    planPlaceDao.updatePlanDayIdAndOrder(placeB.getId(), tempDayId, tempOrder);
-
-    log.info("Swapped: {} (day{} order{}) ↔ {} (day{} order{})",
-        placeA.getPlaceName(), dayIndexA, placeA.getOrder(),
-        placeB.getPlaceName(), dayIndexB, placeB.getOrder());
-  }
 
   /**
    * 특정 장소를 다른 장소로 교체 (Place Replace)
