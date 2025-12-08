@@ -18,9 +18,9 @@ import com.example.demo.planner.plan.dao.PlanSnapshotDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.planner.plan.dto.response.PlacePosition;
 import com.example.demo.planner.plan.dto.response.PlanDayWithPlaces;
 import com.example.demo.planner.plan.dto.response.PlanDetail;
-import com.example.demo.planner.plan.dto.response.PlacePosition;
 import com.example.demo.planner.plan.dto.response.PlanSnapshotContent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -778,7 +778,7 @@ public class PlanService {
     if (plan == null) {
       throw new IllegalArgumentException("Plan not found: " + planId);
     }
-    
+
     // 시작일로부터 몇 일째인지 계산
     int dayIndex = (int) java.time.temporal.ChronoUnit.DAYS.between(plan.getStartDate(), date) + 1;
     return queryDay(planId, dayIndex);
@@ -804,7 +804,7 @@ public class PlanService {
     log.info("현재 일정 조회: planId={}", planId);
     OffsetDateTime now = OffsetDateTime.now();
     java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
-    
+
     return days.stream()
         .flatMap(day -> planPlaceDao.selectPlanPlacesByPlanDayId(day.getId()).stream())
         .filter(place -> place.getStartAt() != null && place.getEndAt() != null)
@@ -820,7 +820,7 @@ public class PlanService {
     log.info("다음 일정 조회: planId={}", planId);
     OffsetDateTime now = OffsetDateTime.now();
     java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
-    
+
     return days.stream()
         .flatMap(day -> planPlaceDao.selectPlanPlacesByPlanDayId(day.getId()).stream())
         .filter(place -> place.getStartAt() != null)
@@ -836,11 +836,11 @@ public class PlanService {
   public PlanDayWithPlaces findPlaceDay(Long planId, String placeName) {
     log.info("장소→날짜 조회 (fuzzy): planId={}, placeName={}", planId, placeName);
     java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
-    
+
     // 1. 모든 장소명 수집
     java.util.List<String> allPlaceNames = new java.util.ArrayList<>();
     java.util.Map<String, PlanDay> placeToDay = new java.util.HashMap<>();
-    
+
     for (PlanDay day : days) {
       java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
       for (PlanPlace place : places) {
@@ -850,23 +850,23 @@ public class PlanService {
         placeToDay.put(place.getTitle(), day);
       }
     }
-    
+
     // 2. Fuzzy matching으로 가장 가까운 장소명 찾기
     String bestMatch = findClosestPlaceName(placeName, allPlaceNames);
-    
+
     if (bestMatch == null) {
       return null;
     }
-    
+
     log.info("Fuzzy match result: '{}' → '{}'", placeName, bestMatch);
-    
+
     // 3. 매칭된 장소가 속한 Day 반환
     PlanDay matchedDay = placeToDay.get(bestMatch);
     if (matchedDay != null) {
       java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(matchedDay.getId());
       return new PlanDayWithPlaces(matchedDay, places);
     }
-    
+
     return null;
   }
 
@@ -876,23 +876,23 @@ public class PlanService {
    */
   public PlacePosition findPlacePosition(String placeName, Long userId) {
     log.info("장소 위치 조회: placeName={}, userId={}", placeName, userId);
-    
+
     // 1. 활성 Plan 조회
     Plan activePlan = findActiveByUserId(userId);
     if (activePlan == null) {
       log.info("활성 여행 계획이 없습니다: userId={}", userId);
       return null;
     }
-    
+
     // 2. 모든 PlanDay 조회
     java.util.List<PlanDay> allDays = planDayDao.selectPlanDaysByPlanId(activePlan.getId());
     if (allDays.isEmpty()) {
       return null;
     }
-    
+
     // 3. 모든 PlanPlace 조회하여 fuzzy matching
     java.util.Map<String, PlacePosition> placePositions = new java.util.HashMap<>();
-    
+
     for (PlanDay day : allDays) {
       java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
       for (int i = 0; i < places.size(); i++) {
@@ -906,16 +906,16 @@ public class PlanService {
             .build());
       }
     }
-    
+
     // 4. Fuzzy matching으로 가장 가까운 장소명 찾기
     java.util.List<String> allPlaceNames = new java.util.ArrayList<>(placePositions.keySet());
     String bestMatch = findClosestPlaceName(placeName, allPlaceNames);
-    
+
     if (bestMatch == null) {
       log.info("장소를 찾을 수 없습니다: '{}'", placeName);
       return null;
     }
-    
+
     log.info("Fuzzy match result: '{}' → '{}'", placeName, bestMatch);
     return placePositions.get(bestMatch);
   }
@@ -936,14 +936,14 @@ public class PlanService {
    */
   public java.util.List<PlanPlace> getPlansByTimeRange(Long userId, String timeRange) {
     log.info("시간대별 일정 조회: userId={}, timeRange={}", userId, timeRange);
-    
+
     // 활성 Plan 조회
     Plan activePlan = findActiveByUserId(userId);
     if (activePlan == null) {
       log.info("활성 여행 계획이 없습니다: userId={}", userId);
       return java.util.Collections.emptyList();
     }
-    
+
     // 시간대 범위 정의
     java.time.LocalTime startTime, endTime;
     switch (timeRange.toLowerCase()) {
@@ -963,11 +963,11 @@ public class PlanService {
         log.warn("알 수 없는 시간대: {}", timeRange);
         return java.util.Collections.emptyList();
     }
-    
+
     // 모든 Day 조회
     java.util.List<PlanDay> allDays = planDayDao.selectPlanDaysByPlanId(activePlan.getId());
     java.util.List<PlanPlace> filteredPlaces = new java.util.ArrayList<>();
-    
+
     // 각 Day의 장소를 시간대로 필터링
     for (PlanDay day : allDays) {
       java.util.List<PlanPlace> dayPlaces = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
@@ -980,7 +980,7 @@ public class PlanService {
         }
       }
     }
-    
+
     log.info("시간대 '{}' 조회 결과: {}개 장소", timeRange, filteredPlaces.size());
     return filteredPlaces;
   }
@@ -993,22 +993,22 @@ public class PlanService {
     if (userInput == null || userInput.isEmpty() || placeNames.isEmpty()) {
       return null;
     }
-    
+
     // 정규화: 소문자 + 공백 제거 + 특수문자 제거
     String normalizedInput = normalizeForMatching(userInput);
-    
+
     String bestMatch = null;
     int bestScore = Integer.MAX_VALUE;
     double bestSimilarity = 0.0;
-    
+
     for (String placeName : placeNames) {
       String normalizedPlace = normalizeForMatching(placeName);
-      
+
       // 1. 완전 일치 체크 (최우선)
       if (normalizedPlace.equals(normalizedInput)) {
         return placeName;
       }
-      
+
       // 2. 부분 일치 체크 (높은 우선순위)
       if (normalizedPlace.contains(normalizedInput)) {
         int score = normalizedPlace.length() - normalizedInput.length();
@@ -1019,7 +1019,7 @@ public class PlanService {
         }
         continue;
       }
-      
+
       if (normalizedInput.contains(normalizedPlace)) {
         int score = normalizedInput.length() - normalizedPlace.length();
         if (score < bestScore) {
@@ -1029,31 +1029,31 @@ public class PlanService {
         }
         continue;
       }
-      
+
       // 3. Levenshtein distance 계산
       int distance = levenshteinDistance(normalizedInput, normalizedPlace);
       double similarity = 1.0 - ((double) distance / Math.max(normalizedInput.length(), normalizedPlace.length()));
-      
+
       // 유사도가 60% 이상이고, 이전 best보다 좋으면 업데이트
-      if (similarity >= 0.6 && (bestMatch == null || similarity > bestSimilarity || 
+      if (similarity >= 0.6 && (bestMatch == null || similarity > bestSimilarity ||
           (similarity == bestSimilarity && distance < bestScore))) {
         bestScore = distance;
         bestMatch = placeName;
         bestSimilarity = similarity;
       }
     }
-    
+
     // 최소 유사도 40% 이상만 반환
     if (bestSimilarity < 0.4) {
       log.info("No match found for '{}' (best similarity: {})", userInput, bestSimilarity);
       return null;
     }
-    
-    log.info("Fuzzy match: '{}' → '{}' (similarity: {}, distance: {})", 
+
+    log.info("Fuzzy match: '{}' → '{}' (similarity: {}, distance: {})",
         userInput, bestMatch, String.format("%.2f", bestSimilarity), bestScore);
     return bestMatch;
   }
-  
+
   /**
    * 매칭을 위한 문자열 정규화
    * - 소문자 변환
@@ -1076,14 +1076,14 @@ public class PlanService {
    */
   private int levenshteinDistance(String a, String b) {
     int[][] dp = new int[a.length() + 1][b.length() + 1];
-    
+
     for (int i = 0; i <= a.length(); i++) {
       dp[i][0] = i;
     }
     for (int j = 0; j <= b.length(); j++) {
       dp[0][j] = j;
     }
-    
+
     for (int i = 1; i <= a.length(); i++) {
       for (int j = 1; j <= b.length(); j++) {
         int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
@@ -1093,8 +1093,288 @@ public class PlanService {
         );
       }
     }
-    
+
     return dp[a.length()][b.length()];
+  }
+
+  // ==================== EDIT/DELETE Operations ====================
+
+  /**
+   * 여행 전체 기간 변경 (startDate, endDate 수정)
+   * - Plan의 startDate, endDate 업데이트
+   * - 모든 PlanDay의 planDate를 새로운 기간에 맞춰 재배치
+   * - dayIndex는 그대로 유지
+   */
+  @Transactional
+  public void updatePlanDates(Long planId, LocalDate newStartDate, LocalDate newEndDate) {
+    log.info("여행 기간 변경: planId={}, newStart={}, newEnd={}", planId, newStartDate, newEndDate);
+    
+    Plan plan = planDao.selectPlanById(planId);
+    if (plan == null) {
+      throw new IllegalArgumentException("Plan not found: " + planId);
+    }
+    
+    // Plan 날짜 업데이트
+    planDao.updatePlanDates(planId, newStartDate, newEndDate);
+    
+    // 모든 PlanDay의 날짜 재배치
+    java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
+    for (PlanDay day : days) {
+      LocalDate newDate = newStartDate.plusDays(day.getDayIndex() - 1);
+      planDayDao.updatePlanDate(day.getId(), newDate);
+      log.info("Day {} updated to {}", day.getDayIndex(), newDate);
+    }
+  }
+
+  /**
+   * 두 일차의 전체 일정 교환 (Day Swap)
+   * - day1의 모든 place ↔ day2의 모든 place
+   * - planDate는 그대로 유지 (일자 순서만 바뀜)
+   */
+  @Transactional
+  public void swapDaySchedules(Long planId, int dayIndexA, int dayIndexB) {
+    log.info("일차 교환: planId={}, dayA={}, dayB={}", planId, dayIndexA, dayIndexB);
+    
+    if (dayIndexA == dayIndexB) {
+      return; // 같은 날끼리는 교환 불필요
+    }
+    
+    PlanDay dayA = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndexA);
+    PlanDay dayB = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndexB);
+    
+    if (dayA == null || dayB == null) {
+      throw new IllegalArgumentException("One or both days not found");
+    }
+    
+    // 각 day의 모든 place 조회
+    java.util.List<PlanPlace> placesA = planPlaceDao.selectPlanPlacesByPlanDayId(dayA.getId());
+    java.util.List<PlanPlace> placesB = planPlaceDao.selectPlanPlacesByPlanDayId(dayB.getId());
+    
+    // A의 place들을 B로, B의 place들을 A로 이동
+    for (PlanPlace place : placesA) {
+      planPlaceDao.updatePlanDayId(place.getId(), dayB.getId());
+    }
+    for (PlanPlace place : placesB) {
+      planPlaceDao.updatePlanDayId(place.getId(), dayA.getId());
+    }
+    
+    log.info("Swapped {} places from day {} to day {}", placesA.size(), dayIndexA, dayIndexB);
+    log.info("Swapped {} places from day {} to day {}", placesB.size(), dayIndexB, dayIndexA);
+  }
+
+  /**
+   * 같은 날 내부의 두 장소 순서 교환 (Place Swap Inner)
+   * - order 값만 교환
+   */
+  @Transactional
+  public void swapPlaceOrdersInner(Long planId, int dayIndex, int placeIndexA, int placeIndexB) {
+    log.info("같은 날 장소 순서 교환: day={}, placeA={}, placeB={}", dayIndex, placeIndexA, placeIndexB);
+    
+    if (placeIndexA == placeIndexB) {
+      return;
+    }
+    
+    PlanDay day = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndex);
+    if (day == null) {
+      throw new IllegalArgumentException("Day not found: " + dayIndex);
+    }
+    
+    java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+    
+    if (placeIndexA < 1 || placeIndexA > places.size() || placeIndexB < 1 || placeIndexB > places.size()) {
+      throw new IllegalArgumentException("Invalid place indices");
+    }
+    
+    PlanPlace placeA = places.get(placeIndexA - 1);
+    PlanPlace placeB = places.get(placeIndexB - 1);
+    
+    // order 교환 (충돌 방지를 위해 임시값 사용)
+    planPlaceDao.updatePlaceOrder(placeA.getId(), -1);
+    planPlaceDao.updatePlaceOrder(placeB.getId(), placeA.getOrder());
+    planPlaceDao.updatePlaceOrder(placeA.getId(), placeB.getOrder());
+    
+    log.info("Swapped order: {} ↔ {}", placeA.getOrder(), placeB.getOrder());
+  }
+
+  /**
+   * 서로 다른 날짜 간 장소 교환 (Place Swap Between Days)
+   * - dayA의 placeA ↔ dayB의 placeB
+   * - plan_day_id와 order 모두 교환
+   */
+  @Transactional
+  public void swapPlacesBetweenDays(Long planId, int dayIndexA, int placeIndexA, int dayIndexB, int placeIndexB) {
+    log.info("날짜 간 장소 교환: day{}[{}] ↔ day{}[{}]", dayIndexA, placeIndexA, dayIndexB, placeIndexB);
+    
+    PlanDay dayA = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndexA);
+    PlanDay dayB = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndexB);
+    
+    if (dayA == null || dayB == null) {
+      throw new IllegalArgumentException("One or both days not found");
+    }
+    
+    java.util.List<PlanPlace> placesA = planPlaceDao.selectPlanPlacesByPlanDayId(dayA.getId());
+    java.util.List<PlanPlace> placesB = planPlaceDao.selectPlanPlacesByPlanDayId(dayB.getId());
+    
+    if (placeIndexA < 1 || placeIndexA > placesA.size() || placeIndexB < 1 || placeIndexB > placesB.size()) {
+      throw new IllegalArgumentException("Invalid place indices");
+    }
+    
+    PlanPlace placeA = placesA.get(placeIndexA - 1);
+    PlanPlace placeB = placesB.get(placeIndexB - 1);
+    
+    // plan_day_id와 order 교환
+    Long tempDayId = dayA.getId();
+    int tempOrder = placeA.getOrder();
+    
+    planPlaceDao.updatePlanDayIdAndOrder(placeA.getId(), dayB.getId(), placeB.getOrder());
+    planPlaceDao.updatePlanDayIdAndOrder(placeB.getId(), tempDayId, tempOrder);
+    
+    log.info("Swapped: {} (day{} order{}) ↔ {} (day{} order{})",
+        placeA.getPlaceName(), dayIndexA, placeA.getOrder(),
+        placeB.getPlaceName(), dayIndexB, placeB.getOrder());
+  }
+
+  /**
+   * 특정 장소를 다른 장소로 교체 (Place Replace)
+   * - 기존 place의 정보를 새로운 place 데이터로 업데이트
+   * - 시간/duration은 유지하거나 선택적 변경
+   */
+  @Transactional
+  public void replacePlaceWithNew(Long placeId, String newPlaceName, String newAddress, 
+                                   Double newLat, Double newLng, String newCategory, BigDecimal newCost) {
+    log.info("장소 교체: placeId={}, newPlace={}", placeId, newPlaceName);
+    
+    PlanPlace existingPlace = planPlaceDao.selectPlanPlaceById(placeId);
+    if (existingPlace == null) {
+      throw new IllegalArgumentException("Place not found: " + placeId);
+    }
+    
+    // 기존 시간/duration은 유지하고 장소 정보만 업데이트
+    planPlaceDao.updatePlaceInfo(placeId, newPlaceName, newAddress, newLat, newLng, newCategory, newCost);
+    
+    log.info("Replaced: {} → {}", existingPlace.getPlaceName(), newPlaceName);
+  }
+
+  /**
+   * 특정 장소의 시간/시간대 변경
+   */
+  @Transactional
+  public void updatePlaceTime(Long placeId, LocalTime newTime, Integer newDuration) {
+    log.info("장소 시간 변경: placeId={}, newTime={}, newDuration={}", placeId, newTime, newDuration);
+    
+    PlanPlace place = planPlaceDao.selectPlanPlaceById(placeId);
+    if (place == null) {
+      throw new IllegalArgumentException("Place not found: " + placeId);
+    }
+    
+    if (newTime != null) {
+      planPlaceDao.updatePlaceTime(placeId, newTime);
+    }
+    if (newDuration != null) {
+      planPlaceDao.updatePlaceDuration(placeId, newDuration);
+    }
+    
+    log.info("Updated time: {} at {}, duration={} min", place.getPlaceName(), newTime, newDuration);
+  }
+
+  /**
+   * 특정 장소 삭제 (Place Delete)
+   * - 해당 place 삭제
+   * - 뒤의 place들의 order를 1씩 앞당김
+   */
+  @Transactional
+  public void deletePlace(Long planId, int dayIndex, int placeIndex) {
+    log.info("장소 삭제: planId={}, day={}, place={}", planId, dayIndex, placeIndex);
+    
+    PlanDay day = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndex);
+    if (day == null) {
+      throw new IllegalArgumentException("Day not found: " + dayIndex);
+    }
+    
+    java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+    
+    if (placeIndex < 1 || placeIndex > places.size()) {
+      throw new IllegalArgumentException("Invalid place index: " + placeIndex);
+    }
+    
+    PlanPlace targetPlace = places.get(placeIndex - 1);
+    
+    // 삭제
+    planPlaceDao.deletePlanPlaceById(targetPlace.getId());
+    log.info("Deleted: {}", targetPlace.getPlaceName());
+    
+    // 뒤의 장소들 order 재조정 (order > deletedOrder → order - 1)
+    for (int i = placeIndex; i < places.size(); i++) {
+      PlanPlace place = places.get(i);
+      planPlaceDao.updatePlaceOrder(place.getId(), place.getOrder() - 1);
+    }
+    
+    log.info("Reordered {} places after deletion", places.size() - placeIndex);
+  }
+
+  /**
+   * 장소명으로 삭제 (Fuzzy matching 사용)
+   */
+  @Transactional
+  public void deletePlaceByName(Long planId, String placeName) {
+    log.info("장소명으로 삭제: planId={}, placeName={}", planId, placeName);
+    
+    PlacePosition position = findPlacePosition(placeName, planId);
+    if (position == null) {
+      throw new IllegalArgumentException("Place not found: " + placeName);
+    }
+    
+    deletePlace(planId, position.getDayIndex(), position.getOrder());
+  }
+
+  /**
+   * 특정 날짜 전체 삭제 (Day Delete)
+   * - 해당 day와 모든 place 삭제
+   * - 뒤의 day들을 앞으로 당김 (dayIndex 재조정)
+   * - planDate도 업데이트
+   */
+  @Transactional
+  public void deleteDay(Long planId, int dayIndex) {
+    log.info("날짜 삭제: planId={}, dayIndex={}", planId, dayIndex);
+    
+    PlanDay targetDay = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndex);
+    if (targetDay == null) {
+      throw new IllegalArgumentException("Day not found: " + dayIndex);
+    }
+    
+    // 해당 day의 모든 place 삭제
+    java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(targetDay.getId());
+    for (PlanPlace place : places) {
+      planPlaceDao.deletePlanPlaceById(place.getId());
+    }
+    log.info("Deleted {} places from day {}", places.size(), dayIndex);
+    
+    // day 삭제
+    planDayDao.deletePlanDayById(targetDay.getId());
+    log.info("Deleted day {}", dayIndex);
+    
+    // 뒤의 day들을 앞으로 당김
+    java.util.List<PlanDay> remainingDays = planDayDao.selectPlanDaysByPlanId(planId);
+    for (PlanDay day : remainingDays) {
+      if (day.getDayIndex() > dayIndex) {
+        int newIndex = day.getDayIndex() - 1;
+        planDayDao.updateDayIndex(day.getId(), newIndex);
+        
+        // planDate도 업데이트 (startDate + newIndex - 1)
+        Plan plan = planDao.selectPlanById(planId);
+        LocalDate newDate = plan.getStartDate().plusDays(newIndex - 1);
+        planDayDao.updatePlanDate(day.getId(), newDate);
+        
+        log.info("Day {} renumbered to {}, date updated to {}", day.getDayIndex(), newIndex, newDate);
+      }
+    }
+    
+    // Plan의 endDate도 하루 당김
+    Plan plan = planDao.selectPlanById(planId);
+    LocalDate newEndDate = plan.getEndDate().minusDays(1);
+    planDao.updatePlanDates(planId, plan.getStartDate(), newEndDate);
+    
+    log.info("Plan endDate updated to {}", newEndDate);
   }
 
 }

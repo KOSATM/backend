@@ -42,6 +42,13 @@ public interface PlanDao {
     void updatePlanTitleById(@Param("id") Long id, @Param("title") String title);
 
     /**
+     * 여행 기간 변경 (startDate, endDate 업데이트)
+     */
+    void updatePlanDates(@Param("planId") Long planId, 
+                         @Param("startDate") java.time.LocalDate startDate, 
+                         @Param("endDate") java.time.LocalDate endDate);
+
+    /**
      * 여행 계획을 삭제합니다.
      */
     int deletePlan(Long id);

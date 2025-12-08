@@ -43,7 +43,7 @@ public class PlanAgent implements AiAgent {
         String lang = (String) command.getArguments().getOrDefault("lang", "ko");
 
         // ========== VIEW INTENTS (조회) ==========
-        
+
         // VIEW_PLAN: 전체 일정 조회
         if ("VIEW_PLAN".equals(intentName)) {
             Plan plan = planService.findActiveByUserId(userId);
@@ -62,14 +62,14 @@ public class PlanAgent implements AiAgent {
         if ("VIEW_PLAN_DAY".equals(intentName)) {
             Integer dayIndex = parseInteger(command.getArguments().get("dayIndex"));
             String dateStr = (String) command.getArguments().get("date");
-            
+
             Plan plan = planService.findActiveByUserId(userId);
             if (plan == null) {
                 return AiAgentResponse.of("No active travel plan found.");
             }
-            
+
             try {
-                var dayWithPlaces = (dayIndex != null) 
+                var dayWithPlaces = (dayIndex != null)
                     ? planService.queryDay(plan.getId(), dayIndex)
                     : planService.queryDayByDate(plan.getId(), dateStr);
                 return AiAgentResponse.of(formatDaySchedule(dayWithPlaces, dayIndex != null ? dayIndex : 0, "en"));
@@ -83,12 +83,12 @@ public class PlanAgent implements AiAgent {
             String placeName = (String) command.getArguments().get("placeName");
             Integer dayIndex = parseInteger(command.getArguments().get("dayIndex"));
             Integer placeIndex = parseInteger(command.getArguments().get("placeIndex"));
-            
+
             Plan plan = planService.findActiveByUserId(userId);
             if (plan == null) {
                 return AiAgentResponse.of("No active travel plan found.");
             }
-            
+
             try {
                 if (placeName != null) {
                     // 장소명으로 검색
@@ -112,7 +112,7 @@ public class PlanAgent implements AiAgent {
             if (plan == null) {
                 return AiAgentResponse.of("No active travel plan found.");
             }
-            
+
             try {
                 var currentActivity = planService.queryCurrentActivity(plan.getId());
                 if (currentActivity == null) {
@@ -130,7 +130,7 @@ public class PlanAgent implements AiAgent {
             if (plan == null) {
                 return AiAgentResponse.of("No active travel plan found.");
             }
-            
+
             try {
                 var nextActivity = planService.queryNextActivity(plan.getId());
                 if (nextActivity == null) {
@@ -148,7 +148,7 @@ public class PlanAgent implements AiAgent {
             if (plan == null) {
                 return AiAgentResponse.of("No active travel plan found.");
             }
-            
+
             try {
                 return AiAgentResponse.of(formatPlanSummary(plan));
             } catch (Exception e) {
@@ -159,23 +159,23 @@ public class PlanAgent implements AiAgent {
         // VIEW_PLAN_TIME_RANGE: 시간대별 일정 조회 (아침/점심/저녁)
         if ("VIEW_PLAN_TIME_RANGE".equals(intentName)) {
             String timeRange = (String) command.getArguments().get("range");
-            
+
             if (timeRange == null || timeRange.isEmpty()) {
                 return AiAgentResponse.of("Please specify a time range (morning, lunch, or evening).");
             }
-            
+
             try {
                 var places = planService.getPlansByTimeRange(userId, timeRange);
                 if (places.isEmpty()) {
                     return AiAgentResponse.of("No activities found for " + timeRange + ".");
                 }
-                
+
                 // LLM으로 한 줄 요약 생성 (맨 위에 표시)
                 String summary = generateTimeRangeSummary(timeRange, places.size());
-                
+
                 // 서버에서 시간대 일정 렌더링
                 String schedule = formatTimeRangeSchedule(timeRange, places);
-                
+
                 return AiAgentResponse.of("⭐ " + summary + "\n\n" + schedule);
             } catch (Exception e) {
                 return AiAgentResponse.of("Error: " + e.getMessage());
@@ -185,29 +185,29 @@ public class PlanAgent implements AiAgent {
         // VIEW_PLACE_DAY: 특정 장소가 몇일차에 있는지 조회
         if ("VIEW_PLACE_DAY".equals(intentName)) {
             String placeName = (String) command.getArguments().get("placeName");
-            
+
             if (placeName == null || placeName.isEmpty()) {
                 return AiAgentResponse.of("Please specify which place you want to find.");
             }
-            
+
             try {
                 var position = planService.findPlacePosition(placeName, userId);
                 if (position == null) {
                     return AiAgentResponse.of("I couldn't find \"" + placeName + "\" in your travel plan.");
                 }
-                
+
                 // LLM으로 한 줄 요약 생성 (맨 위에 표시)
                 String summary = generatePlaceSummary(position);
-                
+
                 // 해당 Day의 전체 장소 목록 조회
                 var dayPlaces = planService.getDayPlaces(position.getDayId());
-                
+
                 // Day 정보 조회
                 var dayInfo = planService.queryDay(
-                    planService.findActiveByUserId(userId).getId(), 
+                    planService.findActiveByUserId(userId).getId(),
                     position.getDayIndex()
                 );
-                
+
                 // 서버에서 직접 Day 전체 일정 렌더링 (타겟 장소만 Bold)
                 String daySchedule = buildHighlightedDaySchedule(
                     dayPlaces,
@@ -217,7 +217,7 @@ public class PlanAgent implements AiAgent {
                     dayInfo.getDay().getTitle(),
                     position.getOrder()
                 );
-                
+
                 // LLM 요약을 맨 위에, 그 다음 전체 일정
                 return AiAgentResponse.of("⭐ " + summary + "\n\n" + daySchedule);
             } catch (Exception e) {
@@ -227,7 +227,232 @@ public class PlanAgent implements AiAgent {
 
         // ========== MODIFICATION INTENTS (수정) ==========
 
-        // PLAN_DAY_SWAP: 일차 통째로 교체
+        // ========== EDIT INTENTS (수정) ==========
+
+        // PLAN_DATE_UPDATE: 여행 전체 기간 변경
+        if ("PLAN_DATE_UPDATE".equals(intentName)) {
+            String newStartDateStr = (String) command.getArguments().get("newStartDate");
+            String newEndDateStr = (String) command.getArguments().get("newEndDate");
+            
+            if (newStartDateStr == null || newEndDateStr == null) {
+                return AiAgentResponse.of("Please specify both start and end dates.");
+            }
+            
+            Plan plan = planService.findActiveByUserId(userId);
+            if (plan == null) {
+                return AiAgentResponse.of("No active travel plan found.");
+            }
+            
+            try {
+                LocalDate newStartDate = LocalDate.parse(newStartDateStr);
+                LocalDate newEndDate = LocalDate.parse(newEndDateStr);
+                planService.updatePlanDates(plan.getId(), newStartDate, newEndDate);
+                return AiAgentResponse.of("Your travel dates have been updated to " + newStartDate + " ~ " + newEndDate + ".");
+            } catch (Exception e) {
+                return AiAgentResponse.of("Error updating dates: " + e.getMessage());
+            }
+        }
+
+        // DAY_SWAP: 일차 간 전체 일정 교환
+        if ("DAY_SWAP".equals(intentName)) {
+            Integer dayA = parseInteger(command.getArguments().get("dayIndexA"));
+            Integer dayB = parseInteger(command.getArguments().get("dayIndexB"));
+            
+            if (dayA == null || dayB == null) {
+                return AiAgentResponse.of("Please specify both day numbers. Example: 'swap day 1 and day 3'");
+            }
+            
+            Plan plan = planService.findActiveByUserId(userId);
+            if (plan == null) {
+                return AiAgentResponse.of("No active travel plan found.");
+            }
+            
+            try {
+                planService.swapDaySchedules(plan.getId(), dayA, dayB);
+                return AiAgentResponse.of("Day " + dayA + " and Day " + dayB + " schedules have been swapped successfully!");
+            } catch (Exception e) {
+                return AiAgentResponse.of("Error swapping days: " + e.getMessage());
+            }
+        }
+
+        // PLACE_SWAP_INNER: 같은 날 내부 장소 순서 교환
+        if ("PLACE_SWAP_INNER".equals(intentName)) {
+            Integer dayIndex = parseInteger(command.getArguments().get("dayIndex"));
+            Integer placeA = parseInteger(command.getArguments().get("placeIndexA"));
+            Integer placeB = parseInteger(command.getArguments().get("placeIndexB"));
+            
+            if (dayIndex == null || placeA == null || placeB == null) {
+                return AiAgentResponse.of("Please specify day and both place numbers. Example: 'swap first and second on day 1'");
+            }
+            
+            Plan plan = planService.findActiveByUserId(userId);
+            if (plan == null) {
+                return AiAgentResponse.of("No active travel plan found.");
+            }
+            
+            try {
+                planService.swapPlaceOrdersInner(plan.getId(), dayIndex, placeA, placeB);
+                return AiAgentResponse.of("Swapped place " + placeA + " and " + placeB + " on Day " + dayIndex + ".");
+            } catch (Exception e) {
+                return AiAgentResponse.of("Error swapping places: " + e.getMessage());
+            }
+        }
+
+        // PLACE_SWAP_BETWEEN: 서로 다른 날짜 간 장소 교환
+        if ("PLACE_SWAP_BETWEEN".equals(intentName)) {
+            Integer dayA = parseInteger(command.getArguments().get("dayIndexA"));
+            Integer placeA = parseInteger(command.getArguments().get("placeIndexA"));
+            Integer dayB = parseInteger(command.getArguments().get("dayIndexB"));
+            Integer placeB = parseInteger(command.getArguments().get("placeIndexB"));
+            
+            if (dayA == null || placeA == null || dayB == null || placeB == null) {
+                return AiAgentResponse.of("Please specify both days and place numbers. Example: 'swap day 1 place 1 with day 2 place 2'");
+            }
+            
+            Plan plan = planService.findActiveByUserId(userId);
+            if (plan == null) {
+                return AiAgentResponse.of("No active travel plan found.");
+            }
+            
+            try {
+                planService.swapPlacesBetweenDays(plan.getId(), dayA, placeA, dayB, placeB);
+                return AiAgentResponse.of("Swapped Day " + dayA + " place " + placeA + " with Day " + dayB + " place " + placeB + ".");
+            } catch (Exception e) {
+                return AiAgentResponse.of("Error swapping places: " + e.getMessage());
+            }
+        }
+
+        // PLACE_REPLACE: 특정 장소를 다른 장소로 변경
+        if ("PLACE_REPLACE".equals(intentName)) {
+            String targetPlace = (String) command.getArguments().get("targetPlace");
+            String newPlace = (String) command.getArguments().get("newPlace");
+            
+            if (targetPlace == null || newPlace == null) {
+                return AiAgentResponse.of("Please specify both the place to replace and the new place.");
+            }
+            
+            Plan plan = planService.findActiveByUserId(userId);
+            if (plan == null) {
+                return AiAgentResponse.of("No active travel plan found.");
+            }
+            
+            try {
+                // 타겟 장소 찾기 (fuzzy matching)
+                var position = planService.findPlacePosition(targetPlace, userId);
+                if (position == null) {
+                    return AiAgentResponse.of("I couldn't find \"" + targetPlace + "\" in your travel plan.");
+                }
+                
+                // TODO: InternetSearchAgent로 newPlace 정보 검색 필요
+                // 현재는 기본값으로 대체 (실제로는 LLM/Search API 호출)
+                // position에서 placeId를 얻기 위해 실제 place 조회
+                var dayPlaces = planService.getDayPlaces(position.getDayId());
+                Long placeId = dayPlaces.get(position.getOrder() - 1).getId();
+                
+                planService.replacePlaceWithNew(
+                    placeId,
+                    newPlace,
+                    "Address TBD",  // TODO: Search
+                    37.5665,        // TODO: Search
+                    126.9780,       // TODO: Search
+                    "Place",        // TODO: Search
+                    BigDecimal.ZERO // TODO: Search
+                );
+                
+                return AiAgentResponse.of("\"" + targetPlace + "\" has been replaced with \"" + newPlace + "\".");
+            } catch (Exception e) {
+                return AiAgentResponse.of("Error replacing place: " + e.getMessage());
+            }
+        }
+
+        // PLACE_TIME_UPDATE: 특정 장소의 시간/시간대 변경
+        if ("PLACE_TIME_UPDATE".equals(intentName)) {
+            String targetPlace = (String) command.getArguments().get("targetPlace");
+            String newTimeStr = (String) command.getArguments().get("newTime");
+            Integer newDuration = parseInteger(command.getArguments().get("newDuration"));
+            
+            if (targetPlace == null || (newTimeStr == null && newDuration == null)) {
+                return AiAgentResponse.of("Please specify the place and either new time or duration.");
+            }
+            
+            Plan plan = planService.findActiveByUserId(userId);
+            if (plan == null) {
+                return AiAgentResponse.of("No active travel plan found.");
+            }
+            
+            try {
+                var position = planService.findPlacePosition(targetPlace, userId);
+                if (position == null) {
+                    return AiAgentResponse.of("I couldn't find \"" + targetPlace + "\" in your travel plan.");
+                }
+                
+                // position에서 placeId를 얻기 위해 실제 place 조회
+                var dayPlaces = planService.getDayPlaces(position.getDayId());
+                Long placeId = dayPlaces.get(position.getOrder() - 1).getId();
+                
+                java.time.LocalTime newTime = newTimeStr != null ? java.time.LocalTime.parse(newTimeStr) : null;
+                planService.updatePlaceTime(placeId, newTime, newDuration);
+                
+                return AiAgentResponse.of("Time updated for \"" + targetPlace + "\".");
+            } catch (Exception e) {
+                return AiAgentResponse.of("Error updating time: " + e.getMessage());
+            }
+        }
+
+        // ========== DELETE INTENTS (삭제) ==========
+
+        // PLACE_DELETE: 특정 장소 삭제
+        if ("PLACE_DELETE".equals(intentName)) {
+            Integer dayIndex = parseInteger(command.getArguments().get("dayIndex"));
+            Integer placeIndex = parseInteger(command.getArguments().get("placeIndex"));
+            String placeName = (String) command.getArguments().get("placeName");
+            
+            Plan plan = planService.findActiveByUserId(userId);
+            if (plan == null) {
+                return AiAgentResponse.of("No active travel plan found.");
+            }
+            
+            try {
+                if (dayIndex != null && placeIndex != null) {
+                    // 일차 + 순서로 삭제
+                    planService.deletePlace(plan.getId(), dayIndex, placeIndex);
+                    return AiAgentResponse.of("Deleted place " + placeIndex + " on Day " + dayIndex + ".");
+                } else if (placeName != null) {
+                    // 장소명으로 삭제 (fuzzy matching)
+                    planService.deletePlaceByName(plan.getId(), placeName);
+                    return AiAgentResponse.of("\"" + placeName + "\" has been deleted from your plan.");
+                } else {
+                    return AiAgentResponse.of("Please specify either day/place number or place name.");
+                }
+            } catch (Exception e) {
+                return AiAgentResponse.of("Error deleting place: " + e.getMessage());
+            }
+        }
+
+        // DAY_DELETE: 특정 날짜 전체 삭제
+        if ("DAY_DELETE".equals(intentName)) {
+            Integer dayIndex = parseInteger(command.getArguments().get("dayIndex"));
+            
+            if (dayIndex == null) {
+                return AiAgentResponse.of("Please specify which day to delete. Example: 'delete day 3'");
+            }
+            
+            Plan plan = planService.findActiveByUserId(userId);
+            if (plan == null) {
+                return AiAgentResponse.of("No active travel plan found.");
+            }
+            
+            try {
+                planService.deleteDay(plan.getId(), dayIndex);
+                return AiAgentResponse.of("Day " + dayIndex + " has been deleted. Subsequent days have been renumbered.");
+            } catch (Exception e) {
+                return AiAgentResponse.of("Error deleting day: " + e.getMessage());
+            }
+        }
+
+        // ========== LEGACY (이전 버전 호환용) ==========
+
+        // PLAN_DAY_SWAP: 일차 통째로 교체 (이전 버전 - DAY_SWAP으로 리다이렉트)
         if ("PLAN_DAY_SWAP".equals(intentName)) {
             Integer dayA = parseInteger(command.getArguments().get("dayIndexA"));
             Integer dayB = parseInteger(command.getArguments().get("dayIndexB"));
@@ -241,7 +466,7 @@ public class PlanAgent implements AiAgent {
                     "No active travel plan found."));
             }
             try {
-                planService.swapDay(plan.getId(), dayA, dayB);
+                planService.swapDaySchedules(plan.getId(), dayA, dayB);
             } catch (Exception e) {
                 return AiAgentResponse.of(getMessage(lang, "일차 교체 중 오류가 발생했습니다: " + e.getMessage(),
                     "Error swapping days: " + e.getMessage()));
@@ -325,7 +550,7 @@ public class PlanAgent implements AiAgent {
         StringBuilder sb = new StringBuilder();
         sb.append("🗓️ **").append(getMessage(lang, dayIndex + "일차 일정", "Day " + dayIndex + " Schedule"));
         sb.append("** — ").append(day.getPlanDate()).append("\n");
-        
+
         // Day 제목이 있고 기본값이 아니면 표시
         if (day.getTitle() != null && !day.getTitle().isEmpty() && !day.getTitle().equals("Day " + dayIndex)) {
             sb.append("   Theme: _").append(day.getTitle()).append("_\n");
@@ -405,23 +630,23 @@ public class PlanAgent implements AiAgent {
      */
     private String formatFullPlan(Plan plan, java.util.List<com.example.demo.planner.plan.dto.response.PlanDayWithPlaces> allDays) {
         StringBuilder sb = new StringBuilder();
-        
+
         // 헤더
         sb.append("📅 **Your Complete Seoul Travel Plan**\n\n");
-        
+
         // 여행 기본 정보
         sb.append("**Travel Duration:** ").append(plan.getStartDate()).append(" to ").append(plan.getEndDate()).append("\n");
         long totalDays = java.time.temporal.ChronoUnit.DAYS.between(plan.getStartDate(), plan.getEndDate()) + 1;
         sb.append("**Total Days:** ").append(totalDays).append(" days\n");
-        
+
         if (plan.getBudget() != null && plan.getBudget().longValue() > 0) {
             sb.append("**Total Budget:** ₩").append(String.format("%,d", plan.getBudget().longValue())).append("\n");
         }
-        
+
         if (plan.getTitle() != null && !plan.getTitle().isEmpty()) {
             sb.append("**Plan Title:** ").append(plan.getTitle()).append("\n");
         }
-        
+
         sb.append("\n");
         sb.append("═══════════════════════════════════════════════════\n\n");
 
@@ -431,26 +656,26 @@ public class PlanAgent implements AiAgent {
             var day = dayWithPlaces.getDay();
             var places = dayWithPlaces.getPlaces();
             totalPlaces += places.size();
-            
+
             sb.append("🗓️ **DAY ").append(day.getDayIndex()).append("** — ").append(day.getPlanDate()).append("\n");
-            
+
             if (day.getTitle() != null && !day.getTitle().isEmpty() && !day.getTitle().equals("Day " + day.getDayIndex())) {
                 sb.append("   Theme: _").append(day.getTitle()).append("_\n");
             }
             sb.append("\n");
-            
+
             if (places.isEmpty()) {
                 sb.append("   _No activities scheduled for this day._\n\n");
             } else {
                 for (int i = 0; i < places.size(); i++) {
                     var place = places.get(i);
-                    
+
                     // 장소 번호 및 제목
                     sb.append("   **").append(i + 1).append(". ").append(place.getTitle()).append("**\n");
-                    
+
                     // 장소명
                     sb.append("      📍 ").append(place.getPlaceName()).append("\n");
-                    
+
                     // 시간
                     if (place.getStartAt() != null) {
                         sb.append("      ⏰ ");
@@ -458,28 +683,28 @@ public class PlanAgent implements AiAgent {
                         if (place.getEndAt() != null) {
                             sb.append(" - ").append(formatTime(place.getEndAt().toLocalTime()));
                             long duration = java.time.Duration.between(
-                                place.getStartAt().toLocalTime(), 
+                                place.getStartAt().toLocalTime(),
                                 place.getEndAt().toLocalTime()
                             ).toMinutes();
                             sb.append(" (").append(duration).append(" min)");
                         }
                         sb.append("\n");
                     }
-                    
+
                     // 주소
                     if (place.getAddress() != null && !place.getAddress().isEmpty()) {
                         sb.append("      🏠 ").append(place.getAddress()).append("\n");
                     }
-                    
+
                     // 예상 비용
                     if (place.getExpectedCost() != null && place.getExpectedCost().longValue() > 0) {
                         sb.append("      💰 ₩").append(String.format("%,d", place.getExpectedCost().longValue())).append("\n");
                     }
-                    
+
                     sb.append("\n");
                 }
             }
-            
+
             sb.append("───────────────────────────────────────────────────\n\n");
         }
 
@@ -505,7 +730,7 @@ public class PlanAgent implements AiAgent {
 
         StringBuilder sb = new StringBuilder();
         sb.append("🔍 **Places matching \"").append(searchTerm).append("\"**\n\n");
-        
+
         for (int i = 0; i < places.size(); i++) {
             var place = places.get(i);
             sb.append(i + 1).append(". **").append(place.getTitle()).append("**\n");
@@ -568,20 +793,20 @@ public class PlanAgent implements AiAgent {
         StringBuilder sb = new StringBuilder();
         sb.append("📊 **Travel Plan Summary**\n\n");
         sb.append("**Trip Duration:** ").append(plan.getStartDate()).append(" to ").append(plan.getEndDate()).append("\n");
-        
+
         long days = java.time.temporal.ChronoUnit.DAYS.between(plan.getStartDate(), plan.getEndDate()) + 1;
         sb.append("**Total Days:** ").append(days).append(" days\n");
-        
+
         if (plan.getBudget() != null) {
             sb.append("**Total Budget:** ₩").append(String.format("%,d", plan.getBudget().longValue())).append("\n");
         }
-        
+
         if (plan.getIsEnded() != null && plan.getIsEnded()) {
             sb.append("**Status:** Completed ✅\n");
         } else {
             sb.append("**Status:** In Progress 🚀\n");
         }
-        
+
         return sb.toString();
     }
 
@@ -596,36 +821,36 @@ public class PlanAgent implements AiAgent {
             java.time.LocalDate date,
             String dayTitle,
             int targetOrder) {
-        
+
         StringBuilder sb = new StringBuilder();
-        
+
         // Day 헤더
         sb.append("🗓️ **DAY ").append(dayIndex).append("** — ").append(date).append("\n");
-        
+
         if (dayTitle != null && !dayTitle.isEmpty() && !dayTitle.equals("Day " + dayIndex)) {
             sb.append("   Theme: _").append(dayTitle).append("_\n");
         }
         sb.append("\n");
-        
+
         // 장소 목록 (타겟 장소만 Bold 처리)
         for (int i = 0; i < places.size(); i++) {
             var place = places.get(i);
             boolean isTarget = place.getPlaceName().equalsIgnoreCase(targetPlaceName);
-            
+
             // 장소 번호 및 제목
             if (isTarget) {
                 sb.append("👉 **").append(i + 1).append(". ").append(place.getTitle()).append("**\n");
             } else {
                 sb.append("   ").append(i + 1).append(". ").append(place.getTitle()).append("\n");
             }
-            
+
             // 장소명
             if (isTarget) {
                 sb.append("      📍 **").append(place.getPlaceName()).append("**\n");
             } else {
                 sb.append("      📍 ").append(place.getPlaceName()).append("\n");
             }
-            
+
             // 시간
             if (place.getStartAt() != null) {
                 sb.append("      ⏰ ");
@@ -642,7 +867,7 @@ public class PlanAgent implements AiAgent {
                 if (isTarget) sb.append("**");
                 sb.append("\n");
             }
-            
+
             // 주소
             if (place.getAddress() != null && !place.getAddress().isEmpty()) {
                 if (isTarget) {
@@ -651,7 +876,7 @@ public class PlanAgent implements AiAgent {
                     sb.append("      🏠 ").append(place.getAddress()).append("\n");
                 }
             }
-            
+
             // 예상 비용
             if (place.getExpectedCost() != null && place.getExpectedCost().longValue() > 0) {
                 if (isTarget) {
@@ -660,10 +885,10 @@ public class PlanAgent implements AiAgent {
                     sb.append("      💰 ₩").append(String.format("%,d", place.getExpectedCost().longValue())).append("\n");
                 }
             }
-            
+
             sb.append("\n");
         }
-        
+
         return sb.toString();
     }
 
@@ -681,7 +906,7 @@ public class PlanAgent implements AiAgent {
             position.getDayIndex(),
             getOrdinal(position.getOrder())
         );
-        
+
         return chatClient.prompt()
             .user(prompt)
             .call()
@@ -708,21 +933,21 @@ public class PlanAgent implements AiAgent {
      */
     private String formatTimeRangeSchedule(String timeRange, java.util.List<com.example.demo.planner.plan.dto.entity.PlanPlace> places) {
         StringBuilder sb = new StringBuilder();
-        
+
         // 시간대 헤더
         String rangeDisplay = getTimeRangeDisplay(timeRange);
         sb.append("🗓️ **").append(rangeDisplay).append(" Schedule**\n\n");
-        
+
         // 장소 목록
         for (int i = 0; i < places.size(); i++) {
             var place = places.get(i);
-            
+
             // 장소 번호 및 제목
             sb.append("   **").append(i + 1).append(". ").append(place.getTitle()).append("**\n");
-            
+
             // 장소명
             sb.append("      📍 ").append(place.getPlaceName()).append("\n");
-            
+
             // 시간
             if (place.getStartAt() != null) {
                 sb.append("      ⏰ ");
@@ -737,20 +962,20 @@ public class PlanAgent implements AiAgent {
                 }
                 sb.append("\n");
             }
-            
+
             // 주소
             if (place.getAddress() != null && !place.getAddress().isEmpty()) {
                 sb.append("      🏠 ").append(place.getAddress()).append("\n");
             }
-            
+
             // 예상 비용
             if (place.getExpectedCost() != null && place.getExpectedCost().longValue() > 0) {
                 sb.append("      💰 ₩").append(String.format("%,d", place.getExpectedCost().longValue())).append("\n");
             }
-            
+
             sb.append("\n");
         }
-        
+
         return sb.toString();
     }
 
@@ -778,7 +1003,7 @@ public class PlanAgent implements AiAgent {
             count,
             timeRange
         );
-        
+
         return chatClient.prompt()
             .user(prompt)
             .call()

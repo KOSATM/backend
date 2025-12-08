@@ -67,7 +67,7 @@ public class ChatController {
     /**
      * 의도 분석 파이프라인 기반 채팅 엔드포인트
      * /api/chat 경로
-     * 
+     *
      * 흐름: 사용자 입력 → IntentAnalysisAgent (의도 분석) → AiAgentRouter (에이전트 라우팅) → 적절한 에이전트 실행
      */
     @PostMapping("/api/chat")

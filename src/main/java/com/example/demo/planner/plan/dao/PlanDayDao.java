@@ -62,7 +62,7 @@ public interface PlanDayDao {
     /**
      * 특정 planId와 dayIndex 조합이 존재하는지 확인합니다.
      */
-    PlanDay selectPlanDayByPlanIdAndDayIndex(@org.apache.ibatis.annotations.Param("planId") Long planId, 
+    PlanDay selectPlanDayByPlanIdAndDayIndex(@org.apache.ibatis.annotations.Param("planId") Long planId,
                                               @org.apache.ibatis.annotations.Param("dayIndex") Integer dayIndex);
 
     /**
@@ -74,4 +74,15 @@ public interface PlanDayDao {
      * dayIndex만 변경합니다 (swap용)
      */
     int updateDayIndex(Long id, Integer dayIndex);
+
+    /**
+     * planDate를 업데이트합니다
+     */
+    void updatePlanDate(@org.apache.ibatis.annotations.Param("id") Long id, 
+                        @org.apache.ibatis.annotations.Param("planDate") java.time.LocalDate planDate);
+
+    /**
+     * 특정 day 전체 삭제
+     */
+    void deletePlanDayById(Long id);
 }
