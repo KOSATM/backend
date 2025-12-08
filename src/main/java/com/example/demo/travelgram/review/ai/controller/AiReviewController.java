@@ -41,8 +41,15 @@ public class AiReviewController {
 
     @GetMapping("{planId}/title")
     public ResponseEntity<String> getPlanTitle(@PathVariable("planId") Long planId) {
-        String title = aiReviewService.generatePlanTitle(planId);
+        String title = aiReviewService.ensurePlanTitle(planId);
         return ResponseEntity.ok(title);
+    }
+
+    // 관리자용 일괄 제목 업데이트 API
+    @PostMapping("/batch/generate-titles")
+    public ResponseEntity<String> batchGenerateTitles() {
+        int count = aiReviewService.generateTitlesForMissingOnes();
+        return ResponseEntity.ok(count + "개의 여행 계획 제목이 생성되었습니다.");
     }
 
     @PostMapping("/generate-styles")

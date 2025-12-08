@@ -58,7 +58,7 @@ public class PlanAssemblerService {
         Map<Long, TravelPlaces> placeInfoMap = extractPlaceInfo(dayPlans);
 
         // 3) Plan 생성 및 저장
-        Plan plan = createPlanEntity(Long.valueOf(userId), startDate, duration);
+        Plan plan = createPlanEntity(userId, startDate, duration);
         // log.info(plan.toString());
         planDao.insertPlan(plan);
 

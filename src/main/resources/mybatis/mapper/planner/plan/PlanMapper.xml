@@ -66,4 +66,11 @@
     WHERE id = #{id}
   </delete>
 
+  <select id="selectEndedPlansWithNoTitle" resultType="Plan">
+        SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title
+        FROM plans
+        WHERE is_ended = true 
+          AND (title IS NULL OR title = '')
+        ORDER BY created_at DESC
+    </select>
 </mapper>

@@ -52,4 +52,7 @@ public interface PlanDao {
     List<TravelPlaces> findAll(@Param("limit") int limit, @Param("offset") int offset);
     List<TravelPlaceCandidate> searchByVector(@Param("embedding") float[] embedding, @Param("limit") int limit);
     List<TravelPlaceCandidate> searchMissingCategoryByVector(Map<String, Object> params);
+
+    /*is_ended=true && title = null일시 제목 자동생성위해 조회 */
+    List<Plan> selectEndedPlansWithNoTitle();
 }

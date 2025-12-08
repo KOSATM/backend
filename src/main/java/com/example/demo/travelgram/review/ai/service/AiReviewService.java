@@ -72,6 +72,74 @@ public class AiReviewService {
 
     }
 
+
+    /**
+     * [단건 처리] 
+     * 특정 Plan을 조회했을 때, 완료된 여행인데 제목이 없다면 생성 후 업데이트
+     */
+    @Transactional
+    public String ensurePlanTitle(Long planId) {
+        Plan plan = planDao.selectPlanById(planId);
+        
+        if (plan == null) {
+            throw new IllegalArgumentException("Plan not found: " + planId);
+        }
+
+        // 조건: 여행이 끝났고(isEnded=true) AND 제목이 비어있음
+        if (Boolean.TRUE.equals(plan.getIsEnded()) && 
+           (plan.getTitle() == null || plan.getTitle().trim().isEmpty())) {
+            
+            log.info("📢 제목 없는 완료된 여행 발견. 제목 생성 시작 - planId: {}", planId);
+            
+            // 1. 기존 메서드 재활용하여 AI 제목 생성
+            String newTitle = generatePlanTitle(planId);
+            
+            // 2. 따옴표 등 불필요한 문자 제거 (AI가 가끔 "제목" 형태로 줄 때가 있음)
+            newTitle = newTitle.replace("\"", "").trim();
+
+            // 3. DB 업데이트
+            planDao.updatePlanTitleById(planId, newTitle);
+            
+            log.info("✅ 제목 생성 및 업데이트 완료: {}", newTitle);
+            return newTitle;
+        }
+
+        return plan.getTitle();
+    }
+    /**
+     * [일괄 처리] 
+     * DB에 있는 '완료되었지만 제목 없는' 모든 Plan을 찾아서 일괄 업데이트
+     * (스케줄러나 관리자 API에서 호출용)
+     */
+    @Transactional
+    public int generateTitlesForMissingOnes() {
+        // 1. 대상 조회
+        List<Plan> targets = planDao.selectEndedPlansWithNoTitle();
+        log.info("🔍 제목 생성 대상 Plan 개수: {}개", targets.size());
+
+        int count = 0;
+        for (Plan plan : targets) {
+            try {
+                // 2. AI 제목 생성
+                String newTitle = generatePlanTitle(plan.getId());
+                newTitle = newTitle.replace("\"", "").trim();
+
+                // 3. 업데이트
+                planDao.updatePlanTitleById(plan.getId(), newTitle);
+                count++;
+                
+                // API Rate Limit 고려하여 약간의 텀을 줄 수도 있음 (선택사항)
+                // Thread.sleep(500); 
+                
+            } catch (Exception e) {
+                log.error("❌ planId={} 제목 생성 중 실패: {}", plan.getId(), e.getMessage());
+                // 하나가 실패해도 나머지는 계속 진행
+            }
+        }
+        
+        log.info("🎉 총 {}개의 Plan 제목 업데이트 완료", count);
+        return count;
+    }
     public String generatePlanTitle(Long planId) {
         ObjectNode inputJson = createPlanInputJson(planId);
 
