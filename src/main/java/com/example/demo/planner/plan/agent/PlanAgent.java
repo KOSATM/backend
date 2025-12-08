@@ -13,6 +13,8 @@ import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.service.create.PlanService;
+import com.example.demo.planner.plan.validation.PlanModificationValidator;
+import com.example.demo.planner.plan.validation.PlanModificationValidator.PlanValidationException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,12 +28,15 @@ public class PlanAgent implements AiAgent {
 
     private final ChatClient chatClient;
     private final PlanService planService;
+    private final PlanModificationValidator validator;
 
     public PlanAgent(
             ChatClient.Builder chatClientBuilder,
-            PlanService planService) {
+            PlanService planService,
+            PlanModificationValidator validator) {
         this.chatClient = chatClientBuilder.build();
         this.planService = planService;
+        this.validator = validator;
     }
 
     /**
@@ -246,8 +251,14 @@ public class PlanAgent implements AiAgent {
             try {
                 LocalDate newStartDate = LocalDate.parse(newStartDateStr);
                 LocalDate newEndDate = LocalDate.parse(newEndDateStr);
+                
+                // ✅ Safety Layer: Validate date range
+                validator.validateDateRangeChange(plan, newStartDate, newEndDate);
+                
                 planService.updatePlanDates(plan.getId(), newStartDate, newEndDate);
                 return AiAgentResponse.of("Your travel dates have been updated to " + newStartDate + " ~ " + newEndDate + ".");
+            } catch (PlanValidationException e) {
+                return AiAgentResponse.of("❌ Validation Error: " + e.getMessage());
             } catch (Exception e) {
                 return AiAgentResponse.of("Error updating dates: " + e.getMessage());
             }
@@ -268,8 +279,13 @@ public class PlanAgent implements AiAgent {
             }
             
             try {
+                // ✅ Safety Layer: Validate day swap
+                validator.validateDaySwap(plan.getId(), dayA, dayB);
+                
                 planService.swapDaySchedules(plan.getId(), dayA, dayB);
                 return AiAgentResponse.of("Day " + dayA + " and Day " + dayB + " schedules have been swapped successfully!");
+            } catch (PlanValidationException e) {
+                return AiAgentResponse.of("❌ Validation Error: " + e.getMessage());
             } catch (Exception e) {
                 return AiAgentResponse.of("Error swapping days: " + e.getMessage());
             }
@@ -291,6 +307,9 @@ public class PlanAgent implements AiAgent {
             }
             
             try {
+                // ✅ Safety Layer: Validate place swap within same day
+                validator.validatePlaceSwapInner(plan.getId(), dayIndex, placeA, placeB);
+                
                 planService.swapPlaceOrdersInner(plan.getId(), dayIndex, placeA, placeB);
                 return AiAgentResponse.of("Swapped place " + placeA + " and " + placeB + " on Day " + dayIndex + ".");
             } catch (Exception e) {
@@ -315,8 +334,13 @@ public class PlanAgent implements AiAgent {
             }
             
             try {
+                // ✅ Safety Layer: Validate place swap between days
+                validator.validatePlaceSwapBetween(plan.getId(), dayA, placeA, dayB, placeB);
+                
                 planService.swapPlacesBetweenDays(plan.getId(), dayA, placeA, dayB, placeB);
                 return AiAgentResponse.of("Swapped Day " + dayA + " place " + placeA + " with Day " + dayB + " place " + placeB + ".");
+            } catch (PlanValidationException e) {
+                return AiAgentResponse.of("❌ Validation Error: " + e.getMessage());
             } catch (Exception e) {
                 return AiAgentResponse.of("Error swapping places: " + e.getMessage());
             }
@@ -414,6 +438,9 @@ public class PlanAgent implements AiAgent {
             
             try {
                 if (dayIndex != null && placeIndex != null) {
+                    // ✅ Safety Layer: Validate place exists before deletion
+                    validator.validatePlaceDelete(plan.getId(), dayIndex, placeIndex);
+                    
                     // 일차 + 순서로 삭제
                     planService.deletePlace(plan.getId(), dayIndex, placeIndex);
                     return AiAgentResponse.of("Deleted place " + placeIndex + " on Day " + dayIndex + ".");
@@ -424,6 +451,8 @@ public class PlanAgent implements AiAgent {
                 } else {
                     return AiAgentResponse.of("Please specify either day/place number or place name.");
                 }
+            } catch (PlanValidationException e) {
+                return AiAgentResponse.of("❌ Validation Error: " + e.getMessage());
             } catch (Exception e) {
                 return AiAgentResponse.of("Error deleting place: " + e.getMessage());
             }
@@ -443,8 +472,13 @@ public class PlanAgent implements AiAgent {
             }
             
             try {
+                // ✅ Safety Layer: Validate day exists before deletion
+                validator.validateDayDelete(plan.getId(), dayIndex);
+                
                 planService.deleteDay(plan.getId(), dayIndex);
                 return AiAgentResponse.of("Day " + dayIndex + " has been deleted. Subsequent days have been renumbered.");
+            } catch (PlanValidationException e) {
+                return AiAgentResponse.of("❌ Validation Error: " + e.getMessage());
             } catch (Exception e) {
                 return AiAgentResponse.of("Error deleting day: " + e.getMessage());
             }

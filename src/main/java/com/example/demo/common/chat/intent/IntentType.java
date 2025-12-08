@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.example.demo.common.global.agent.AiAgent;
+import com.example.demo.common.global.agent.SampleAiAgent;
 import com.example.demo.planner.plan.agent.PlaceSuggestAgent;
-import com.example.demo.planner.plan.agent.PlanAgent;
 import com.example.demo.planner.plan.service.create.TravelPlannerService;
 
 import lombok.Getter;
@@ -19,32 +19,9 @@ public enum IntentType {
 
     // -------------------- PLANNER --------------------
     TRAVEL_PLAN("travel_plan", CategoryType.PLANNER, "/planner", "여행 일정 추천", TravelPlannerService.class),
-
-    // ========== 조회 관련 Intent (VIEW) ==========
-    VIEW_PLAN("view_plan", CategoryType.PLANNER, "/planner", "전체 일정 조회", PlanAgent.class),
-    VIEW_PLAN_DAY("view_plan_day", CategoryType.PLANNER, "/planner", "특정 날짜의 일정 조회 (day 1, 첫날, 12월 6일)", PlanAgent.class),
-    VIEW_PLAN_PLACE("view_plan_place", CategoryType.PLANNER, "/planner", "특정 장소 조회 (강남, 명동교자 등)", PlanAgent.class),
-    VIEW_PLACE_DAY("view_place_day", CategoryType.PLANNER, "/planner", "특정 장소가 몇일차에 있는지 조회", PlanAgent.class),
-    VIEW_PLAN_TIME_RANGE("view_plan_time_range", CategoryType.PLANNER, "/planner", "시간대별 일정 조회 (아침, 점심, 저녁)", PlanAgent.class),
-    VIEW_CURRENT_ACTIVITY("view_current_activity", CategoryType.PLANNER, "/planner", "현재 시간 기준 일정 조회", PlanAgent.class),
-    VIEW_NEXT_ACTIVITY("view_next_activity", CategoryType.PLANNER, "/planner", "다음 일정 조회", PlanAgent.class),
-    VIEW_PLAN_SUMMARY("view_plan_summary", CategoryType.PLANNER, "/planner", "여행 요약 조회", PlanAgent.class),
-
-    // ========== 수정 관련 Intent (EDIT/UPDATE) ==========
-    PLAN_DATE_UPDATE("plan_date_update", CategoryType.PLANNER, "/planner", "여행 기간 날짜 변경", PlanAgent.class),
-    DAY_SWAP("day_swap", CategoryType.PLANNER, "/planner", "일차 간 전체 일정 교환 (Day 1 ↔ Day 3)", PlanAgent.class),
-    PLACE_SWAP_INNER("place_swap_inner", CategoryType.PLANNER, "/planner", "같은 날 내부 장소 순서 교환", PlanAgent.class),
-    PLACE_SWAP_BETWEEN("place_swap_between", CategoryType.PLANNER, "/planner", "서로 다른 날짜 간 장소 교환", PlanAgent.class),
-    PLACE_REPLACE("place_replace", CategoryType.PLANNER, "/planner", "특정 장소를 다른 장소로 변경", PlanAgent.class),
-    PLACE_TIME_UPDATE("place_time_update", CategoryType.PLANNER, "/planner", "특정 장소의 시간/시간대 변경", PlanAgent.class),
-
-    // ========== 추가 관련 Intent (CREATE) ==========
-    PLACE_ADD("place_add", CategoryType.PLANNER, "/planner", "일정에 새로운 장소 추가", PlanAgent.class),
-
-    // ========== 삭제 관련 Intent (DELETE) ==========
-    PLACE_DELETE("place_delete", CategoryType.PLANNER, "/planner", "특정 장소 삭제", PlanAgent.class),
-    DAY_DELETE("day_delete", CategoryType.PLANNER, "/planner", "특정 날짜 전체 삭제", PlanAgent.class),
-
+    PLAN_ADD("plan_add", CategoryType.PLANNER, "/planner", "일정에 장소 추가", null),
+    PLAN_DELETE("plan_delete", CategoryType.PLANNER, "/planner", "일정에서 장소 삭제", null),
+    PLAN_MODIFY("plan_modify", CategoryType.PLANNER, "/planner", "일정 수정", null),
     PLAN_PLACE_RECOMMEND("plan_place_recommend", CategoryType.PLANNER, "/planner/recommend", "여행지 추천",
             PlaceSuggestAgent.class),
     // ATTRACTION_RECOMMEND("attraction_recommend", CategoryType.PLANNER, "/planner/recommend", "여행지 추천",
