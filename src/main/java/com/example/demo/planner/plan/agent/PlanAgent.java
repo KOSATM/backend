@@ -75,8 +75,8 @@ public class PlanAgent implements AiAgent {
 
             try {
                 var dayWithPlaces = (dayIndex != null)
-                    ? planService.queryDay(plan.getId(), dayIndex)
-                    : planService.queryDayByDate(plan.getId(), dateStr);
+                        ? planService.queryDay(plan.getId(), dayIndex)
+                        : planService.queryDayByDate(plan.getId(), dateStr);
                 return AiAgentResponse.of(formatDaySchedule(dayWithPlaces, dayIndex != null ? dayIndex : 0, "en"));
             } catch (Exception e) {
                 return AiAgentResponse.of("Error: " + e.getMessage());
@@ -209,19 +209,17 @@ public class PlanAgent implements AiAgent {
 
                 // Day 정보 조회
                 var dayInfo = planService.queryDay(
-                    planService.findActiveByUserId(userId).getId(),
-                    position.getDayIndex()
-                );
+                        planService.findActiveByUserId(userId).getId(),
+                        position.getDayIndex());
 
                 // 서버에서 직접 Day 전체 일정 렌더링 (타겟 장소만 Bold)
                 String daySchedule = buildHighlightedDaySchedule(
-                    dayPlaces,
-                    position.getPlaceName(),
-                    position.getDayIndex(),
-                    position.getDate(),
-                    dayInfo.getDay().getTitle(),
-                    position.getOrder()
-                );
+                        dayPlaces,
+                        position.getPlaceName(),
+                        position.getDayIndex(),
+                        position.getDate(),
+                        dayInfo.getDay().getTitle(),
+                        position.getOrder());
 
                 // LLM 요약을 맨 위에, 그 다음 전체 일정
                 return AiAgentResponse.of("⭐ " + summary + "\n\n" + daySchedule);
@@ -256,7 +254,8 @@ public class PlanAgent implements AiAgent {
                 validator.validateDateRangeChange(plan, newStartDate, newEndDate);
 
                 planService.updatePlanDates(plan.getId(), newStartDate, newEndDate);
-                return AiAgentResponse.of("Your travel dates have been updated to " + newStartDate + " ~ " + newEndDate + ".");
+                return AiAgentResponse
+                        .of("Your travel dates have been updated to " + newStartDate + " ~ " + newEndDate + ".");
             } catch (PlanValidationException e) {
                 return AiAgentResponse.of("❌ Validation Error: " + e.getMessage());
             } catch (Exception e) {
@@ -283,7 +282,8 @@ public class PlanAgent implements AiAgent {
                 validator.validateDaySwap(plan.getId(), dayA, dayB);
 
                 planService.swapDaySchedules(plan.getId(), dayA, dayB);
-                return AiAgentResponse.of("Day " + dayA + " and Day " + dayB + " schedules have been swapped successfully!");
+                return AiAgentResponse
+                        .of("Day " + dayA + " and Day " + dayB + " schedules have been swapped successfully!");
             } catch (PlanValidationException e) {
                 return AiAgentResponse.of("❌ Validation Error: " + e.getMessage());
             } catch (Exception e) {
@@ -320,14 +320,20 @@ public class PlanAgent implements AiAgent {
                     // Check if same day
                     if (positionA.getDayIndex().equals(positionB.getDayIndex())) {
                         // Same day → INNER swap
-                        validator.validatePlaceSwapInner(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getOrder());
-                        planService.swapPlaceOrdersInner(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getOrder());
-                        return AiAgentResponse.of("\"" + placeNameA + "\" and \"" + placeNameB + "\" have been swapped.");
+                        validator.validatePlaceSwapInner(plan.getId(), positionA.getDayIndex(), positionA.getOrder(),
+                                positionB.getOrder());
+                        planService.swapPlaceOrdersInner(plan.getId(), positionA.getDayIndex(), positionA.getOrder(),
+                                positionB.getOrder());
+                        return AiAgentResponse
+                                .of("\"" + placeNameA + "\" and \"" + placeNameB + "\" have been swapped.");
                     } else {
                         // Different days → BETWEEN swap
-                        validator.validatePlaceSwapBetween(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getDayIndex(), positionB.getOrder());
-                        planService.swapPlacesBetweenDays(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getDayIndex(), positionB.getOrder());
-                        return AiAgentResponse.of("\"" + placeNameA + "\" (Day " + positionA.getDayIndex() + ") and \"" + placeNameB + "\" (Day " + positionB.getDayIndex() + ") have been swapped.");
+                        validator.validatePlaceSwapBetween(plan.getId(), positionA.getDayIndex(), positionA.getOrder(),
+                                positionB.getDayIndex(), positionB.getOrder());
+                        planService.swapPlacesBetweenDays(plan.getId(), positionA.getDayIndex(), positionA.getOrder(),
+                                positionB.getDayIndex(), positionB.getOrder());
+                        return AiAgentResponse.of("\"" + placeNameA + "\" (Day " + positionA.getDayIndex() + ") and \""
+                                + placeNameB + "\" (Day " + positionB.getDayIndex() + ") have been swapped.");
                     }
                 }
 
@@ -338,7 +344,8 @@ public class PlanAgent implements AiAgent {
 
                 validator.validatePlaceSwapInner(plan.getId(), dayIndex, placeIndexA, placeIndexB);
                 planService.swapPlaceOrdersInner(plan.getId(), dayIndex, placeIndexA, placeIndexB);
-                return AiAgentResponse.of("Swapped place " + placeIndexA + " and " + placeIndexB + " on Day " + dayIndex + ".");
+                return AiAgentResponse
+                        .of("Swapped place " + placeIndexA + " and " + placeIndexB + " on Day " + dayIndex + ".");
 
             } catch (PlanValidationException e) {
                 return AiAgentResponse.of("❌ Validation Error: " + e.getMessage());
@@ -355,54 +362,61 @@ public class PlanAgent implements AiAgent {
             Integer placeA = parseInteger(command.getArguments().get("placeIndexA"));
             Integer dayB = parseInteger(command.getArguments().get("dayIndexB"));
             Integer placeB = parseInteger(command.getArguments().get("placeIndexB"));
-            
+
             Plan plan = planService.findActiveByUserId(userId);
             if (plan == null) {
                 return AiAgentResponse.of("No active travel plan found.");
             }
-            
+
             try {
                 // Case 1: Swap by place names (e.g., "명동교자랑 강남역 바꿔줘")
                 if (placeNameA != null && placeNameB != null) {
                     var positionA = planService.findPlacePosition(placeNameA, userId);
                     var positionB = planService.findPlacePosition(placeNameB, userId);
-                    
+
                     if (positionA == null) {
                         return AiAgentResponse.of("I couldn't find \"" + placeNameA + "\" in your travel plan.");
                     }
                     if (positionB == null) {
                         return AiAgentResponse.of("I couldn't find \"" + placeNameB + "\" in your travel plan.");
                     }
-                    
+
                     // Check if same day or different days
                     if (positionA.getDayIndex().equals(positionB.getDayIndex())) {
                         // Same day → INNER swap
-                        validator.validatePlaceSwapInner(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getOrder());
-                        planService.swapPlaceOrdersInner(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getOrder());
-                        return AiAgentResponse.of("\"" + placeNameA + "\" and \"" + placeNameB + "\" have been swapped.");
+                        validator.validatePlaceSwapInner(plan.getId(), positionA.getDayIndex(), positionA.getOrder(),
+                                positionB.getOrder());
+                        planService.swapPlaceOrdersInner(plan.getId(), positionA.getDayIndex(), positionA.getOrder(),
+                                positionB.getOrder());
+                        return AiAgentResponse
+                                .of("\"" + placeNameA + "\" and \"" + placeNameB + "\" have been swapped.");
                     } else {
                         // Different days → BETWEEN swap
-                        validator.validatePlaceSwapBetween(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getDayIndex(), positionB.getOrder());
-                        planService.swapPlacesBetweenDays(plan.getId(), positionA.getDayIndex(), positionA.getOrder(), positionB.getDayIndex(), positionB.getOrder());
-                        return AiAgentResponse.of("\"" + placeNameA + "\" (Day " + positionA.getDayIndex() + ") and \"" + placeNameB + "\" (Day " + positionB.getDayIndex() + ") have been swapped.");
+                        validator.validatePlaceSwapBetween(plan.getId(), positionA.getDayIndex(), positionA.getOrder(),
+                                positionB.getDayIndex(), positionB.getOrder());
+                        planService.swapPlacesBetweenDays(plan.getId(), positionA.getDayIndex(), positionA.getOrder(),
+                                positionB.getDayIndex(), positionB.getOrder());
+                        return AiAgentResponse.of("\"" + placeNameA + "\" (Day " + positionA.getDayIndex() + ") and \""
+                                + placeNameB + "\" (Day " + positionB.getDayIndex() + ") have been swapped.");
                     }
                 }
-                
+
                 // Case 2: Swap by day + order (e.g., "1일차 첫번째랑 2일차 첫번째 바꿔줘")
                 if (dayA == null || placeA == null || dayB == null || placeB == null) {
                     return AiAgentResponse.of("Please specify either place names OR both days and place numbers.");
                 }
-                
+
                 validator.validatePlaceSwapBetween(plan.getId(), dayA, placeA, dayB, placeB);
                 planService.swapPlacesBetweenDays(plan.getId(), dayA, placeA, dayB, placeB);
-                return AiAgentResponse.of("Swapped Day " + dayA + " place " + placeA + " with Day " + dayB + " place " + placeB + ".");
-                
+                return AiAgentResponse.of(
+                        "Swapped Day " + dayA + " place " + placeA + " with Day " + dayB + " place " + placeB + ".");
+
             } catch (PlanValidationException e) {
                 return AiAgentResponse.of("❌ Validation Error: " + e.getMessage());
             } catch (Exception e) {
                 return AiAgentResponse.of("Error swapping places: " + e.getMessage());
             }
-        }        // PLACE_REPLACE: 특정 장소를 다른 장소로 변경
+        } // PLACE_REPLACE: 특정 장소를 다른 장소로 변경
         if ("PLACE_REPLACE".equals(intentName)) {
             String targetPlace = (String) command.getArguments().get("targetPlace");
             String newPlace = (String) command.getArguments().get("newPlace");
@@ -430,13 +444,13 @@ public class PlanAgent implements AiAgent {
                 Long placeId = dayPlaces.get(position.getOrder() - 1).getId();
 
                 planService.replacePlaceWithNew(
-                    placeId,
-                    newPlace,
-                    "Address TBD",  // TODO: Search
-                    37.5665,        // TODO: Search
-                    126.9780,       // TODO: Search
-                    "Place",        // TODO: Search
-                    BigDecimal.ZERO // TODO: Search
+                        placeId,
+                        newPlace,
+                        "Address TBD", // TODO: Search
+                        37.5665, // TODO: Search
+                        126.9780, // TODO: Search
+                        "Place", // TODO: Search
+                        BigDecimal.ZERO // TODO: Search
                 );
 
                 return AiAgentResponse.of("\"" + targetPlace + "\" has been replaced with \"" + newPlace + "\".");
@@ -532,7 +546,8 @@ public class PlanAgent implements AiAgent {
                 validator.validateDayDelete(plan.getId(), dayIndex);
 
                 planService.deleteDay(plan.getId(), dayIndex);
-                return AiAgentResponse.of("Day " + dayIndex + " has been deleted. Subsequent days have been renumbered.");
+                return AiAgentResponse
+                        .of("Day " + dayIndex + " has been deleted. Subsequent days have been renumbered.");
             } catch (PlanValidationException e) {
                 return AiAgentResponse.of("❌ Validation Error: " + e.getMessage());
             } catch (Exception e) {
@@ -548,22 +563,22 @@ public class PlanAgent implements AiAgent {
             Integer dayB = parseInteger(command.getArguments().get("dayIndexB"));
             if (dayA == null || dayB == null) {
                 return AiAgentResponse.of(getMessage(lang, "일차 번호를 정확히 이해하지 못했어요. 예: '1일차와 3일차 바꿔줘'",
-                    "I couldn't understand the day numbers. Example: 'swap day 1 and day 3'"));
+                        "I couldn't understand the day numbers. Example: 'swap day 1 and day 3'"));
             }
             Plan plan = planService.findActiveByUserId(userId);
             if (plan == null) {
                 return AiAgentResponse.of(getMessage(lang, "현재 활성화된 여행 계획이 없어요.",
-                    "No active travel plan found."));
+                        "No active travel plan found."));
             }
             try {
                 planService.swapDaySchedules(plan.getId(), dayA, dayB);
             } catch (Exception e) {
                 return AiAgentResponse.of(getMessage(lang, "일차 교체 중 오류가 발생했습니다: " + e.getMessage(),
-                    "Error swapping days: " + e.getMessage()));
+                        "Error swapping days: " + e.getMessage()));
             }
             return AiAgentResponse.of(getMessage(lang,
-                dayA + "일차와 " + dayB + "일차 일정을 서로 교체했어요!",
-                "Day " + dayA + " and Day " + dayB + " have been swapped!"));
+                    dayA + "일차와 " + dayB + "일차 일정을 서로 교체했어요!",
+                    "Day " + dayA + " and Day " + dayB + " have been swapped!"));
         }
 
         // PLAN_QUERY_DAY: 특정 일차 조회
@@ -571,12 +586,12 @@ public class PlanAgent implements AiAgent {
             Integer dayIndex = parseInteger(command.getArguments().get("dayIndex"));
             if (dayIndex == null) {
                 return AiAgentResponse.of(getMessage(lang, "일차 번호를 정확히 이해하지 못했어요. 예: '3일차 보여줘'",
-                    "I couldn't understand the day number. Example: 'show me day 3'"));
+                        "I couldn't understand the day number. Example: 'show me day 3'"));
             }
             Plan plan = planService.findActiveByUserId(userId);
             if (plan == null) {
                 return AiAgentResponse.of(getMessage(lang, "현재 활성화된 여행 계획이 없어요.",
-                    "No active travel plan found."));
+                        "No active travel plan found."));
             }
             try {
                 var dayWithPlaces = planService.queryDay(plan.getId(), dayIndex);
@@ -592,12 +607,12 @@ public class PlanAgent implements AiAgent {
             Integer placeIndex = parseInteger(command.getArguments().get("placeIndex"));
             if (dayIndex == null || placeIndex == null) {
                 return AiAgentResponse.of(getMessage(lang, "일차와 장소 번호를 정확히 이해하지 못했어요. 예: '2일차 첫번째 장소'",
-                    "I couldn't understand the day and place numbers. Example: 'day 2 first place'"));
+                        "I couldn't understand the day and place numbers. Example: 'day 2 first place'"));
             }
             Plan plan = planService.findActiveByUserId(userId);
             if (plan == null) {
                 return AiAgentResponse.of(getMessage(lang, "현재 활성화된 여행 계획이 없어요.",
-                    "No active travel plan found."));
+                        "No active travel plan found."));
             }
             try {
                 var place = planService.queryPlace(plan.getId(), dayIndex, placeIndex);
@@ -614,8 +629,10 @@ public class PlanAgent implements AiAgent {
      * Object를 Integer로 변환 (null-safe)
      */
     private Integer parseInteger(Object obj) {
-        if (obj == null) return null;
-        if (obj instanceof Integer) return (Integer) obj;
+        if (obj == null)
+            return null;
+        if (obj instanceof Integer)
+            return (Integer) obj;
         try {
             return Integer.parseInt(obj.toString());
         } catch (NumberFormatException e) {
@@ -633,7 +650,8 @@ public class PlanAgent implements AiAgent {
     /**
      * 일차별 일정 포맷팅 (아이콘 + 마크다운)
      */
-    private String formatDaySchedule(com.example.demo.planner.plan.dto.response.PlanDayWithPlaces dayWithPlaces, int dayIndex, String lang) {
+    private String formatDaySchedule(com.example.demo.planner.plan.dto.response.PlanDayWithPlaces dayWithPlaces,
+            int dayIndex, String lang) {
         var day = dayWithPlaces.getDay();
         var places = dayWithPlaces.getPlaces();
 
@@ -677,11 +695,15 @@ public class PlanAgent implements AiAgent {
     /**
      * 특정 장소 상세 정보 포맷팅 (아이콘 + 마크다운)
      */
-    private String formatPlaceDetail(com.example.demo.planner.plan.dto.entity.PlanPlace place, int dayIndex, int placeIndex, String lang) {
+    private String formatPlaceDetail(com.example.demo.planner.plan.dto.entity.PlanPlace place, int dayIndex,
+            int placeIndex, String lang) {
         StringBuilder sb = new StringBuilder();
         sb.append("📍 **").append(place.getTitle()).append("**\n\n");
-        sb.append(getMessage(lang, dayIndex + "일차 " + placeIndex + "번째 장소", "Day " + dayIndex + ", Place #" + placeIndex)).append("\n\n");
-        sb.append("**").append(getMessage(lang, "장소명", "Location")).append(":** ").append(place.getPlaceName()).append("\n");
+        sb.append(
+                getMessage(lang, dayIndex + "일차 " + placeIndex + "번째 장소", "Day " + dayIndex + ", Place #" + placeIndex))
+                .append("\n\n");
+        sb.append("**").append(getMessage(lang, "장소명", "Location")).append(":** ").append(place.getPlaceName())
+                .append("\n");
 
         if (place.getStartAt() != null) {
             sb.append("**").append(getMessage(lang, "시간", "Time")).append(":** ");
@@ -694,15 +716,16 @@ public class PlanAgent implements AiAgent {
 
         if (place.getExpectedCost() != null && place.getExpectedCost().longValue() > 0) {
             sb.append("**").append(getMessage(lang, "예상 비용", "Expected Cost")).append(":** ₩")
-                .append(String.format("%,d", place.getExpectedCost().longValue())).append("\n");
+                    .append(String.format("%,d", place.getExpectedCost().longValue())).append("\n");
         }
 
         if (place.getAddress() != null && !place.getAddress().isEmpty()) {
-            sb.append("**").append(getMessage(lang, "주소", "Address")).append(":** ").append(place.getAddress()).append("\n");
+            sb.append("**").append(getMessage(lang, "주소", "Address")).append(":** ").append(place.getAddress())
+                    .append("\n");
         }
 
         sb.append("**").append(getMessage(lang, "좌표", "Coordinates")).append(":** ")
-            .append(String.format("%.6f, %.6f", place.getLat(), place.getLng())).append("\n");
+                .append(String.format("%.6f, %.6f", place.getLat(), place.getLng())).append("\n");
 
         return sb.toString();
     }
@@ -718,14 +741,16 @@ public class PlanAgent implements AiAgent {
      * 전체 일정 포맷팅 - 모든 세부 정보 포함 (영어 전용)
      * LLM을 거치지 않고 서버에서 직접 포맷팅하여 100% 정확한 전체 일정 반환
      */
-    private String formatFullPlan(Plan plan, java.util.List<com.example.demo.planner.plan.dto.response.PlanDayWithPlaces> allDays) {
+    private String formatFullPlan(Plan plan,
+            java.util.List<com.example.demo.planner.plan.dto.response.PlanDayWithPlaces> allDays) {
         StringBuilder sb = new StringBuilder();
 
         // 헤더
         sb.append("📅 **Your Complete Seoul Travel Plan**\n\n");
 
         // 여행 기본 정보
-        sb.append("**Travel Duration:** ").append(plan.getStartDate()).append(" to ").append(plan.getEndDate()).append("\n");
+        sb.append("**Travel Duration:** ").append(plan.getStartDate()).append(" to ").append(plan.getEndDate())
+                .append("\n");
         long totalDays = java.time.temporal.ChronoUnit.DAYS.between(plan.getStartDate(), plan.getEndDate()) + 1;
         sb.append("**Total Days:** ").append(totalDays).append(" days\n");
 
@@ -749,7 +774,8 @@ public class PlanAgent implements AiAgent {
 
             sb.append("🗓️ **DAY ").append(day.getDayIndex()).append("** — ").append(day.getPlanDate()).append("\n");
 
-            if (day.getTitle() != null && !day.getTitle().isEmpty() && !day.getTitle().equals("Day " + day.getDayIndex())) {
+            if (day.getTitle() != null && !day.getTitle().isEmpty()
+                    && !day.getTitle().equals("Day " + day.getDayIndex())) {
                 sb.append("   Theme: _").append(day.getTitle()).append("_\n");
             }
             sb.append("\n");
@@ -773,9 +799,8 @@ public class PlanAgent implements AiAgent {
                         if (place.getEndAt() != null) {
                             sb.append(" - ").append(formatTime(place.getEndAt().toLocalTime()));
                             long duration = java.time.Duration.between(
-                                place.getStartAt().toLocalTime(),
-                                place.getEndAt().toLocalTime()
-                            ).toMinutes();
+                                    place.getStartAt().toLocalTime(),
+                                    place.getEndAt().toLocalTime()).toMinutes();
                             sb.append(" (").append(duration).append(" min)");
                         }
                         sb.append("\n");
@@ -788,7 +813,8 @@ public class PlanAgent implements AiAgent {
 
                     // 예상 비용
                     if (place.getExpectedCost() != null && place.getExpectedCost().longValue() > 0) {
-                        sb.append("      💰 ₩").append(String.format("%,d", place.getExpectedCost().longValue())).append("\n");
+                        sb.append("      💰 ₩").append(String.format("%,d", place.getExpectedCost().longValue()))
+                                .append("\n");
                     }
 
                     sb.append("\n");
@@ -813,7 +839,8 @@ public class PlanAgent implements AiAgent {
     /**
      * 장소 검색 결과 포맷팅 (영어 전용)
      */
-    private String formatPlaceSearchResults(java.util.List<com.example.demo.planner.plan.dto.entity.PlanPlace> places, String searchTerm) {
+    private String formatPlaceSearchResults(java.util.List<com.example.demo.planner.plan.dto.entity.PlanPlace> places,
+            String searchTerm) {
         if (places.isEmpty()) {
             return "No places found matching \"" + searchTerm + "\"";
         }
@@ -851,7 +878,7 @@ public class PlanAgent implements AiAgent {
         sb.append("📍 ").append(activity.getPlaceName()).append("\n");
         if (activity.getStartAt() != null && activity.getEndAt() != null) {
             sb.append("🕐 ").append(formatTime(activity.getStartAt().toLocalTime()))
-              .append(" - ").append(formatTime(activity.getEndAt().toLocalTime())).append("\n");
+                    .append(" - ").append(formatTime(activity.getEndAt().toLocalTime())).append("\n");
         }
         if (activity.getAddress() != null && !activity.getAddress().isEmpty()) {
             sb.append("🏠 ").append(activity.getAddress()).append("\n");
@@ -882,7 +909,8 @@ public class PlanAgent implements AiAgent {
     private String formatPlanSummary(Plan plan) {
         StringBuilder sb = new StringBuilder();
         sb.append("📊 **Travel Plan Summary**\n\n");
-        sb.append("**Trip Duration:** ").append(plan.getStartDate()).append(" to ").append(plan.getEndDate()).append("\n");
+        sb.append("**Trip Duration:** ").append(plan.getStartDate()).append(" to ").append(plan.getEndDate())
+                .append("\n");
 
         long days = java.time.temporal.ChronoUnit.DAYS.between(plan.getStartDate(), plan.getEndDate()) + 1;
         sb.append("**Total Days:** ").append(days).append(" days\n");
@@ -944,17 +972,18 @@ public class PlanAgent implements AiAgent {
             // 시간
             if (place.getStartAt() != null) {
                 sb.append("      ⏰ ");
-                if (isTarget) sb.append("**");
+                if (isTarget)
+                    sb.append("**");
                 sb.append(formatTime(place.getStartAt().toLocalTime()));
                 if (place.getEndAt() != null) {
                     sb.append(" - ").append(formatTime(place.getEndAt().toLocalTime()));
                     long duration = java.time.Duration.between(
-                        place.getStartAt().toLocalTime(),
-                        place.getEndAt().toLocalTime()
-                    ).toMinutes();
+                            place.getStartAt().toLocalTime(),
+                            place.getEndAt().toLocalTime()).toMinutes();
                     sb.append(" (").append(duration).append(" min)");
                 }
-                if (isTarget) sb.append("**");
+                if (isTarget)
+                    sb.append("**");
                 sb.append("\n");
             }
 
@@ -970,9 +999,11 @@ public class PlanAgent implements AiAgent {
             // 예상 비용
             if (place.getExpectedCost() != null && place.getExpectedCost().longValue() > 0) {
                 if (isTarget) {
-                    sb.append("      💰 **₩").append(String.format("%,d", place.getExpectedCost().longValue())).append("**\n");
+                    sb.append("      💰 **₩").append(String.format("%,d", place.getExpectedCost().longValue()))
+                            .append("**\n");
                 } else {
-                    sb.append("      💰 ₩").append(String.format("%,d", place.getExpectedCost().longValue())).append("\n");
+                    sb.append("      💰 ₩").append(String.format("%,d", place.getExpectedCost().longValue()))
+                            .append("\n");
                 }
             }
 
@@ -988,19 +1019,18 @@ public class PlanAgent implements AiAgent {
      */
     private String generatePlaceSummary(com.example.demo.planner.plan.dto.response.PlacePosition position) {
         String prompt = String.format(
-            "Return exactly one short English sentence describing: " +
-            "'You will visit %s on Day %d as the %s stop.' " +
-            "No lists, no explanation, no markdown except plain text. " +
-            "Use ordinal numbers correctly (1st, 2nd, 3rd, 4th, etc.).",
-            position.getPlaceName(),
-            position.getDayIndex(),
-            getOrdinal(position.getOrder())
-        );
+                "Return exactly one short English sentence describing: " +
+                        "'You will visit %s on Day %d as the %s stop.' " +
+                        "No lists, no explanation, no markdown except plain text. " +
+                        "Use ordinal numbers correctly (1st, 2nd, 3rd, 4th, etc.).",
+                position.getPlaceName(),
+                position.getDayIndex(),
+                getOrdinal(position.getOrder()));
 
         return chatClient.prompt()
-            .user(prompt)
-            .call()
-            .content();
+                .user(prompt)
+                .call()
+                .content();
     }
 
     /**
@@ -1011,17 +1041,22 @@ public class PlanAgent implements AiAgent {
             return number + "th";
         }
         switch (number % 10) {
-            case 1: return number + "st";
-            case 2: return number + "nd";
-            case 3: return number + "rd";
-            default: return number + "th";
+            case 1:
+                return number + "st";
+            case 2:
+                return number + "nd";
+            case 3:
+                return number + "rd";
+            default:
+                return number + "th";
         }
     }
 
     /**
      * 시간대 일정 렌더링
      */
-    private String formatTimeRangeSchedule(String timeRange, java.util.List<com.example.demo.planner.plan.dto.entity.PlanPlace> places) {
+    private String formatTimeRangeSchedule(String timeRange,
+            java.util.List<com.example.demo.planner.plan.dto.entity.PlanPlace> places) {
         StringBuilder sb = new StringBuilder();
 
         // 시간대 헤더
@@ -1045,9 +1080,8 @@ public class PlanAgent implements AiAgent {
                 if (place.getEndAt() != null) {
                     sb.append(" - ").append(formatTime(place.getEndAt().toLocalTime()));
                     long duration = java.time.Duration.between(
-                        place.getStartAt().toLocalTime(),
-                        place.getEndAt().toLocalTime()
-                    ).toMinutes();
+                            place.getStartAt().toLocalTime(),
+                            place.getEndAt().toLocalTime()).toMinutes();
                     sb.append(" (").append(duration).append(" min)");
                 }
                 sb.append("\n");
@@ -1074,10 +1108,14 @@ public class PlanAgent implements AiAgent {
      */
     private String getTimeRangeDisplay(String timeRange) {
         switch (timeRange.toLowerCase()) {
-            case "morning": return "Morning (05:00 - 11:00)";
-            case "lunch": return "Lunch (11:00 - 15:00)";
-            case "evening": return "Evening (17:00 - 23:59)";
-            default: return timeRange;
+            case "morning":
+                return "Morning (05:00 - 11:00)";
+            case "lunch":
+                return "Lunch (11:00 - 15:00)";
+            case "evening":
+                return "Evening (17:00 - 23:59)";
+            default:
+                return timeRange;
         }
     }
 
@@ -1086,18 +1124,17 @@ public class PlanAgent implements AiAgent {
      */
     private String generateTimeRangeSummary(String timeRange, int count) {
         String prompt = String.format(
-            "Return exactly one short English sentence like: " +
-            "'Here are your %s plans' or 'You have %d %s activities scheduled.' " +
-            "No lists, no explanation, no markdown except plain text.",
-            timeRange,
-            count,
-            timeRange
-        );
+                "Return exactly one short English sentence like: " +
+                        "'Here are your %s plans' or 'You have %d %s activities scheduled.' " +
+                        "No lists, no explanation, no markdown except plain text.",
+                timeRange,
+                count,
+                timeRange);
 
         return chatClient.prompt()
-            .user(prompt)
-            .call()
-            .content();
+                .user(prompt)
+                .call()
+                .content();
     }
 
     /**
@@ -1105,55 +1142,55 @@ public class PlanAgent implements AiAgent {
      */
     public String chat(String userMessage, Long userId) {
         String systemPrompt = """
-            당신은 서울 여행 계획 도우미입니다.
+                당신은 서울 여행 계획 도우미입니다.
 
-            중요: 현재 사용자 ID는 %d입니다. 모든 Tool 호출 시 반드시 이 userId를 사용하세요.
+                중요: 현재 사용자 ID는 %d입니다. 모든 Tool 호출 시 반드시 이 userId를 사용하세요.
 
-            가능한 기능:
-            1. 여행 계획 생성: createPlan(userId=%d, days=X, budget=Y)
-            2. 사용자의 현재 계획 조회: getMyPlan(userId=%d) - "내 계획", "show my plan" 등
-            3. 특정 계획 조회: getPlan(planId=X) - planId를 알고 있을 때만
+                가능한 기능:
+                1. 여행 계획 생성: createPlan(userId=%d, days=X, budget=Y)
+                2. 사용자의 현재 계획 조회: getMyPlan(userId=%d) - "내 계획", "show my plan" 등
+                3. 특정 계획 조회: getPlan(planId=X) - planId를 알고 있을 때만
 
-            필수 규칙:
-            - 모든 응답은 반드시 영어로만 작성하세요
-            - 사용자가 "내 계획" 또는 "my plan"을 요청하면 반드시 getMyPlan(userId=%d)을 사용하세요
-            - planId 없이 계획 조회 시에는 getPlan이 아닌 getMyPlan을 사용하세요
-            - Tool을 사용하여 데이터베이스와 상호작용하세요
-            - 친절하고 도움이 되는 태도를 유지하세요
+                필수 규칙:
+                - 모든 응답은 반드시 영어로만 작성하세요
+                - 사용자가 "내 계획" 또는 "my plan"을 요청하면 반드시 getMyPlan(userId=%d)을 사용하세요
+                - planId 없이 계획 조회 시에는 getPlan이 아닌 getMyPlan을 사용하세요
+                - Tool을 사용하여 데이터베이스와 상호작용하세요
+                - 친절하고 도움이 되는 태도를 유지하세요
 
-            PlanDay 생성/이동 정책 (중요 - 반드시 준수):
-            - dayIndex를 지정하지 않으면 자동으로 순차 생성됩니다 (1, 2, 3...)
-            - 특정 일차를 생성하거나 이동할 때, 현재 계획 기간을 초과하는 경우:
-              1. 먼저 preview API를 호출하여 확장 필요 여부와 예상 endDate를 확인
-              2. 사용자에게 "여행 기간이 X일에서 Y일로 확장됩니다. 진행하시겠습니까?"와 같이 물어봄
-              3. 사용자가 승인하면 confirm=true로 실제 API 호출
-              4. 사용자가 거부하면 작업 취소
+                PlanDay 생성/이동 정책 (중요 - 반드시 준수):
+                - dayIndex를 지정하지 않으면 자동으로 순차 생성됩니다 (1, 2, 3...)
+                - 특정 일차를 생성하거나 이동할 때, 현재 계획 기간을 초과하는 경우:
+                  1. 먼저 preview API를 호출하여 확장 필요 여부와 예상 endDate를 확인
+                  2. 사용자에게 "여행 기간이 X일에서 Y일로 확장됩니다. 진행하시겠습니까?"와 같이 물어봄
+                  3. 사용자가 승인하면 confirm=true로 실제 API 호출
+                  4. 사용자가 거부하면 작업 취소
 
-            예시 흐름:
-            - 사용자: "5일차 추가해줘" (현재 3일 계획)
-            - Agent: previewDayCreation(planId=1, dayIndex=5) 호출
-            - 결과: requiresExtension=true, newEndDate=2025-12-09
-            - Agent: "여행 기간이 3일에서 5일로 확장됩니다 (종료일: 12월 9일). 진행하시겠습니까?"
-            - 사용자: "네" → createDay(planId=1, dayIndex=5, confirm=true)
+                예시 흐름:
+                - 사용자: "5일차 추가해줘" (현재 3일 계획)
+                - Agent: previewDayCreation(planId=1, dayIndex=5) 호출
+                - 결과: requiresExtension=true, newEndDate=2025-12-09
+                - Agent: "여행 기간이 3일에서 5일로 확장됩니다 (종료일: 12월 9일). 진행하시겠습니까?"
+                - 사용자: "네" → createDay(planId=1, dayIndex=5, confirm=true)
 
-            확장이 필요 없는 경우(현재 기간 내):
-            - preview 없이 바로 실행 가능 (confirm 불필요)
+                확장이 필요 없는 경우(현재 기간 내):
+                - preview 없이 바로 실행 가능 (confirm 불필요)
 
-            사용자 요청 처리:
-            - "계획 만들어줘" → createPlan(userId=%d, days=X, budget=Y) 호출
-            - "내 계획 보여줘", "show my plan" → getMyPlan(userId=%d) 호출
-            - "계획 #5 보여줘" → getPlan(planId=5) 호출
-            - "X일차 추가해줘" → previewDayCreation → 사용자 확인 → createDay(confirm=true)
-            - "Day를 Y일차로 이동" → previewDayMove → 사용자 확인 → moveDay(confirm=true)
-            """.formatted(userId, userId, userId, userId, userId, userId, userId);
+                사용자 요청 처리:
+                - "계획 만들어줘" → createPlan(userId=%d, days=X, budget=Y) 호출
+                - "내 계획 보여줘", "show my plan" → getMyPlan(userId=%d) 호출
+                - "계획 #5 보여줘" → getPlan(planId=5) 호출
+                - "X일차 추가해줘" → previewDayCreation → 사용자 확인 → createDay(confirm=true)
+                - "Day를 Y일차로 이동" → previewDayMove → 사용자 확인 → moveDay(confirm=true)
+                """.formatted(userId, userId, userId, userId, userId, userId, userId);
 
         try {
             String response = chatClient.prompt()
-                .system(systemPrompt)
-                .user(userMessage)
-                .tools(new PlanTools())
-                .call()
-                .content();
+                    .system(systemPrompt)
+                    .user(userMessage)
+                    .tools(new PlanTools())
+                    .call()
+                    .content();
 
             log.info("PlanAgent response: {}", response);
 
@@ -1176,16 +1213,16 @@ public class PlanAgent implements AiAgent {
     class PlanTools {
 
         @Tool(description = """
-            서울 여행 계획을 새로 생성합니다.
-            사용자가 새로운 여행 계획을 만들고 싶을 때 이 Tool을 호출하세요.
-            파라미터:
-            - userId: 사용자 ID (필수)
-            - days: 여행 일수 (필수)
-            - budget: 예산 (원화, 선택)
-            - startDate: 여행 시작일 (YYYY-MM-DD, 선택)
+                서울 여행 계획을 새로 생성합니다.
+                사용자가 새로운 여행 계획을 만들고 싶을 때 이 Tool을 호출하세요.
+                파라미터:
+                - userId: 사용자 ID (필수)
+                - days: 여행 일수 (필수)
+                - budget: 예산 (원화, 선택)
+                - startDate: 여행 시작일 (YYYY-MM-DD, 선택)
 
-            반환: 생성된 계획의 ID와 요약 정보
-            """)
+                반환: 생성된 계획의 ID와 요약 정보
+                """)
         public String createPlan(
                 @ToolParam(description = "사용자 ID") Long userId,
                 @ToolParam(description = "여행 일수 (예: 3, 5, 7)") Integer days,
@@ -1201,15 +1238,16 @@ public class PlanAgent implements AiAgent {
                 Plan plan = planService.createPlanWithSampleData(userId, days, budgetDecimal, startDate);
 
                 return String.format("""
-                    ✅ Travel plan created successfully!
+                        ✅ Travel plan created successfully!
 
-                    Plan ID: #%d
-                    Duration: %s ~ %s (%d days)
-                    Budget: ₩%,d
-                    Sample places: %d locations created
+                        Plan ID: #%d
+                        Duration: %s ~ %s (%d days)
+                        Budget: ₩%,d
+                        Sample places: %d locations created
 
-                    Your Seoul adventure is ready! Each day includes morning and afternoon activities.
-                    """, plan.getId(), plan.getStartDate(), plan.getEndDate(), days, budgetDecimal.longValue(), days * 2);
+                        Your Seoul adventure is ready! Each day includes morning and afternoon activities.
+                        """, plan.getId(), plan.getStartDate(), plan.getEndDate(), days, budgetDecimal.longValue(),
+                        days * 2);
 
             } catch (Exception e) {
                 log.error("Error creating plan", e);
@@ -1218,14 +1256,14 @@ public class PlanAgent implements AiAgent {
         }
 
         @Tool(description = """
-            사용자의 현재 활성화된 여행 계획을 조회합니다.
-            사용자가 "내 계획 보여줘", "show my plan", "현재 여행" 등으로 요청할 때 사용하세요.
+                사용자의 현재 활성화된 여행 계획을 조회합니다.
+                사용자가 "내 계획 보여줘", "show my plan", "현재 여행" 등으로 요청할 때 사용하세요.
 
-            파라미터:
-            - userId: 사용자 ID (필수)
+                파라미터:
+                - userId: 사용자 ID (필수)
 
-            반환: 현재 활성 계획의 상세 정보
-            """)
+                반환: 현재 활성 계획의 상세 정보
+                """)
         public String getMyPlan(@ToolParam(description = "사용자 ID") Long userId) {
             log.info("Tool called: getMyPlan(userId={})", userId);
 
@@ -1233,26 +1271,26 @@ public class PlanAgent implements AiAgent {
                 Plan plan = planService.findActiveByUserId(userId);
                 if (plan == null) {
                     return """
-                        📋 No active travel plan found.
+                            📋 No active travel plan found.
 
-                        Would you like to create a new travel plan? Just let me know:
-                        - Where you want to go
-                        - How many days
-                        - Your budget (optional)
-                        """;
+                            Would you like to create a new travel plan? Just let me know:
+                            - Where you want to go
+                            - How many days
+                            - Your budget (optional)
+                            """;
                 }
 
                 return String.format("""
-                    📋 Your Active Travel Plan
+                        📋 Your Active Travel Plan
 
-                    Plan ID: #%d
-                    Duration: %s ~ %s
-                    Budget: ₩%,d
-                    Status: Active
+                        Plan ID: #%d
+                        Duration: %s ~ %s
+                        Budget: ₩%,d
+                        Status: Active
 
-                    Need to see specific days? Ask me "show day 1" or "show day 2"!
-                    """, plan.getId(), plan.getStartDate(), plan.getEndDate(),
-                    plan.getBudget().longValue());
+                        Need to see specific days? Ask me "show day 1" or "show day 2"!
+                        """, plan.getId(), plan.getStartDate(), plan.getEndDate(),
+                        plan.getBudget().longValue());
 
             } catch (Exception e) {
                 log.error("Error getting my plan", e);
@@ -1261,14 +1299,14 @@ public class PlanAgent implements AiAgent {
         }
 
         @Tool(description = """
-            특정 여행 계획의 상세 정보를 조회합니다.
-            planId를 알고 있을 때만 사용하세요.
+                특정 여행 계획의 상세 정보를 조회합니다.
+                planId를 알고 있을 때만 사용하세요.
 
-            파라미터:
-            - planId: 조회할 계획의 ID (필수)
+                파라미터:
+                - planId: 조회할 계획의 ID (필수)
 
-            반환: 계획의 상세 정보
-            """)
+                반환: 계획의 상세 정보
+                """)
         public String getPlan(@ToolParam(description = "계획 ID") Long planId) {
             log.info("Tool called: getPlan(planId={})", planId);
 
@@ -1279,15 +1317,15 @@ public class PlanAgent implements AiAgent {
                 }
 
                 return String.format("""
-                    📋 Plan Details:
+                        📋 Plan Details:
 
-                    Plan ID: #%d
-                    Duration: %s ~ %s
-                    Budget: ₩%,d
-                    Status: %s
-                    """, plan.getId(), plan.getStartDate(), plan.getEndDate(),
-                    plan.getBudget().longValue(),
-                    plan.getIsEnded() ? "Completed" : "Active");
+                        Plan ID: #%d
+                        Duration: %s ~ %s
+                        Budget: ₩%,d
+                        Status: %s
+                        """, plan.getId(), plan.getStartDate(), plan.getEndDate(),
+                        plan.getBudget().longValue(),
+                        plan.getIsEnded() ? "Completed" : "Active");
 
             } catch (Exception e) {
                 log.error("Error getting plan", e);
@@ -1296,15 +1334,15 @@ public class PlanAgent implements AiAgent {
         }
 
         @Tool(description = """
-            PlanDay 생성 시 여행 기간 확장이 필요한지 미리 확인합니다.
-            사용자가 현재 계획 기간을 초과하는 Day를 추가하려 할 때 반드시 먼저 이 Tool을 호출하세요.
+                PlanDay 생성 시 여행 기간 확장이 필요한지 미리 확인합니다.
+                사용자가 현재 계획 기간을 초과하는 Day를 추가하려 할 때 반드시 먼저 이 Tool을 호출하세요.
 
-            파라미터:
-            - planId: 여행 계획 ID (필수)
-            - dayIndex: 생성하려는 일차 (필수)
+                파라미터:
+                - planId: 여행 계획 ID (필수)
+                - dayIndex: 생성하려는 일차 (필수)
 
-            반환: 확장 필요 여부, 예상 종료일, 현재 최대 일차
-            """)
+                반환: 확장 필요 여부, 예상 종료일, 현재 최대 일차
+                """)
         public String previewDayCreation(
                 @ToolParam(description = "여행 계획 ID") Long planId,
                 @ToolParam(description = "생성하려는 일차 (예: 5)") Integer dayIndex) {
@@ -1316,34 +1354,34 @@ public class PlanAgent implements AiAgent {
 
                 if (preview.isRequiresExtension()) {
                     return String.format("""
-                        ⚠️ 여행 기간 확장이 필요합니다
+                            ⚠️ 여행 기간 확장이 필요합니다
 
-                        현재 최대 일차: %d일차
-                        요청 일차: %d일차
-                        예상 종료일: %s
+                            현재 최대 일차: %d일차
+                            요청 일차: %d일차
+                            예상 종료일: %s
 
-                        사용자에게 다음과 같이 물어보세요:
-                        "여행 기간을 %d일차까지 확장하시겠습니까? (종료일: %s)"
+                            사용자에게 다음과 같이 물어보세요:
+                            "여행 기간을 %d일차까지 확장하시겠습니까? (종료일: %s)"
 
-                        승인 시: createDay tool을 confirm=true로 호출
-                        거부 시: 작업 취소
-                        """,
-                        preview.getCurrentMaxIndex(),
-                        preview.getRequestedToIndex(),
-                        preview.getNewEndDate(),
-                        preview.getRequestedToIndex(),
-                        preview.getNewEndDate());
+                            승인 시: createDay tool을 confirm=true로 호출
+                            거부 시: 작업 취소
+                            """,
+                            preview.getCurrentMaxIndex(),
+                            preview.getRequestedToIndex(),
+                            preview.getNewEndDate(),
+                            preview.getRequestedToIndex(),
+                            preview.getNewEndDate());
                 } else {
                     return String.format("""
-                        ✅ 확장 불필요 - 바로 생성 가능
+                            ✅ 확장 불필요 - 바로 생성 가능
 
-                        현재 최대 일차: %d일차
-                        요청 일차: %d일차
+                            현재 최대 일차: %d일차
+                            요청 일차: %d일차
 
-                        createDay tool을 바로 호출하세요 (confirm 불필요).
-                        """,
-                        preview.getCurrentMaxIndex(),
-                        preview.getRequestedToIndex());
+                            createDay tool을 바로 호출하세요 (confirm 불필요).
+                            """,
+                            preview.getCurrentMaxIndex(),
+                            preview.getRequestedToIndex());
                 }
 
             } catch (Exception e) {
@@ -1353,15 +1391,15 @@ public class PlanAgent implements AiAgent {
         }
 
         @Tool(description = """
-            PlanDay 이동 시 여행 기간 확장이 필요한지 미리 확인합니다.
-            Day를 현재 최대 일차보다 뒤로 이동할 때 반드시 먼저 이 Tool을 호출하세요.
+                PlanDay 이동 시 여행 기간 확장이 필요한지 미리 확인합니다.
+                Day를 현재 최대 일차보다 뒤로 이동할 때 반드시 먼저 이 Tool을 호출하세요.
 
-            파라미터:
-            - dayId: 이동할 Day의 ID (필수)
-            - toIndex: 목표 일차 (필수)
+                파라미터:
+                - dayId: 이동할 Day의 ID (필수)
+                - toIndex: 목표 일차 (필수)
 
-            반환: 확장 필요 여부, 예상 종료일, 현재 최대 일차
-            """)
+                반환: 확장 필요 여부, 예상 종료일, 현재 최대 일차
+                """)
         public String previewDayMove(
                 @ToolParam(description = "이동할 Day의 ID") Long dayId,
                 @ToolParam(description = "목표 일차 (예: 5)") Integer toIndex) {
@@ -1373,34 +1411,34 @@ public class PlanAgent implements AiAgent {
 
                 if (preview.isRequiresExtension()) {
                     return String.format("""
-                        ⚠️ 여행 기간 확장이 필요합니다
+                            ⚠️ 여행 기간 확장이 필요합니다
 
-                        현재 최대 일차: %d일차
-                        목표 일차: %d일차
-                        예상 종료일: %s
+                            현재 최대 일차: %d일차
+                            목표 일차: %d일차
+                            예상 종료일: %s
 
-                        사용자에게 다음과 같이 물어보세요:
-                        "Day를 %d일차로 이동하려면 여행 기간 확장이 필요합니다 (종료일: %s). 진행하시겠습니까?"
+                            사용자에게 다음과 같이 물어보세요:
+                            "Day를 %d일차로 이동하려면 여행 기간 확장이 필요합니다 (종료일: %s). 진행하시겠습니까?"
 
-                        승인 시: moveDay tool을 confirm=true로 호출
-                        거부 시: 작업 취소
-                        """,
-                        preview.getCurrentMaxIndex(),
-                        preview.getRequestedToIndex(),
-                        preview.getNewEndDate(),
-                        preview.getRequestedToIndex(),
-                        preview.getNewEndDate());
+                            승인 시: moveDay tool을 confirm=true로 호출
+                            거부 시: 작업 취소
+                            """,
+                            preview.getCurrentMaxIndex(),
+                            preview.getRequestedToIndex(),
+                            preview.getNewEndDate(),
+                            preview.getRequestedToIndex(),
+                            preview.getNewEndDate());
                 } else {
                     return String.format("""
-                        ✅ 확장 불필요 - 바로 이동 가능
+                            ✅ 확장 불필요 - 바로 이동 가능
 
-                        현재 최대 일차: %d일차
-                        목표 일차: %d일차
+                            현재 최대 일차: %d일차
+                            목표 일차: %d일차
 
-                        moveDay tool을 바로 호출하세요 (confirm 부8필요).
-                        """,
-                        preview.getCurrentMaxIndex(),
-                        preview.getRequestedToIndex());
+                            moveDay tool을 바로 호출하세요 (confirm 부8필요).
+                            """,
+                            preview.getCurrentMaxIndex(),
+                            preview.getRequestedToIndex());
                 }
 
             } catch (Exception e) {

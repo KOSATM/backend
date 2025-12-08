@@ -1,8 +1,6 @@
 package com.example.demo.supporter.imageSearch.dto.request;
 
 
-import com.example.demo.supporter.imageSearch.dto.entity.ActionType;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;

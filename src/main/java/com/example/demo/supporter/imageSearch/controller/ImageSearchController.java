@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.demo.supporter.imageSearch.dto.entity.ImageSearchCandidate;
 import com.example.demo.supporter.imageSearch.dto.request.PlaceCandidateRequest;
 import com.example.demo.supporter.imageSearch.dto.response.PlaceCandidateResponse;
 import com.example.demo.supporter.imageSearch.dto.response.SessionWithCandidatesResponse;
@@ -38,7 +37,7 @@ public class ImageSearchController {
         List<PlaceCandidateResponse> candidates = service.processImageForPlaceRecommendation(placeType, image, address);
         return ResponseEntity.ok(candidates);
     }
-
+    
     //후보자 저장
     @PostMapping("/save")
     public ResponseEntity<Long> savePlaceCandidates(

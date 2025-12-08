@@ -196,7 +196,6 @@ public class CategorySearchAgent {
             "placeName": "",
             "type": "category",
             "address": "",
-            "location": "",
             "association": "인터넷 검색 실패",
             "description": "인터넷 검색 오류로 후보 생성 불가",
             "similarity": "low",
@@ -213,8 +212,7 @@ public class CategorySearchAgent {
           {
             "placeName": "장소명",
             "type": "category",
-            "address": "주소",
-            "location": "주소 또는 지역(동단위)",
+            "address": "장소의 full 주소",
             "association": "Step1 카테고리와의 연결 관계",
             "description": "해당 장소의 전문 서비스 · 메뉴 · 활동에 대한 핵심 설명",
             "similarity": "high | medium | low",
