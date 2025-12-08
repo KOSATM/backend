@@ -298,10 +298,13 @@
         const bubble = document.createElement("div");
         bubble.className = "message-bubble";
 
+        // Null/undefined 체크
+        const safeText = text || "";
+
         // Bot 메시지에 포맷팅 적용
         if (!isUser) {
           // 줄바꿈 처리
-          let formattedText = text.replace(/\n/g, "<br>");
+          let formattedText = safeText.replace(/\n/g, "<br>");
 
           // **굵게** 처리
           formattedText = formattedText.replace(
@@ -317,7 +320,7 @@
 
           bubble.innerHTML = formattedText;
         } else {
-          bubble.textContent = text;
+          bubble.textContent = safeText;
         }
 
         messageDiv.appendChild(bubble);
@@ -352,7 +355,11 @@
           });
 
           const data = await response.json();
-          addMessage(data.response, false);
+          // API 응답이 중첩 구조인 경우 처리
+          const actualData = data.data || data;
+          const responseText =
+            actualData.response || actualData.message || "No response received";
+          addMessage(responseText, false);
         } catch (error) {
           addMessage("❌ Error: " + error.message, false);
         }

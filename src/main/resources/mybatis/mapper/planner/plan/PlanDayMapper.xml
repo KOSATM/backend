@@ -67,4 +67,10 @@
     WHERE plan_id = #{planId}
   </select>
 
+  <update id="updateDayIndex">
+    UPDATE plan_days
+    SET day_index = #{dayIndex}
+    WHERE id = #{id}
+  </update>
+
 </mapper>
