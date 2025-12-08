@@ -32,19 +32,27 @@ public class ChatController {
     @GetMapping("/api/chat/intent/analyze")
     public String getMethodName() {
 
-        IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").userMessage("강남 위주로 여행지 추천해줘").build();
+        IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").message("강남 위주로 여행지 추천해줘").build();
         // IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner")
                 // .userMessage("오늘 날씨 알려주고 일정 수정하고 싶어?").build();
 
         return intentAnalysisAgent.analyze(intentRequest).toString();
     }
 
-    @GetMapping("/test")
-    public ResponseEntity<PipelineResult> test(@RequestParam("msg") String msg, @RequestParam("userId") Long userId) {
-        IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").userMessage(msg).build();
+    // @GetMapping("/test")
+    // public ResponseEntity<PipelineResult> test(@RequestParam("msg") String msg, @RequestParam("userId") Long userId) {
+    //     IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").userMessage(msg).build();
 
-        return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest, userId));
+    //     return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest, userId));
+    // }
+
+    @PostMapping("/chat")
+    public ResponseEntity<PipelineResult> analyzeChat(@RequestBody IntentRequest
+    intentRequest) {
+    log.info(intentRequest.toString()+";;;;;;;;");
+    return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest, intentRequest.getUserId()));
     }
+
 
     /**
      * Plan Agent 기반 채팅 엔드포인트

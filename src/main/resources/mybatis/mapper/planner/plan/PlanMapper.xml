@@ -4,6 +4,79 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.planner.plan.dao.PlanDao">
 
+  <!-- 전체 여행 플랜 가져오기 -->
+  <select id="selectPlanWithAllByUserId"
+        parameterType="long"
+        resultType="com.example.demo.planner.plan.dto.entity.PlanScheduleRow">
+
+    SELECT
+        p.id              AS plan_id,
+        p.budget,
+        p.start_date,
+        p.end_date,
+
+        d.id              AS day_id,
+        d.day_index,
+        d.title           AS day_title,
+        d.plan_date,
+
+        pp.id             AS place_id,
+        pp.title          AS place_title,
+        pp.start_at,
+        pp.end_at,
+        pp.place_name,
+        pp.address,
+        pp.expected_cost
+
+    FROM plans p
+    JOIN plan_days d   ON p.id = d.plan_id
+    JOIN plan_places pp ON d.id = pp.day_id
+
+    WHERE p.id = (
+        SELECT id
+        FROM plans
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT 1
+    )
+
+    ORDER BY d.day_index ASC, pp.start_at ASC
+</select>
+
+
+ <select id="selectPlanWithAllByPlanId"
+        parameterType="long"
+        resultType="com.example.demo.planner.plan.dto.entity.PlanScheduleRow">
+
+    SELECT
+        p.id              AS plan_id,
+        p.budget,
+        p.start_date,
+        p.end_date,
+
+        d.id              AS day_id,
+        d.day_index,
+        d.title           AS day_title,
+        d.plan_date,
+
+        pp.id             AS place_id,
+        pp.title          AS place_title,
+        pp.start_at,
+        pp.end_at,
+        pp.place_name,
+        pp.address,
+        pp.expected_cost
+
+    FROM plans p
+    JOIN plan_days d   ON p.id = d.plan_id
+    JOIN plan_places pp ON d.id = pp.day_id
+
+    WHERE p.id = #{planId}
+
+    ORDER BY d.day_index ASC, pp.start_at ASC
+</select>
+
+
   <select id="selectPlanById" parameterType="long" resultType="Plan">
     SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title
     FROM plans

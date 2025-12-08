@@ -12,6 +12,7 @@ public class AiAgentResponse {
     private final String message;       // AI 모델이 만든 응답 메시지
     private final boolean requirePageMove;
     private final String targetUrl;     // 페이지 이동 필요 시 이동 URL
+    private final Object data;
 
     public static AiAgentResponse of(String message) {
         return AiAgentResponse.builder()
@@ -20,10 +21,20 @@ public class AiAgentResponse {
                 .build();
     }
 
-    public static AiAgentResponse pageMove(String message, String url) {
+    public static AiAgentResponse pageMove(String message, String url, Object data) {
         return AiAgentResponse.builder()
                 .message(message != null ? message : "")
                 .requirePageMove(true)
+                .data(data)
+                .targetUrl(url != null ? url : "")
+                .build();
+    }
+
+    public static AiAgentResponse ofData(String message, String url, Object data) {
+        return AiAgentResponse.builder()
+                .message(message != null ? message : "")
+                .requirePageMove(true)
+                .data(data)
                 .targetUrl(url != null ? url : "")
                 .build();
     }
