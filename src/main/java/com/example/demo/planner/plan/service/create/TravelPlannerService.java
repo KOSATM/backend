@@ -46,7 +46,7 @@ public class TravelPlannerService implements AiAgent {
     
 
     @Override
-    public AiAgentResponse execute(IntentCommand command) {
+    public AiAgentResponse execute(IntentCommand command, Long userId) {
         log.info("▷▷ 1. TravelPlannerAgent 시작");
 
         Map<String, Object> arguments = command.getArguments();
@@ -104,7 +104,7 @@ public class TravelPlannerService implements AiAgent {
         logDayPlans(dayPlans);
 
         log.info("▷▷ 10. 최종 일정 배치 후 저장 및 응답");
-        planAssemblerService.createAndSavePlan(dayPlans, arguments, null);
+        planAssemblerService.createAndSavePlan(dayPlans, arguments, userId);
         
 
         log.info("▷▷ 11. TravelPlannerAgent 완료");
