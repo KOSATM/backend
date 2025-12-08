@@ -47,28 +47,8 @@ public class ChatController {
     }
 
     /**
-     * PlanAgent의 Tool 기반 채팅 (생성/수정용)
-     */
-    @PostMapping("/api/chat/agent")
-    public ResponseEntity<TravelChatSendResponse> chatWithAgent(@RequestBody TravelChatSendRequest request) {
-        try {
-            Long userId = request.getUserId() != null ? request.getUserId() : 1L;
-            log.info("Agent chat request from user {}: {}", userId, request.getMessage());
-
-            String response = planAgent.chat(request.getMessage(), userId);
-            return ResponseEntity.ok(TravelChatSendResponse.success(response, null));
-
-        } catch (Exception e) {
-            log.error("Error in agent chat", e);
-            return ResponseEntity.ok(TravelChatSendResponse.error(e.getMessage()));
-        }
-    }
-
-    /**
-     * 의도 분석 파이프라인 기반 채팅 엔드포인트
+     * Plan Agent 기반 채팅 엔드포인트
      * /api/chat 경로
-     * 
-     * 흐름: 사용자 입력 → IntentAnalysisAgent (의도 분석) → AiAgentRouter (에이전트 라우팅) → 적절한 에이전트 실행
      */
     @PostMapping("/api/chat")
     public ResponseEntity<TravelChatSendResponse> chat(@RequestBody TravelChatSendRequest request) {
@@ -77,21 +57,8 @@ public class ChatController {
 
             log.info("Chat request from user {}: {}", userId, request.getMessage());
 
-            // 1. IntentRequest 생성
-            IntentRequest intentRequest = IntentRequest.builder()
-                .currentUrl("/planner")
-                .userMessage(request.getMessage())
-                .build();
-
-            // 2. DefaultChatPipeline 실행 (의도 분석 → 에이전트 라우팅 → 실행)
-            PipelineResult result = defaultChatPipeline.execute(intentRequest, userId);
-
-            // 3. 메인 응답 반환
-            String response = result.getMainResponse().getMessage();
-
-            log.info("Pipeline returned response (length={}): {}",
-                response != null ? response.length() : 0,
-                response != null && response.length() > 100 ? response.substring(0, 100) + "..." : response);
+            // Agent에게 처리 위임 - LLM이 자동으로 적절한 Tool 선택
+            String response = planAgent.chat(request.getMessage(), userId);
 
             return ResponseEntity.ok(TravelChatSendResponse.success(response, null));
 

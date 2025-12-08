@@ -61,6 +61,14 @@
     WHERE id = #{id}
   </update>
 
+  <update id="updatePlanDates">
+    UPDATE plans
+    SET start_date = #{startDate},
+        end_date = #{endDate},
+        updated_at = now()
+    WHERE id = #{planId}
+  </update>
+
   <delete id="deletePlan" parameterType="long">
     DELETE FROM plans
     WHERE id = #{id}

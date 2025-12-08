@@ -73,4 +73,15 @@
     WHERE id = #{id}
   </update>
 
+  <update id="updatePlanDate">
+    UPDATE plan_days
+    SET plan_date = #{planDate}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deletePlanDayById" parameterType="long">
+    DELETE FROM plan_days
+    WHERE id = #{id}
+  </delete>
+
 </mapper>
