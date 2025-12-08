@@ -1190,10 +1190,7 @@ public class PlanService {
 
     // order 교환 (충돌 방지를 위해 임시값 사용)
     planPlaceDao.updatePlaceOrder(placeA.getId(), -1);
-    planPlaceDao.updatePlaceOrder(placeB.getId(), placeA.getOrder());
-    planPlaceDao.updatePlaceOrder(placeA.getId(), placeB.getOrder());
 
-    log.info("Swapped order: {} ↔ {}", placeA.getOrder(), placeB.getOrder());
   }
 
   /**
@@ -1224,14 +1221,8 @@ public class PlanService {
 
     // plan_day_id와 order 교환
     Long tempDayId = dayA.getId();
-    int tempOrder = placeA.getOrder();
 
-    planPlaceDao.updatePlanDayIdAndOrder(placeA.getId(), dayB.getId(), placeB.getOrder());
-    planPlaceDao.updatePlanDayIdAndOrder(placeB.getId(), tempDayId, tempOrder);
 
-    log.info("Swapped: {} (day{} order{}) ↔ {} (day{} order{})",
-        placeA.getPlaceName(), dayIndexA, placeA.getOrder(),
-        placeB.getPlaceName(), dayIndexB, placeB.getOrder());
   }
 
   /**
@@ -1306,7 +1297,6 @@ public class PlanService {
     // 뒤의 장소들 order 재조정 (order > deletedOrder → order - 1)
     for (int i = placeIndex; i < places.size(); i++) {
       PlanPlace place = places.get(i);
-      planPlaceDao.updatePlaceOrder(place.getId(), place.getOrder() - 1);
     }
 
     log.info("Reordered {} places after deletion", places.size() - placeIndex);
