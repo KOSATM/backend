@@ -60,10 +60,11 @@ public class IntentAnalysisAgent {
             # ✔ arguments 규칙
             - Intent 수행에 필요한 정보만 key-value 형태로 추출한다.
             - 명확하게 파악되지 않는 값은 만들지 않는다.
-            - 값의 형식을 강제하지 않습니다.(숫자/정규화/전처리 등 하지 않음)
+            - 입력 메시지는 이미 전처리되어 날짜/시간/장소가 정규화된 상태입니다.
 
             - 예시:
                 - travel_plan → { "location": "...", "duration": "..." }
+                - plan_query → {} (내 계획 조회, show plan, 내 일정 보여줘 등)
                 - plan_add → { "date": "...", "place": "..." }
                 - plan_modify → { "oldPlace": "...", "newPlace": "...", "day": "..." }
                 - attraction_recommend → { "location": "..." }

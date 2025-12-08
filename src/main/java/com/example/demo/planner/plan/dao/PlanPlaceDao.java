@@ -45,4 +45,14 @@ public interface PlanPlaceDao {
      * 여행 날짜의 모든 장소를 삭제합니다.
      */
     int deletePlanPlaceByDayId(Long dayId);
+    
+    /**
+     * dayId로 장소 목록 조회 (Agent용)
+     */
+    List<PlanPlace> selectPlacesByDayId(Long dayId);
+    
+    /**
+     * placeId로 장소 조회 (Agent용)
+     */
+    PlanPlace selectPlaceById(Long placeId);
 }

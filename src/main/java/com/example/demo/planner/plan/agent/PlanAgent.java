@@ -8,6 +8,9 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
+import com.example.demo.common.chat.intent.dto.IntentCommand;
+import com.example.demo.common.chat.pipeline.AiAgentResponse;
+import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.service.PlanService;
 
@@ -19,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Component
 @Slf4j
-public class PlanAgent {
+public class PlanAgent implements AiAgent {
 
     private final ChatClient chatClient;
     private final PlanService planService;
@@ -32,23 +35,92 @@ public class PlanAgent {
     }
 
     /**
+     * AiAgent 인터페이스 구현 - IntentCommand로부터 execute
+     */
+    @Override
+    public AiAgentResponse execute(IntentCommand command) {
+        Long userId = (Long) command.getArguments().get("userId");
+        if (userId == null) {
+            return AiAgentResponse.of("User ID is required to query plans");
+        }
+
+        // 직접 DB에서 활성 계획 조회
+        Plan plan = planService.findActiveByUserId(userId);
+        
+        if (plan == null) {
+            return AiAgentResponse.of("아직 생성된 여행 계획이 없습니다.\n\"3일 여행 계획 만들어줘\"라고 말씀해주시면 새로운 계획을 만들어드릴게요! 🗺️");
+        }
+
+        // 계획 정보를 JSON 형식으로 구성
+        String planJson = formatPlanAsJson(plan);
+        
+        // LLM에게 마크다운 형식으로 예쁘게 출력하도록 요청
+        String prompt = """
+            다음 여행 계획 정보를 사용자에게 친근하고 이해하기 쉽게 마크다운 형식으로 출력해주세요.
+            
+            규칙:
+            1. 이모지를 적절히 활용하세요 (📅, 💰, 📍 등)
+            2. 간결하고 명확하게 작성하세요
+            3. 날짜는 "12월 6일 (금)" 형식으로 표시하세요
+            4. 금액은 "50만원" 또는 "500,000원" 형식으로 표시하세요
+            5. 추가 정보나 도움말을 간단히 안내하세요
+            
+            계획 정보:
+            %s
+            
+            위 정보를 바탕으로 사용자에게 친근하게 안내해주세요.
+            """.formatted(planJson);
+
+        String response = chatClient.prompt()
+            .user(prompt)
+            .call()
+            .content();
+
+        return AiAgentResponse.of(response);
+    }
+    
+    /**
+     * Plan 객체를 JSON 형식 문자열로 변환
+     */
+    private String formatPlanAsJson(Plan plan) {
+        StringBuilder json = new StringBuilder();
+        json.append("{\n");
+        json.append("  \"planId\": ").append(plan.getId()).append(",\n");
+        json.append("  \"startDate\": \"").append(plan.getStartDate()).append("\",\n");
+        json.append("  \"endDate\": \"").append(plan.getEndDate()).append("\",\n");
+        json.append("  \"budget\": ").append(plan.getBudget()).append(",\n");
+        json.append("  \"title\": \"").append(plan.getTitle() != null ? plan.getTitle() : "서울 여행").append("\",\n");
+        json.append("  \"isEnded\": ").append(plan.getIsEnded()).append("\n");
+        json.append("}");
+        return json.toString();
+    }
+
+    /**
      * 사용자 메시지를 받아 적절한 Tool을 실행하고 응답 생성
      */
     public String chat(String userMessage, Long userId) {
         String systemPrompt = """
-            당신은 서울 여행 계획 도우미입니다.
+            당신은 친절한 서울 여행 계획 도우미입니다.
 
             중요: 현재 사용자 ID는 %d입니다. 모든 Tool 호출 시 반드시 이 userId를 사용하세요.
 
             가능한 기능:
             1. 여행 계획 생성 (createPlan tool 사용, userId=%d)
-            2. 기존 계획 조회 (getPlan tool 사용, userId=%d)
+            2. 기존 계획 조회 (getPlan tool 사용)
+            3. 내 활성 계획 조회 (getMyActivePlan tool 사용, userId=%d)
+            4. 일차별 상세 조회 (getDayDetail tool 사용)
+            5. 장소 상세 조회 (getPlaceDetail tool 사용)
 
             필수 규칙:
-            - 모든 응답은 반드시 영어로만 작성하세요
+            - 모든 응답은 한국어로 친근하게 작성하세요
+            - 사용자에게 도움이 되는 정보를 간결하고 명확하게 전달하세요
             - 모든 Tool 호출 시 반드시 userId=%d를 전달하세요
             - Tool을 사용하여 데이터베이스와 상호작용하세요
-            - 친절하고 도움이 되는 태도를 유지하세요
+
+            응답 형식 가이드:
+            - 계획 조회 시: "📅 여행 계획 #123\\n기간: 12월 6일 ~ 12월 8일 (3일)\\n예산: 50만원\\n\\n더 자세한 정보가 필요하시면 말씀해주세요!"
+            - 일차별 조회 시: "🗓️ Day 1 (12월 6일)\\n방문 장소: 경복궁, 북촌한옥마을, 광화문..."
+            - 장소 조회 시: "📍 경복궁\\n주소: 서울시 종로구...\\n예상 비용: 3,000원"
 
             PlanDay 생성/이동 정책 (중요 - 반드시 준수):
             - dayIndex를 지정하지 않으면 자동으로 순차 생성됩니다 (1, 2, 3...)
@@ -70,10 +142,13 @@ public class PlanAgent {
 
             사용자 요청 처리:
             - "계획 만들어줘" → createPlan(userId=%d, days=X, budget=Y) 호출
-            - "내 계획 보여줘" → getPlan(userId=%d, planId=X) 호출
+            - "내 계획 보여줘" → getMyActivePlan(userId=%d) 호출 (planId 모를 때)
+            - "1번 계획 보여줘" → getPlan(planId=1) 호출 (planId 알 때)
+            - "첫째날 일정 보여줘" → getDayDetail(planId=X, dayIndex=1) 호출
+            - "경복궁 정보 보여줘" → getPlaceDetail(placeId=X) 호출
             - "X일차 추가해줘" → previewDayCreation → 사용자 확인 → createDay(confirm=true)
             - "Day를 Y일차로 이동" → previewDayMove → 사용자 확인 → moveDay(confirm=true)
-            """.formatted(userId, userId, userId, userId, userId);
+            """.formatted(userId, userId, userId, userId, userId, userId);
 
         try {
             String response = chatClient.prompt()
@@ -282,6 +357,141 @@ public class PlanAgent {
             } catch (Exception e) {
                 log.error("Error in previewDayMove", e);
                 return "Failed to preview day move: " + e.getMessage();
+            }
+        }
+
+        @Tool(description = """
+            현재 사용자의 활성(진행 중인) 여행 계획을 조회합니다.
+            사용자가 계획 ID를 모르고 "내 계획 보여줘" 같은 요청을 할 때 사용하세요.
+            
+            파라미터:
+            - userId: 사용자 ID (필수)
+            
+            반환: 활성 계획의 상세 정보
+            """)
+        public String getMyActivePlan(@ToolParam(description = "사용자 ID") Long userId) {
+            log.info("Tool called: getMyActivePlan(userId={})", userId);
+
+            try {
+                Plan plan = planService.findActiveByUserId(userId);
+                if (plan == null) {
+                    return "No active travel plan found. Would you like to create one?";
+                }
+
+                return String.format("""
+                    📋 Your Active Plan:
+
+                    Plan ID: #%d
+                    Duration: %s ~ %s
+                    Budget: ₩%,d
+                    Status: Active
+                    
+                    Use getDayDetail to see specific days, or ask me to add/modify places!
+                    """, plan.getId(), plan.getStartDate(), plan.getEndDate(),
+                    plan.getBudget().longValue());
+
+            } catch (Exception e) {
+                log.error("Error getting active plan", e);
+                return "Failed to get active plan: " + e.getMessage();
+            }
+        }
+
+        @Tool(description = """
+            특정 일차의 상세 일정을 조회합니다.
+            파라미터:
+            - planId: 여행 계획 ID (필수)
+            - dayIndex: 조회할 일차 (필수, 1부터 시작)
+            
+            반환: 해당 일차의 장소 목록과 시간 정보
+            """)
+        public String getDayDetail(
+                @ToolParam(description = "여행 계획 ID") Long planId,
+                @ToolParam(description = "일차 (1부터 시작)") Integer dayIndex) {
+            
+            log.info("Tool called: getDayDetail(planId={}, dayIndex={})", planId, dayIndex);
+
+            try {
+                var day = planService.getDayByIndex(planId, dayIndex);
+                if (day == null) {
+                    return String.format("Day %d not found in plan #%d", dayIndex, planId);
+                }
+
+                var places = planService.getPlacesByDayId(day.getId());
+                
+                StringBuilder response = new StringBuilder();
+                response.append(String.format("""
+                    📅 Day %d Details:
+                    Date: %s
+                    
+                    Places (%d):
+                    """, dayIndex, day.getPlanDate(), places.size()));
+                
+                for (int i = 0; i < places.size(); i++) {
+                    var place = places.get(i);
+                    response.append(String.format("""
+                        %d. %s
+                           📍 %s
+                           ⏰ %s - %s (%d min)
+                           💰 ₩%,d
+                        
+                        """, 
+                        i + 1,
+                        place.getTitle() != null ? place.getTitle() : place.getPlaceName(),
+                        place.getAddress(),
+                        place.getStartAt(),
+                        place.getEndAt(),
+                        place.getEndAt() != null && place.getStartAt() != null ? 
+                            java.time.Duration.between(place.getStartAt(), place.getEndAt()).toMinutes() : 0,
+                        place.getExpectedCost() != null ? place.getExpectedCost().longValue() : 0
+                    ));
+                }
+
+                return response.toString();
+
+            } catch (Exception e) {
+                log.error("Error getting day detail", e);
+                return "Failed to get day detail: " + e.getMessage();
+            }
+        }
+
+        @Tool(description = """
+            특정 장소의 상세 정보를 조회합니다.
+            파라미터:
+            - placeId: 장소 ID (필수)
+            
+            반환: 장소의 상세 정보
+            """)
+        public String getPlaceDetail(@ToolParam(description = "장소 ID") Long placeId) {
+            log.info("Tool called: getPlaceDetail(placeId={})", placeId);
+
+            try {
+                var place = planService.getPlaceById(placeId);
+                if (place == null) {
+                    return "Place not found with ID: " + placeId;
+                }
+
+                return String.format("""
+                    📍 Place Details:
+
+                    Title: %s
+                    Place Name: %s
+                    Address: %s
+                    Location: %s, %s
+                    Time: %s - %s
+                    Expected Cost: ₩%,d
+                    """,
+                    place.getTitle() != null ? place.getTitle() : "(No title)",
+                    place.getPlaceName(),
+                    place.getAddress(),
+                    place.getLat(),
+                    place.getLng(),
+                    place.getStartAt(),
+                    place.getEndAt(),
+                    place.getExpectedCost() != null ? place.getExpectedCost().longValue() : 0);
+
+            } catch (Exception e) {
+                log.error("Error getting place detail", e);
+                return "Failed to get place detail: " + e.getMessage();
             }
         }
     }

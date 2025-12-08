@@ -53,4 +53,10 @@
     WHERE plan_id = #{planId}
   </select>
 
+  <select id="selectDayByIndex" resultType="PlanDay">
+    SELECT id, plan_id, day_index, title, plan_date
+    FROM plan_days
+    WHERE plan_id = #{planId} AND day_index = #{dayIndex}
+  </select>
+
 </mapper>

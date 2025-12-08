@@ -13,4 +13,5 @@ public class IntentRequest {
 
     private String userMessage;         // 사용자가 입력한 자연어 메시지
     private String currentUrl;          // 현재 클라이언트 페이지 URL
+    private Long userId;                // 로그인한 사용자 ID
 }

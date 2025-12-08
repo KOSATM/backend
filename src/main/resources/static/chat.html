@@ -292,6 +292,12 @@
       }
 
       function addMessage(text, isUser) {
+        // text가 undefined나 null이면 에러 방지
+        if (text == null || text === undefined) {
+          text = "No response received";
+          console.error("addMessage received undefined text");
+        }
+
         const messageDiv = document.createElement("div");
         messageDiv.className = `message ${isUser ? "user" : "bot"}`;
 
@@ -300,8 +306,11 @@
 
         // Bot 메시지에 포맷팅 적용
         if (!isUser) {
+          // text를 문자열로 변환
+          const textStr = String(text);
+          
           // 줄바꿈 처리
-          let formattedText = text.replace(/\n/g, "<br>");
+          let formattedText = textStr.replace(/\n/g, "<br>");
 
           // **굵게** 처리
           formattedText = formattedText.replace(
@@ -346,14 +355,33 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               message: message,
-              planId: null,
               userId: parseInt(userSelect.value),
+              currentUrl: "/planner",  // 파이프라인 컨텍스트
             }),
           });
 
           const data = await response.json();
-          addMessage(data.response, false);
+          console.log("Response data:", data); // 디버깅용
+          
+          // 실제 응답 구조에 맞게 추출
+          let responseText;
+          if (data.data && data.data.response) {
+            // 중첩된 구조: {data: {response: "..."}}
+            responseText = data.data.response;
+          } else if (data.response) {
+            // 직접 구조: {response: "..."}
+            responseText = data.response;
+          } else if (data.message) {
+            // message 필드
+            responseText = data.message;
+          } else {
+            responseText = "No response";
+          }
+          
+          console.log("Extracted response:", responseText); // 디버깅
+          addMessage(responseText, false);
         } catch (error) {
+          console.error("Error:", error);
           addMessage("❌ Error: " + error.message, false);
         }
       }

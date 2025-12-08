@@ -54,4 +54,17 @@
     WHERE day_id = #{dayId}
   </delete>
 
+  <select id="selectPlacesByDayId" parameterType="long" resultType="PlanPlace">
+    SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost
+    FROM plan_places
+    WHERE day_id = #{dayId}
+    ORDER BY start_at ASC
+  </select>
+
+  <select id="selectPlaceById" parameterType="long" resultType="PlanPlace">
+    SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost
+    FROM plan_places
+    WHERE id = #{id}
+  </select>
+
 </mapper>

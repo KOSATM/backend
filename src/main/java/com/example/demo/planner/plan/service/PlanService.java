@@ -660,4 +660,125 @@ public class PlanService {
     return planDetails;
   }
 
+  // ==================== Agent용 조회 메서드 ====================
+
+  /**
+   * 사용자의 활성(진행 중인) 여행 계획 조회
+   * isEnded=false인 Plan 반환
+   */
+  public Plan findActiveByUserId(Long userId) {
+    log.info("활성 Plan 조회: userId={}", userId);
+    java.util.List<Plan> plans = planDao.selectPlansByUserId(userId);
+    return plans.stream()
+        .filter(p -> !p.getIsEnded())
+        .findFirst()
+        .orElse(null);
+  }
+
+  /**
+   * 특정 일차의 Day 조회
+   */
+  public PlanDay getDayByIndex(Long planId, Integer dayIndex) {
+    log.info("Day 조회: planId={}, dayIndex={}", planId, dayIndex);
+    return planDayDao.selectDayByIndex(planId, dayIndex);
+  }
+
+  /**
+   * 특정 Day의 모든 Place 조회
+   */
+  public java.util.List<PlanPlace> getPlacesByDayId(Long dayId) {
+    log.info("Place 목록 조회: dayId={}", dayId);
+    return planPlaceDao.selectPlacesByDayId(dayId);
+  }
+
+  /**
+   * 특정 Place 조회
+   */
+  public PlanPlace getPlaceById(Long placeId) {
+    log.info("Place 조회: placeId={}", placeId);
+    return planPlaceDao.selectPlaceById(placeId);
+  }
+
+  /**
+   * TravelPlannerService용: DayPlanResult로 Plan 생성
+   */
+  @Transactional
+  public Plan createPlanWithDayPlanResults(
+      Long userId, 
+      Integer days, 
+      java.math.BigDecimal budget, 
+      LocalDate startDate,
+      java.util.List<com.example.demo.planner.plan.dto.response.DayPlanResult> dayPlans) {
+    
+    log.info("DayPlanResult로 Plan 생성 시작: userId={}, days={}", userId, days);
+
+    // 1. Plan 생성
+    Plan plan = Plan.builder()
+        .userId(userId)
+        .budget(budget)
+        .startDate(startDate)
+        .endDate(startDate.plusDays(days - 1))
+        .isEnded(false)
+        .title(days + "일 서울 여행")
+        .createdAt(OffsetDateTime.now(ZoneOffset.UTC))
+        .build();
+
+    planDao.insertPlan(plan);
+    Long planId = plan.getId();
+    log.info("Plan 생성 완료: planId={}", planId);
+
+    // 2. DayPlanResult를 기반으로 Day와 Place 생성
+    for (int dayNum = 0; dayNum < dayPlans.size(); dayNum++) {
+      var dayPlan = dayPlans.get(dayNum);
+      LocalDate currentDate = startDate.plusDays(dayNum);
+
+      // PlanDay 생성
+      PlanDay day = PlanDay.builder()
+          .planId(planId)
+          .dayIndex(dayNum + 1)
+          .title("Day " + (dayNum + 1))
+          .planDate(currentDate)
+          .build();
+
+      planDayDao.insertPlanDay(day);
+      Long dayId = day.getId();
+      log.debug("PlanDay 생성 완료: dayId={}, dayIndex={}", dayId, dayNum + 1);
+
+      // Places 생성
+      java.util.List<com.example.demo.planner.plan.dto.ClusterPlace> places = dayPlan.getPlaces();
+      log.info("  Day {} Places 개수: {}", dayNum + 1, places != null ? places.size() : "null");
+      int hourOffset = 9; // 오전 9시부터 시작
+
+      if (places != null && !places.isEmpty()) {
+        for (int i = 0; i < places.size(); i++) {
+        var clusterPlace = places.get(i);
+        var travelPlace = clusterPlace.getOriginal().getTravelPlaces();
+        
+        LocalTime startTime = LocalTime.of(hourOffset + (i * 2), 0);
+        LocalTime endTime = startTime.plusHours(2);
+
+        PlanPlace place = PlanPlace.builder()
+            .dayId(dayId)
+            .title(travelPlace.getTitle())
+            .placeName(travelPlace.getTitle())
+            .address(travelPlace.getAddress())
+            .lat(travelPlace.getLat())
+            .lng(travelPlace.getLng())
+            .startAt(OffsetDateTime.of(currentDate, startTime, ZoneOffset.ofHours(9)))
+            .endAt(OffsetDateTime.of(currentDate, endTime, ZoneOffset.ofHours(9)))
+            .expectedCost(new java.math.BigDecimal("20000"))
+            .build();
+
+        planPlaceDao.insertPlanPlace(place);
+        log.debug("  Place 생성: {}", place.getTitle());
+        }
+      } else {
+        log.warn("  Day {}에 place가 없습니다!", dayNum + 1);
+      }
+    }
+
+    log.info("DayPlanResult로 Plan 생성 완료: planId={}", planId);
+    return plan;
+  }
+
 }

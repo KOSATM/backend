@@ -15,6 +15,7 @@ import com.example.demo.planner.plan.agent.DurationNormalizerAgent;
 import com.example.demo.planner.plan.agent.SeedQueryAgent;
 import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dto.Cluster;
+import com.example.demo.planner.plan.service.PlanService;
 import com.example.demo.planner.plan.dto.ClusterBundle;
 import com.example.demo.planner.plan.dto.ClusterPlace;
 import com.example.demo.planner.plan.dto.TravelPlaceCandidate;
@@ -36,11 +37,13 @@ public class TravelPlannerService implements AiAgent {
     private final CategoryFillService categoryFillService;
     private final DaySplitService daySplitService;
     private final RegionService regionService;
+    private final PlanService planService;
 
     public TravelPlannerService(EmbeddingModel embeddingModel, SeedQueryAgent seedQueryAgent,
             DurationNormalizerAgent durationNormalizerAgent, PlanDao planDao,
             KMeansClusterService kMeansClusterService,
-            CategoryFillService categoryFillService, DaySplitService daySplitService, RegionService regionService) {
+            CategoryFillService categoryFillService, DaySplitService daySplitService, RegionService regionService,
+            PlanService planService) {
         this.embeddingModel = embeddingModel;
         this.seedQueryAgent = seedQueryAgent;
         this.durationNormalizerAgent = durationNormalizerAgent;
@@ -49,6 +52,7 @@ public class TravelPlannerService implements AiAgent {
         this.categoryFillService = categoryFillService;
         this.daySplitService = daySplitService;
         this.regionService = regionService;
+        this.planService = planService;
     }
 
     @Override
@@ -56,6 +60,11 @@ public class TravelPlannerService implements AiAgent {
         log.info("▷▷ 1. TravelPlannerAgent 시작");
 
         Map<String, Object> arguments = command.getArguments();
+
+        // ✅ 영어 필터링 및 정규화
+        log.info("▷▷ 0. 영어 입력 정규화");
+        arguments = normalizeToEnglish(arguments);
+        log.info("  정규화된 arguments: {}", arguments);
 
         // 전략 선택
         TravelPlanStrategy strategy = selectStrategy(arguments);
@@ -108,17 +117,99 @@ public class TravelPlannerService implements AiAgent {
         List<DayPlanResult> dayPlans = daySplitService.split(clusters, duration, strategy);
         // logDayPlans(dayPlans);
 
-        log.info("▷▷ 10. 최종 일정 반환");
+        log.info("▷▷ 10. DB에 저장");
+        Long userId = (Long) arguments.get("userId");
+        if (userId == null) {
+            log.warn("userId가 없어 기본값 2L 사용");
+            userId = 2L;
+        }
+        java.math.BigDecimal budget = new java.math.BigDecimal(
+            arguments.getOrDefault("budget", 500000).toString()
+        );
+        java.time.LocalDate startDate = java.time.LocalDate.now();
+        
+        // DB에 Plan + Days + Places 저장
+        var savedPlan = planService.createPlanWithDayPlanResults(userId, duration, budget, startDate, dayPlans);
+        log.info("  저장 완료: planId={}", savedPlan.getId());
 
         log.info("▷▷ 11. TravelPlannerAgent 완료");
 
         printDayPlans(dayPlans);
 
-        return AiAgentResponse.of(buildResponse(dayPlans));
+        return AiAgentResponse.of(buildResponse(dayPlans, savedPlan.getId()));
 
     }
 
     // ==================== Private 메서드 ====================
+
+    /**
+     * 영어 전용 정규화
+     * 숫자 → 영어 단어 변환
+     * 한글 → 영어 변환
+     */
+    private Map<String, Object> normalizeToEnglish(Map<String, Object> args) {
+        Map<String, Object> normalized = new java.util.HashMap<>(args);
+        
+        // duration 정규화: "3일" → "threedays", "3" → "threedays"
+        if (args.containsKey("duration")) {
+            Object durationObj = args.get("duration");
+            String duration = String.valueOf(durationObj);
+            
+            // 숫자를 영어로 변환
+            duration = duration.replaceAll("[^0-9]", ""); // 숫자만 추출
+            if (!duration.isEmpty()) {
+                int days = Integer.parseInt(duration);
+                normalized.put("duration", numberToEnglish(days) + "days");
+                log.info("  duration 정규화: {} → {}", durationObj, normalized.get("duration"));
+            }
+        }
+        
+        // location 정규화: 한글 → 영어
+        if (args.containsKey("location")) {
+            String location = String.valueOf(args.get("location"));
+            String englishLocation = convertLocationToEnglish(location);
+            if (!englishLocation.equals(location)) {
+                normalized.put("location", englishLocation);
+                log.info("  location 정규화: {} → {}", location, englishLocation);
+            }
+        }
+        
+        return normalized;
+    }
+
+    /**
+     * 숫자를 영어 단어로 변환 (1~10)
+     */
+    private String numberToEnglish(int number) {
+        return switch (number) {
+            case 1 -> "one";
+            case 2 -> "two";
+            case 3 -> "three";
+            case 4 -> "four";
+            case 5 -> "five";
+            case 6 -> "six";
+            case 7 -> "seven";
+            case 8 -> "eight";
+            case 9 -> "nine";
+            case 10 -> "ten";
+            default -> String.valueOf(number);
+        };
+    }
+
+    /**
+     * 한글 지역명을 영어로 변환
+     */
+    private String convertLocationToEnglish(String location) {
+        return switch (location) {
+            case "서울" -> "Seoul";
+            case "강남" -> "Gangnam";
+            case "홍대" -> "Hongdae";
+            case "명동" -> "Myeongdong";
+            case "이태원" -> "Itaewon";
+            case "강북" -> "Gangbuk";
+            default -> location; // 이미 영어거나 알 수 없으면 그대로
+        };
+    }
 
     private TravelPlanStrategy selectStrategy(Map<String, Object> args) {
         // 추후 확장
@@ -181,8 +272,8 @@ public class TravelPlannerService implements AiAgent {
     }
 
     // 응답 메시지 생성
-    private String buildResponse(List<DayPlanResult> dayPlans) {
-        return "총 " + dayPlans.size() + "일 일정이 생성되었습니다. " + "\n 화면 우측에 있는 일정을 보고 수정하시고 싶은 부분이 있다면 말씀해주세요!";
+    private String buildResponse(List<DayPlanResult> dayPlans, Long planId) {
+        return "총 " + dayPlans.size() + "일 일정이 생성되었습니다! (Plan ID: " + planId + ")\n화면 우측에 있는 일정을 보고 수정하시고 싶은 부분이 있다면 말씀해주세요!";
     }
 
     private void printDayPlans(List<DayPlanResult> dayPlans) {

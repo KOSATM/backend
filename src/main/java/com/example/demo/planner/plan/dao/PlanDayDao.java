@@ -58,4 +58,9 @@ public interface PlanDayDao {
      * 특정 planId의 최대 dayIndex를 조회합니다.
      */
     Integer selectMaxDayIndexByPlanId(Long planId);
+    
+    /**
+     * planId와 dayIndex로 Day 조회 (Agent용)
+     */
+    PlanDay selectDayByIndex(Long planId, Integer dayIndex);
 }
