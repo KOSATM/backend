@@ -1,5 +1,6 @@
 package com.example.demo.planner.plan.service.create;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -13,18 +14,20 @@ import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.planner.plan.agent.DurationNormalizerAgent;
 import com.example.demo.planner.plan.agent.SeedQueryAgent;
+import com.example.demo.planner.plan.agent.StartDateNormalizerAgent;
 import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dto.Cluster;
-import com.example.demo.planner.plan.service.PlanService;
 import com.example.demo.planner.plan.dto.ClusterBundle;
 import com.example.demo.planner.plan.dto.ClusterPlace;
 import com.example.demo.planner.plan.dto.TravelPlaceCandidate;
 import com.example.demo.planner.plan.dto.response.DayPlanResult;
-import com.example.demo.planner.travel.strategy.StandardTravelStrategy;
-import com.example.demo.planner.travel.strategy.TravelPlanStrategy;
+import com.example.demo.planner.plan.strategy.StandardTravelStrategy;
+import com.example.demo.planner.plan.strategy.TravelPlanStrategy;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@RequiredArgsConstructor
 @Component
 @Slf4j
 public class TravelPlannerService implements AiAgent {
@@ -37,26 +40,12 @@ public class TravelPlannerService implements AiAgent {
     private final CategoryFillService categoryFillService;
     private final DaySplitService daySplitService;
     private final RegionService regionService;
-    private final PlanService planService;
+    private final StartDateNormalizerAgent startDateNormalizerAgent;
+    private final PlanAssemblerService planAssemblerService;
 
-    public TravelPlannerService(EmbeddingModel embeddingModel, SeedQueryAgent seedQueryAgent,
-            DurationNormalizerAgent durationNormalizerAgent, PlanDao planDao,
-            KMeansClusterService kMeansClusterService,
-            CategoryFillService categoryFillService, DaySplitService daySplitService, RegionService regionService,
-            PlanService planService) {
-        this.embeddingModel = embeddingModel;
-        this.seedQueryAgent = seedQueryAgent;
-        this.durationNormalizerAgent = durationNormalizerAgent;
-        this.planDao = planDao;
-        this.kMeansClusterService = kMeansClusterService;
-        this.categoryFillService = categoryFillService;
-        this.daySplitService = daySplitService;
-        this.regionService = regionService;
-        this.planService = planService;
-    }
 
     @Override
-    public AiAgentResponse execute(IntentCommand command) {
+    public AiAgentResponse execute(IntentCommand command, Long userId) {
         log.info("▷▷ 1. TravelPlannerAgent 시작");
 
         Map<String, Object> arguments = command.getArguments();
@@ -71,8 +60,9 @@ public class TravelPlannerService implements AiAgent {
         log.info("  선택된 전략: {}", strategy.getClass().getSimpleName());
 
         // Duration 정규화
-        log.info("▷▷ 2. Duration 정규화");
-        int duration = normalizeDuration(arguments);
+        log.info("▷▷ 2. 입력값 정규화");
+        normalizeDuration(arguments);
+        int duration = (int) arguments.get("duration");
         String location = (String) arguments.getOrDefault("location", "서울");
 
         int minSpot = strategy.getTotalMinSpot(duration);
@@ -99,7 +89,7 @@ public class TravelPlannerService implements AiAgent {
 
         // 카테고리 보강
         log.info("▷▷ 6. 카테고리 보강");
-        Map<String, List<TravelPlaceCandidate>> categoryMap = categoryFillService.fill(filtered, minFood, minSpot);
+        Map<String, List<TravelPlaceCandidate>> categoryMap = categoryFillService.fill(filtered, arguments, minFood, minSpot);
 
         // 병합
         log.info("▷▷ 7. 카테고리 병합");
@@ -115,28 +105,18 @@ public class TravelPlannerService implements AiAgent {
         // Day 분할
         log.info("▷▷ 9. 일정 분배");
         List<DayPlanResult> dayPlans = daySplitService.split(clusters, duration, strategy);
-        // logDayPlans(dayPlans);
+        logDayPlans(dayPlans);
 
-        log.info("▷▷ 10. DB에 저장");
-        Long userId = (Long) arguments.get("userId");
-        if (userId == null) {
-            log.warn("userId가 없어 기본값 2L 사용");
-            userId = 2L;
-        }
-        java.math.BigDecimal budget = new java.math.BigDecimal(
-            arguments.getOrDefault("budget", 500000).toString()
-        );
-        java.time.LocalDate startDate = java.time.LocalDate.now();
-        
-        // DB에 Plan + Days + Places 저장
-        var savedPlan = planService.createPlanWithDayPlanResults(userId, duration, budget, startDate, dayPlans);
-        log.info("  저장 완료: planId={}", savedPlan.getId());
+        log.info("▷▷ 10. 최종 일정 배치 후 저장 및 응답");
+        planAssemblerService.createAndSavePlan(dayPlans, arguments, userId);
+
 
         log.info("▷▷ 11. TravelPlannerAgent 완료");
 
         printDayPlans(dayPlans);
 
-        return AiAgentResponse.of(buildResponse(dayPlans, savedPlan.getId()));
+        // return AiAgentResponse.of(buildResponse(dayPlans));
+        return AiAgentResponse.of(null);
 
     }
 
@@ -149,12 +129,12 @@ public class TravelPlannerService implements AiAgent {
      */
     private Map<String, Object> normalizeToEnglish(Map<String, Object> args) {
         Map<String, Object> normalized = new java.util.HashMap<>(args);
-        
+
         // duration 정규화: "3일" → "threedays", "3" → "threedays"
         if (args.containsKey("duration")) {
             Object durationObj = args.get("duration");
             String duration = String.valueOf(durationObj);
-            
+
             // 숫자를 영어로 변환
             duration = duration.replaceAll("[^0-9]", ""); // 숫자만 추출
             if (!duration.isEmpty()) {
@@ -163,7 +143,7 @@ public class TravelPlannerService implements AiAgent {
                 log.info("  duration 정규화: {} → {}", durationObj, normalized.get("duration"));
             }
         }
-        
+
         // location 정규화: 한글 → 영어
         if (args.containsKey("location")) {
             String location = String.valueOf(args.get("location"));
@@ -173,7 +153,7 @@ public class TravelPlannerService implements AiAgent {
                 log.info("  location 정규화: {} → {}", location, englishLocation);
             }
         }
-        
+
         return normalized;
     }
 
@@ -216,10 +196,14 @@ public class TravelPlannerService implements AiAgent {
         return new StandardTravelStrategy();
     }
 
-    // Duration 정규화
-    private int normalizeDuration(Map<String, Object> args) {
-        String normalized = durationNormalizerAgent.durationNormalized(args);
-        return Integer.parseInt(normalized);
+    // 정규화
+    private void normalizeDuration(Map<String, Object> arguments) {
+        String duration = durationNormalizerAgent.normalized(arguments);
+        String startDate = arguments.containsKey("startDate") != false ? startDateNormalizerAgent.normalized(arguments)
+                : (LocalDate.now().plusDays(7)).toString();
+        arguments.put("duration", Integer.parseInt(duration));
+        arguments.put("startDate", startDate);
+        return;
     }
 
     // 벡터 검색 & 셔플

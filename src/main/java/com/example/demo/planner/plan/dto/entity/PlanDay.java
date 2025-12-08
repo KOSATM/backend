@@ -7,10 +7,12 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 @Builder
 @Getter
 @JsonDeserialize(builder = PlanDay.PlanDayBuilder.class)
+@ToString
 public class PlanDay {
     private Long id;
     private Long planId;

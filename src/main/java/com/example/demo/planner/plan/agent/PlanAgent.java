@@ -12,7 +12,7 @@ import com.example.demo.common.chat.intent.dto.IntentCommand;
 import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.planner.plan.dto.entity.Plan;
-import com.example.demo.planner.plan.service.PlanService;
+import com.example.demo.planner.plan.service.create.PlanService;
 
 import lombok.extern.slf4j.Slf4j;
 

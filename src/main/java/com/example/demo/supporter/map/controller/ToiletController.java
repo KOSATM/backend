@@ -29,10 +29,10 @@ public class ToiletController {
 
     @GetMapping("in-bounds")
     public ResponseEntity<List<Toilet>> getToiletsInBounds(
-        @RequestParam Double northEastLat,
-        @RequestParam Double northEastLng,
-        @RequestParam Double southWestLat,
-        @RequestParam Double southWestLng
+        @RequestParam("northEastLat") Double northEastLat,
+        @RequestParam("northEastLng") Double northEastLng,
+        @RequestParam("southWestLat") Double southWestLat,
+        @RequestParam("southWestLng") Double southWestLng
     ) {
         List<Toilet> toilets = service.findToiletsInBounds(northEastLat, northEastLng, southWestLat, southWestLng);
         return ResponseEntity.ok(toilets);
@@ -40,9 +40,9 @@ public class ToiletController {
 
     @GetMapping("nearest")
     public ResponseEntity<List<Toilet>> getNearestToilets(  
-        @RequestParam Double userLat,
-        @RequestParam Double userLng,
-        @RequestParam(defaultValue = "3") Integer limit
+        @RequestParam("userLat") Double userLat,
+        @RequestParam("userLng") Double userLng,
+        @RequestParam(value = "limit", defaultValue = "3") Integer limit
     ) {
         List<Toilet> toilets = service.findNearestToilets(userLat, userLng, limit);
         return ResponseEntity.ok(toilets);

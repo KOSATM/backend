@@ -9,10 +9,10 @@ import com.example.demo.planner.plan.dto.Cluster;
 import com.example.demo.planner.plan.dto.ClusterBundle;
 import com.example.demo.planner.plan.dto.ClusterPlace;
 import com.example.demo.planner.plan.dto.response.DayPlanResult;
-import com.example.demo.planner.travel.cluster.GeoUtils;
-import com.example.demo.planner.travel.strategy.DayRequirement;
-import com.example.demo.planner.travel.strategy.TravelPlanStrategy;
-import com.example.demo.planner.travel.utils.CategoryNames;
+import com.example.demo.planner.plan.strategy.DayRequirement;
+import com.example.demo.planner.plan.strategy.TravelPlanStrategy;
+import com.example.demo.planner.plan.utils.CategoryNames;
+import com.example.demo.planner.plan.utils.GeoUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

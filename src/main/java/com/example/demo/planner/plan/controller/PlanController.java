@@ -18,7 +18,7 @@ import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
 import com.example.demo.planner.plan.dto.response.PlanDetail;
-import com.example.demo.planner.plan.service.PlanService;
+import com.example.demo.planner.plan.service.create.PlanService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -76,6 +76,13 @@ public class PlanController {
   @GetMapping("/{planId}/detail")
   public ResponseEntity<PlanDetail> getPlanDetail(@PathVariable("planId") Long planId) {
     PlanDetail planDetail = planService.getPlanDetail(planId);
+    return ResponseEntity.ok(planDetail);
+  }
+
+  // 사용자의 활성화된 여행 계획 상세 조회 (Days + Places 포함) - GET /plans/{userId}/active/detail
+  @GetMapping("/{userId}/active/detail")
+  public ResponseEntity<PlanDetail> getActivePlanDetail(@PathVariable("userId") Long userId) {
+    PlanDetail planDetail = planService.getLatestPlanDetail(userId);
     return ResponseEntity.ok(planDetail);
   }
 

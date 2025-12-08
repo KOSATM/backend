@@ -1,4 +1,4 @@
-package com.example.demo.planner.travel.utils;
+package com.example.demo.planner.plan.utils;
 
 import java.util.List;
 
@@ -15,11 +15,7 @@ public class CategoryNames {
     // 전체 카테고리 집합
     public static final List<String> ALL = List.of(SPOT, FOOD, CAFE, EVENT, SHOPPING, STAY, ETC);
 
-    // 1. FOOD 최우선 → 끼니 보장
-    // 2. SPOT 필수 → 핵심 관광지
-    // 3. CAFE 선택 → 휴식 공간
-    // 4. EVENT 선택 → 특별한 경험
-    // 5. SHOPPING 선택 → 쇼핑
+
     public static final List<String> REQUIRED = List.of(
             FOOD, // 최우선
             SPOT // 필수

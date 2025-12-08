@@ -6,14 +6,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.demo.common.tools.InternetSearchTool;
 import com.example.demo.common.tools.NaverInternetSearchTool;
 import com.example.demo.common.travel.dao.TravelPlaceDao;
 import com.example.demo.supporter.imageSearch.agent.ImageSearchAgent;
 import com.example.demo.supporter.imageSearch.dao.ImagePlaceDao;
+import com.example.demo.supporter.imageSearch.dao.ImageSearchCandidateDao;
+import com.example.demo.supporter.imageSearch.dao.ImageSearchSessionDao;
+import com.example.demo.supporter.imageSearch.dto.entity.ActionType;
+import com.example.demo.supporter.imageSearch.dto.entity.ImageSearchCandidate;
 import com.example.demo.supporter.imageSearch.dto.request.PlaceCandidateRequest;
+import com.example.demo.supporter.imageSearch.dto.response.CandidateWithPlaceResponse;
 import com.example.demo.supporter.imageSearch.dto.response.ImagePlaceResponse;
+import com.example.demo.supporter.imageSearch.dto.response.ImageSearchCandidateResponse;
+import com.example.demo.supporter.imageSearch.dto.response.ImageSearchSessionResponse;
 import com.example.demo.supporter.imageSearch.dto.response.PlaceCandidateResponse;
+import com.example.demo.supporter.imageSearch.dto.response.SessionWithCandidatesResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,8 +35,9 @@ public class ImageSearchService {
     private final TravelPlaceDao travelPlaceDao;
     private final ImageProcessorService imageProcessorService;
     private final ImagePlaceDao imagePlaceDao;
+    private final ImageSearchSessionDao sessionDao;
+    private final ImageSearchCandidateDao candidateDao;
 
-    @Transactional
     public List<PlaceCandidateResponse> processImageForPlaceRecommendation(String placeType, MultipartFile image,
             String address)
             throws Exception {
@@ -79,26 +87,42 @@ public class ImageSearchService {
             PlaceCandidateResponse currCandidate = candidates.get(i);
             String candidateName = currCandidate.getPlaceName();
 
-            String imageUrlFromDB = travelPlaceDao.selectImgUrlByTitle(candidateName);
+            String imageUrlFromDB = getImageUrlFromDatabase(candidateName);
+
             if (imageUrlFromDB != null) {
                 // 있으면 db에서 이미지 삽입
                 currCandidate.setImageUrl(imageUrlFromDB);
             } else {
-                // 없으면 인터넷 서치를 이용해 이미지 삽입
-                // internet Search 기록이 이미지 형식인지 확인
-                final int MAX_ATTEMPTS = 3;
-                for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-                    String imageUrlFromInternet = internetSearchTool.getImgUrl(candidateName);
-
-                    // URL이 유효한 링크인지 확인
-                    if (isDirectImageUrl(imageUrlFromInternet)) {
-                        currCandidate.setImageUrl(imageUrlFromInternet);
-                        break;
-                    }
+                // 없으면 인터넷에서 이미지 검색
+                String imageUrlFromInternet = searchImageFromInternet(candidateName);
+                if (imageUrlFromInternet != null) {
+                    currCandidate.setImageUrl(imageUrlFromInternet);
                 }
             }
             log.info("후보자 {}의 이미지 URL: {}", i + 1, currCandidate.getImageUrl());
         }
+    }
+
+    @Transactional(readOnly = true)
+    private String getImageUrlFromDatabase(String candidateName) {
+        return travelPlaceDao.selectImgUrlByTitle(candidateName);
+    }
+
+    private String searchImageFromInternet(String candidateName) {
+        final int MAX_ATTEMPTS = 3;
+        for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+            try {
+                String imageUrlFromInternet = internetSearchTool.getImgUrl(candidateName);
+
+                // URL이 유효한 링크인지 확인
+                if (isDirectImageUrl(imageUrlFromInternet)) {
+                    return imageUrlFromInternet;
+                }
+            } catch (Exception e) {
+                log.warn("인터넷 이미지 검색 중 예외 발생: {}", e.getMessage());
+            }
+        }
+        return null;
     }
 
     public boolean isDirectImageUrl(String url) {
@@ -114,21 +138,40 @@ public class ImageSearchService {
                 lowercaseUrl.endsWith("webp");
     }
 
-    @Transactional
-    public void savePlaceCandidates(List<PlaceCandidateRequest> candidates) {
-        for (PlaceCandidateRequest candidate : candidates) {
+    // @Transactional
+    public Long savePlaceCandidates(Long userId, List<PlaceCandidateRequest> candidates) {
+        ImageSearchSessionResponse session = new ImageSearchSessionResponse();
+        session.setUserId(userId);
+        session.setActionType(ActionType.valueOf(candidates.get(0).getActionType()));
+        sessionDao.insert(session);
+        Long sessionId = session.getId();
+        log.info("ImageSearchSession 저장 완료, ID: {}", sessionId);
 
+        //각 Candidate에 대해 place 생성 -> candidate 생성
+        for (int i = 0; i < candidates.size(); i++) {
+            PlaceCandidateRequest candidate = candidates.get(i);
+
+            //place 저장
             // 원본 이미지 S3 업로드 및 URL 획득
             ImageProcessorService.ImageUrlResult imageUrls = imageProcessorService
                     .processAndStoreImageFromUrl(candidate);
 
-            // DTO를 Entity로 변환
-            ImagePlaceResponse entity = toEntity(candidate, imageUrls);
+            ImagePlaceResponse placeEntity = toEntity(candidate, imageUrls);
+            imagePlaceDao.save(placeEntity);
+            log.info("ImagePlace 저장 완료, ID: {}", placeEntity.getId());
 
-            // DAO를 통해 DB에 저장
-            int result = imagePlaceDao.save(entity);
-            log.info("ImagePlace 저장 결과: {}", result);
+            //candidate 저장
+            ImageSearchCandidateResponse candidateResponse = new ImageSearchCandidateResponse();
+            candidateResponse.setImageSearchSessionId(sessionId);
+            candidateResponse.setImagePlaceId(placeEntity.getId());
+            candidateResponse.setIsSelected(candidate.getIsSelected());
+            candidateResponse.setRank(Long.valueOf(candidate.getRank()));
+
+            candidateDao.insert(candidateResponse);
+            log.info("ImageSearchCandidate 저장 완료, ID: {}", candidateResponse.getId());
         }
+
+        return sessionId;
     }
 
     private ImagePlaceResponse toEntity(PlaceCandidateRequest candidate,
@@ -157,5 +200,78 @@ public class ImageSearchService {
             response.setImageStatus(ImagePlaceResponse.ImageStatusEnum.FAILED);
         }
         return response;
+    }
+
+    @Transactional
+    public int updateSessionActionType(Long candidateId, String actionType) {
+        // 1. Candidate ID로 Candidate 조회
+        ImageSearchCandidate candidate = candidateDao.selectById(candidateId);
+        if (candidate == null) {
+            log.warn("Candidate를 찾을 수 없습니다. candidateId: {}", candidateId);
+            return 0;
+        }
+        
+        // 2. Session ID 추출
+        Long sessionId = candidate.getImageSearchSessionId();
+        
+        // 3. Session의 ActionType 업데이트
+        int result = sessionDao.updateActionType(sessionId, actionType);
+        log.info("Session ActionType 업데이트 완료. sessionId: {}, actionType: {}", sessionId, actionType);
+        
+        return result;
+    }
+
+    @Transactional
+    public int delete(Long candidateId) {
+        //Candidate ID로 Candidate 조회
+        ImageSearchCandidate candidate = candidateDao.selectById(candidateId);
+        if (candidate == null) {
+            log.warn("Candidate를 찾을 수 없습니다. candidateId: {}", candidateId);
+            return 0;
+        }
+
+        Long sessionId = candidate.getImageSearchSessionId();
+        Long placeId = candidate.getImagePlaceId();
+        
+        // 1. Candidate 삭제 (외래키 참조 제거)
+        int deleted = candidateDao.delete(candidateId);
+        log.info("Candidate 삭제 완료, candidateId: {}", candidateId);
+        
+        // 2. 연결된 Place 삭제
+        imagePlaceDao.deleteById(placeId);
+        log.info("Place 삭제 완료, placeId: {}", placeId);
+
+        // 3. 
+        java.util.List<ImageSearchCandidate> remainingCandidates = candidateDao.selectBySessionId(sessionId);
+        if (remainingCandidates.isEmpty()) {
+            sessionDao.delete(sessionId);
+            log.info("Session 삭제 완료, sessionId: {}", sessionId);
+        }
+
+        return deleted;
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<SessionWithCandidatesResponse> getSessionsByUserId(Long userId) {
+        // 1. userId로 모든 Session 조회
+        java.util.List<ImageSearchSessionResponse> sessions = sessionDao.selectByUserId(userId);
+        
+        // 2. 각 Session에 대해 Candidate + Place 정보 조회
+        java.util.List<SessionWithCandidatesResponse> result = new java.util.ArrayList<>();
+        for (ImageSearchSessionResponse session : sessions) {
+            SessionWithCandidatesResponse sessionWithCandidates = new SessionWithCandidatesResponse();
+            sessionWithCandidates.setSessionId(session.getId());
+            sessionWithCandidates.setUserId(session.getUserId());
+            sessionWithCandidates.setCreatedAt(session.getCreatedAt());
+            sessionWithCandidates.setActionType(session.getActionType());
+            
+            // Candidate + Place 조회 (JOIN)
+            java.util.List<CandidateWithPlaceResponse> candidates = candidateDao.selectWithPlaceBySessionId(session.getId());
+            sessionWithCandidates.setCandidates(candidates);
+            
+            result.add(sessionWithCandidates);
+        }
+        
+        return result;
     }
 }

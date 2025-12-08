@@ -1,10 +1,19 @@
-package com.example.demo.planner.travel.strategy;
+package com.example.demo.planner.plan.strategy;
 
 public class StandardTravelStrategy implements TravelPlanStrategy {
 
     @Override
     public DayRequirement getDayRequirement(int day, int duration) {
         DayRequirement req = new DayRequirement();
+
+        if (duration == 1) {
+            req.setMinFood(3);
+            req.setMaxFood(3);
+            req.setMinSpot(3);
+            req.setMinOptional(1);
+            req.setMaxPlaces(7);
+            return req;
+        }
 
         if (day == 1) { // 도착일
             req.setMinFood(1);

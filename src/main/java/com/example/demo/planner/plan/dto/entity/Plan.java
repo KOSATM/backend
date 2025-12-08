@@ -9,9 +9,11 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 @Builder
 @Getter
+@ToString
 @JsonDeserialize(builder = Plan.PlanBuilder.class)
 public class Plan {
     private Long id;

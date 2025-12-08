@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 // 에이전트 라우터를 위한 예시 클래스
 public class SampleAiAgent implements AiAgent{@Override
     
-    public AiAgentResponse execute(IntentCommand command) {
+    public AiAgentResponse execute(IntentCommand command, Long userId) {
         log.info("SampleAiAgent 에이전트 실행");
         return AiAgentResponse.of("SampleAiAgent 기능 실행 결과");
     }

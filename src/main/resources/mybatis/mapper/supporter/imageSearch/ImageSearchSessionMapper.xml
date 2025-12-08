@@ -10,16 +10,25 @@
   </resultMap>
 
     <!-- INSERT -->
-    <insert id="insert" parameterType="ImageSearchSession" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.example.demo.supporter.imageSearch.dto.response.ImageSearchSessionResponse"
+            useGeneratedKeys="true" keyProperty="id">
         INSERT INTO image_search_sessions (user_id, created_at, action_type)
-        VALUES (#{userId}, #{createdAt}, #{actionType}::image_action_type)
+        VALUES (#{userId}, NOW(), #{actionType}::image_action_type_enum)
     </insert>
-
+    
     <!-- SELECT by ID -->
-    <select id="selectById" resultMap="ImageSearchSessionResultMap">
-        SELECT *
+    <select id="selectById" resultType="com.example.demo.supporter.imageSearch.dto.response.ImageSearchSessionResponse">
+        SELECT id, user_id, created_at, action_type
         FROM image_search_sessions
         WHERE id = #{id}
+    </select>
+
+    <!-- SELECT by USER ID -->
+    <select id="selectByUserId" resultType="com.example.demo.supporter.imageSearch.dto.response.ImageSearchSessionResponse">
+        SELECT id, user_id, created_at, action_type
+        FROM image_search_sessions
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
     </select>
 
     <!-- SELECT ALL -->
@@ -28,6 +37,13 @@
         FROM image_search_sessions
         ORDER BY id DESC
     </select>
+
+    <!-- UPDATE ACTION TYPE -->
+    <update id="updateActionType">
+        UPDATE image_search_sessions
+        SET action_type = #{actionType}::image_action_type_enum
+        WHERE id = #{sessionId}
+    </update>
 
     <!-- UPDATE -->
     <update id="update" parameterType="ImageSearchSession">
@@ -43,4 +59,21 @@
         DELETE FROM image_search_sessions
         WHERE id = #{id}
     </delete>
+
+    <!-- FIND RECENT SESSION BY USER AND PLACES -->
+    <select id="findRecentSessionByUserAndPlaces" resultType="com.example.demo.supporter.imageSearch.dto.response.ImageSearchSessionResponse">
+        SELECT s.id, s.user_id, s.created_at, s.action_type
+        FROM image_search_sessions s
+        WHERE s.user_id = #{userId}
+        AND (
+            SELECT array_agg(image_place_id ORDER BY image_place_id)
+            FROM image_search_candidates
+            WHERE image_search_session_id = s.id
+        ) = (
+            SELECT array_agg(unnest ORDER BY unnest)
+            FROM unnest(#{placeIds}::bigint[])
+        )
+        ORDER BY s.created_at DESC
+        LIMIT 1
+    </select>
 </mapper>

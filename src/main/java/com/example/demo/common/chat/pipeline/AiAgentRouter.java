@@ -27,7 +27,7 @@ public class AiAgentRouter {
             .collect(Collectors.toMap(AiAgent::getClass, Function.identity()));
     }
 
-    public AiAgentResponse route(IntentCommand command) {
+    public AiAgentResponse route(IntentCommand command, Long userId) {
 
         Class<? extends AiAgent> clazz = command.getIntent().getAgentClass();
         AiAgent agent = agentByClass.get(clazz);
@@ -38,7 +38,7 @@ public class AiAgentRouter {
             return AiAgentResponse.of("지원하지 않는 기능이에요.");
         }
 
-        return agent.execute(command);
+        return agent.execute(command, userId);
 
         // return switch (command.getCategory()) {
         // // case PLANNER -> planner.execute(command);

@@ -37,4 +37,14 @@ public class ChecklistService {
     public int delete(Long id) {
         return dao.deleteChecklist(id);
     }
+
+    // 체크리스트 삭제하는 메서드
+    @Transactional
+    public int deleteItemsByUserId(Long userId) {
+        return dao.deleteChecklistsByUserId(userId);
+    }
+
+    public List<Checklist> findByUserId(Long userId) {
+    return dao.selectChecklistsByUserId(userId);
+}
 }

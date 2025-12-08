@@ -1,4 +1,4 @@
-package com.example.demo.planner.plan.service;
+package com.example.demo.planner.plan.service.create;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -7,7 +7,10 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.example.demo.common.user.dao.UserDao;
+import com.example.demo.common.user.dto.User;
 import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dao.PlanDayDao;
 import com.example.demo.planner.plan.dao.PlanPlaceDao;
@@ -22,7 +25,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -32,6 +34,7 @@ public class PlanService {
   private final PlanDayDao planDayDao;
   private final PlanPlaceDao planPlaceDao;
   private final PlanSnapshotDao planSnapshotDao;
+  private final UserDao userDao;
 
   // 스냅샷을 여행 계획, 여행 일자, 여행 장소로 분리
   public PlanSnapshotContent parseSnapshot(String snapshotJson) throws Exception {
@@ -569,6 +572,43 @@ public class PlanService {
     java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
 
     // 3. 각 Day의 Places를 조회하여 PlanDayWithPlaces 생성
+    java.util.List<PlanDayWithPlaces> daysWithPlaces = days.stream()
+        .map(day -> {
+          java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+          return new PlanDayWithPlaces(day, places);
+        })
+        .collect(java.util.stream.Collectors.toList());
+
+    log.info("Plan 상세 조회 완료: planId={}, days={}, 총 places={}",
+        planId, daysWithPlaces.size(),
+        daysWithPlaces.stream().mapToInt(d -> d.getPlaces().size()).sum());
+
+    return new PlanDetail(plan, daysWithPlaces);
+  }
+
+  // 사용자의 활성화된 Plan 상세 조회 (Days + Places 포함) - Plan -> List<PlanDayWithPlaces> 중첩 구조
+  public PlanDetail getLatestPlanDetail(Long userId) {
+    log.info("사용자의 활성화된 Plan 상세 조회 시작: userId={}", userId);
+
+    // 1. 사용자 조회
+    User user = userDao.selectUserById(userId);
+    if (user == null) {
+      log.warn("존재하지 않는 사용자: userId={}", userId);
+      throw new IllegalArgumentException("존재하지 않는 사용자입니다: userId=" + userId);
+    }
+
+    // 2. Plan 조회
+    Plan plan = planDao.selectActiveTravelPlanByUserId(userId);
+    if (plan == null) {
+      log.warn("사용자의 활성화된 Plan을 찾을 수 없음: userId={}", userId);
+      throw new IllegalArgumentException("존재하지 않는 Plan입니다: userId=" + userId);
+    }
+    long planId = plan.getId();
+
+    // 3. Plan의 모든 Day 조회
+    java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
+
+    // 4. 각 Day의 Places를 조회하여 PlanDayWithPlaces 생성
     java.util.List<PlanDayWithPlaces> daysWithPlaces = days.stream()
         .map(day -> {
           java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());

@@ -26,8 +26,8 @@ public enum IntentType {
     PLAN_MODIFY("plan_modify", CategoryType.PLANNER, "/planner", "일정 수정", null),
     PLAN_PLACE_RECOMMEND("plan_place_recommend", CategoryType.PLANNER, "/planner/recommend", "여행지 추천",
             PlaceSuggestAgent.class),
-    ATTRACTION_RECOMMEND("attraction_recommend", CategoryType.PLANNER, "/planner/recommend", "여행지 추천",
-            SampleAiAgent.class),
+    // ATTRACTION_RECOMMEND("attraction_recommend", CategoryType.PLANNER, "/planner/recommend", "여행지 추천",
+    //         SampleAiAgent.class),
     HOTEL_RECOMMEND("hotel_recommend", CategoryType.PLANNER, "/planner/hotel", "호텔 추천", null),
 
     // -------------------- SUPPORTER --------------------

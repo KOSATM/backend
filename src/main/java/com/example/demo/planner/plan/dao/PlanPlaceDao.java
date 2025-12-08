@@ -1,10 +1,10 @@
 package com.example.demo.planner.plan.dao;
 
+import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
-
-import java.util.List;
 
 @Mapper
 public interface PlanPlaceDao {
@@ -30,6 +30,11 @@ public interface PlanPlaceDao {
      * 여행 장소를 생성합니다.
      */
     int insertPlanPlace(PlanPlace place);
+
+    /**
+     * 여행 장소들을 생성합니다.
+     */
+    int insertPlanPlaceBatch(List<PlanPlace> planPlaces);
     
     /**
      * 여행 장소를 수정합니다.

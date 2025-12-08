@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.demo.planner.plan.dto.Cluster;
 import com.example.demo.planner.plan.dto.ClusterPlace;
-import com.example.demo.planner.travel.cluster.GeoUtils;
+import com.example.demo.planner.plan.utils.GeoUtils;
 
 import lombok.extern.slf4j.Slf4j;
 

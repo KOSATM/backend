@@ -63,8 +63,7 @@ public class IntentAnalysisAgent {
             - 입력 메시지는 이미 전처리되어 날짜/시간/장소가 정규화된 상태입니다.
 
             - 예시:
-                - travel_plan → { "location": "...", "duration": "..." }
-                - plan_query → {} (내 계획 조회, show plan, 내 일정 보여줘 등)
+                - travel_plan → { "location": "...", "theme": "...", "duration": "...", "startDate": "..." }
                 - plan_add → { "date": "...", "place": "..." }
                 - plan_modify → { "oldPlace": "...", "newPlace": "...", "day": "..." }
                 - attraction_recommend → { "location": "..." }

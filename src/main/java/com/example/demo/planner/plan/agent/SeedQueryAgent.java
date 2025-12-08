@@ -83,6 +83,7 @@ public class SeedQueryAgent {
 
         boolean isCategoryMode = seedQueryArgs.containsKey("category");
         String location = (String) seedQueryArgs.getOrDefault("location", "서울");
+        String theme = (String) seedQueryArgs.getOrDefault("theme", "");
         
         if (isCategoryMode) {
             String category = (String) seedQueryArgs.get("category");
@@ -104,8 +105,9 @@ public class SeedQueryAgent {
                 
                 - mode: default
                 - locations: %s
+                - theme: %s
                 
                 문장은 반드시 하나만 출력해줘.
-                """.formatted(location);
+                """.formatted(location,theme);
     }
 }

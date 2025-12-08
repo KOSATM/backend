@@ -1,4 +1,4 @@
-package com.example.demo.planner.travel.cluster;
+package com.example.demo.planner.plan.utils;
 
 public class GeoUtils {
 

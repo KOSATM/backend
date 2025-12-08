@@ -119,4 +119,11 @@
   <delete id="deleteByPlaceType" parameterType="string">
     DELETE FROM image_places WHERE place_type = #{placeType}
   </delete>
+
+  <!-- FIND BY NAME AND ADDRESS -->
+  <select id="findByNameAndAddress" resultMap="ImagePlaceResultMap">
+    SELECT * FROM image_places
+    WHERE name = #{name} AND address = #{address}
+    LIMIT 1
+  </select>
 </mapper>

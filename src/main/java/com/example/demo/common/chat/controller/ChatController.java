@@ -38,10 +38,10 @@ public class ChatController {
     }
 
     @GetMapping("/test")
-    public ResponseEntity<PipelineResult> test(@RequestParam("msg") String msg) {
+    public ResponseEntity<PipelineResult> test(@RequestParam("msg") String msg, @RequestParam("userId") Long userId) {
         IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").userMessage(msg).build();
         
-        return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest));
+        return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest, userId));
     }
 
     /**

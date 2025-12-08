@@ -199,4 +199,32 @@ public class ReviewService {
         log.info("📊 여행 분석 완료: Type={}, Mood={}", result.getTravelType(), result.getOverallMood());
 
     }
+
+    @Transactional
+    public void selectStyle(Long reviewPostId, Long reviewStyleId) {
+        log.info("리뷰 스타일 선택 업데이트 - reviewPostId: {}, reviewStyleId: {}", reviewPostId, reviewStyleId);
+        
+        // DAO 호출하여 업데이트 수행
+        reviewPostDao.updateReviewPostStyleIdById(reviewPostId, reviewStyleId);
+    }
+
+    @Transactional
+    public void updateCaption(Long reviewPostId, String caption){
+        log.info("리뷰 캡션 업데이트 - reviewPostId: {}, caption: {}", reviewPostId, caption);
+
+        reviewPostDao.updateReviewPostCaptionIdById(reviewPostId, caption);
+    }
+
+    @Transactional
+    public void updateHashtags(Long hashtagGroupId, List<String> names){
+
+        // 1. 기존 태그들 삭제 (초기화)
+        reviewHashtagDao.deleteHashtagsByHashtagGroupId(hashtagGroupId);
+
+        // 2. 선택된 태그가 있을 때만 insert 수행
+        // (사용자가 태그를 다 지워서 빈 리스트가 올 수도 있으므로 체크)
+        if (names != null && !names.isEmpty()) {
+            reviewHashtagDao.insertHashtagList(hashtagGroupId, names);
+        }
+    }
 }

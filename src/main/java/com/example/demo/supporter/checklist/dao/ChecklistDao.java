@@ -1,5 +1,6 @@
 package com.example.demo.supporter.checklist.dao;
 
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import com.example.demo.supporter.checklist.dto.entity.Checklist;
@@ -43,4 +44,10 @@ public interface ChecklistDao {
      * 체크리스트 삭제
      */
     int deleteChecklist(@Param("id") Long id);
+    
+    /**
+     * 사용자의 모든 체크리스트 삭제
+     */
+    @Delete("DELETE FROM checklists WHERE user_id = #{userId}")
+    int deleteChecklistsByUserId(@Param("userId") Long userId);
 }

@@ -26,7 +26,7 @@ public class DefaultChatPipeline implements ChatPipeline {
     private final AiAgentRouter agentRouter;
 
     @Override
-    public PipelineResult execute(IntentRequest request) {
+    public PipelineResult execute(IntentRequest request, Long userId) {
 
         // 0) 입력 필터링 및 정규화 (NEW)
         log.info("▶ 0. 입력 필터링 및 정규화");
@@ -76,7 +76,7 @@ public class DefaultChatPipeline implements ChatPipeline {
 
         // 5) 메인 Intent 실행
         log.info("▶ 5. 가장 우선되는 Main Intent 기능 실행");
-        AiAgentResponse mainIntentResponse = agentRouter.route(main);
+        AiAgentResponse mainIntentResponse = agentRouter.route(main, userId);
 
 
         // 6) 메인 응답 + 추가 Intent 묶어서 반환

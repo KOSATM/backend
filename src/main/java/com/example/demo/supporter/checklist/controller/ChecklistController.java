@@ -37,7 +37,7 @@ public class ChecklistController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Checklist>> list(@PathVariable Long userId) {
+    public ResponseEntity<List<Checklist>> list(@PathVariable("userId") Long userId) {
         return ResponseEntity.ok(service.getAll(userId));
     }
 

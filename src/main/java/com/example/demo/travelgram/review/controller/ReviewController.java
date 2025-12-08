@@ -16,9 +16,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.common.global.annotation.NoWrap;
 import com.example.demo.travelgram.review.dto.entity.ReviewPhoto;
-import com.example.demo.travelgram.review.dto.request.ReviewCreateRequest;
+import com.example.demo.travelgram.review.dto.request.HashtagUpdateRequest;
 import com.example.demo.travelgram.review.dto.request.ReviewPhotoOrderUpdateRequest;
-import com.example.demo.travelgram.review.dto.response.PhotoAnalysisResult;
 import com.example.demo.travelgram.review.dto.response.ReviewCreateResponse;
 import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
 import com.example.demo.travelgram.review.service.ReviewService;
@@ -41,9 +40,9 @@ public class ReviewController {
 
     @PostMapping("/create")
     public ResponseEntity<ReviewCreateResponse> createReview(
-            @RequestBody ReviewCreateRequest request) {
+            @RequestParam("planId") Long planId) {
 
-        ReviewCreateResponse result = reviewService.createReview(request.getPlanId());
+        ReviewCreateResponse result = reviewService.createReview(planId);
 
         return ResponseEntity.ok(result);
     }
@@ -78,6 +77,7 @@ public class ReviewController {
         List<ReviewPhoto> photos = reviewService.getReviewPhotos(photoGroupId);
         return ResponseEntity.ok(photos);
     }
+
     @PutMapping("/photo/order")
     public ResponseEntity<?> updatePhotoOrder(@RequestBody ReviewPhotoOrderUpdateRequest request) {
         reviewService.updatePhotoOrder(request);
@@ -93,4 +93,27 @@ public class ReviewController {
         // 내용물 없이 성공 신호(200 OK)만 보냄
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/style/select")
+    public ResponseEntity<Void> selectStyle(@RequestParam("reviewPostId") Long reviewPostId,
+            @RequestParam("reviewStyleId") Long reviewStyleId) {
+        reviewService.selectStyle(reviewPostId, reviewStyleId);
+        return ResponseEntity.ok().build();
+    }
+
+    // List<Hastags> 업데이트.....
+    @PostMapping("/hashtags/create")
+    public ResponseEntity<Void> updateHashtag(@RequestBody HashtagUpdateRequest request) {
+        // request.getNames()는 ["감성", "여행", "맛집"] 같은 리스트입니다.
+        reviewService.updateHashtags(request.getHashtagGroupId(), request.getNames());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/caption/update")
+    public ResponseEntity<Void> updateCaption(@RequestParam("reviewPostId") Long reviewPostId,
+            @RequestParam("caption") String caption) {
+        reviewService.updateCaption(reviewPostId, caption);
+        return ResponseEntity.ok().build();
+    }
+
 }
