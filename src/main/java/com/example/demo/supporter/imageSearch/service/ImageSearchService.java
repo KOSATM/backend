@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.demo.common.naver.dto.LocalItem;
 import com.example.demo.common.tools.NaverInternetSearchTool;
 import com.example.demo.common.travel.dao.TravelPlaceDao;
 import com.example.demo.supporter.imageSearch.agent.ImageSearchAgent;
@@ -151,7 +152,16 @@ public class ImageSearchService {
         for (int i = 0; i < candidates.size(); i++) {
             PlaceCandidateRequest candidate = candidates.get(i);
 
-            //place 저장
+            // 경도 / 위도 저장
+            LocalItem localItem = internetSearchTool.getLocalInfo(candidate.getName()).get(0);
+
+            // 네이버 api에서 제공하는 위/경도 값은 좌표를 1,000,000배 확대한 값
+            candidate.setLat(Double.parseDouble(localItem.getMapy()) / 10_000_000.0);
+            candidate.setLng(Double.parseDouble(localItem.getMapx()) / 10_000_000.0);
+
+            log.info("위도: {}", candidate.getLat());
+            log.info("경도: {}", candidate.getLng());
+
             // 원본 이미지 S3 업로드 및 URL 획득
             ImageProcessorService.ImageUrlResult imageUrls = imageProcessorService
                     .processAndStoreImageFromUrl(candidate);
@@ -271,7 +281,6 @@ public class ImageSearchService {
             
             result.add(sessionWithCandidates);
         }
-        
         return result;
     }
 }
