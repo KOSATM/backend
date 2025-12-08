@@ -1,84 +1,64 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
-  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.planner.plan.dao.PlanDao">
 
-  <select id="selectPlanById" parameterType="long" resultType="Plan">
-    SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title
-    FROM plans
-    WHERE id = #{id}
-  </select>
+    <!-- ==================== 조회(READ) 기능 ==================== -->
 
-  <select id="selectPlansByUserId" parameterType="long" resultType="Plan">
-    SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title
-    FROM plans
-    WHERE user_id = #{userId}
-    ORDER BY created_at DESC
-  </select>
+    <!-- 단일 여행 계획 조회: ID로 특정 여행 계획 하나를 조회 -->
+    <select id="selectPlanById" parameterType="long" resultType="Plan"> SELECT id, user_id, budget,
+        start_date, end_date, created_at, updated_at, is_ended, title FROM plans WHERE id = #{id} </select>
 
-  <select id="selectActiveTravelPlanByUserId" parameterType="long" resultType="Plan">
-    SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title
-    FROM plans
-    WHERE user_id = #{userId} AND (is_ended = false OR is_ended IS NULL)
-    ORDER BY created_at DESC
-    LIMIT 1
-  </select>
+    <!-- 사용자의 모든 여행 계획 조회: 특정 사용자의 모든 Plan을 최신순으로 조회 -->
+    <select id="selectPlansByUserId" parameterType="long" resultType="Plan"> SELECT id, user_id,
+        budget, start_date, end_date, created_at, updated_at, is_ended, title FROM plans WHERE
+        user_id = #{userId} ORDER BY created_at DESC </select>
 
-  <select id="selectCompletedTravelPlansByUserId" parameterType="long" resultType="Plan">
-    SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title
-    FROM plans
-    WHERE user_id = #{userId} AND is_ended = true
-    ORDER BY created_at DESC
-  </select>
+    <!-- 활성 여행 계획 조회: 사용자의 진행 중인 여행 계획 조회 (is_ended=false) -->
+    <select id="selectActiveTravelPlanByUserId" parameterType="long" resultType="Plan"> SELECT id,
+        user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title FROM plans
+        WHERE user_id = #{userId} AND (is_ended = false OR is_ended IS NULL) ORDER BY created_at
+        DESC LIMIT 1 </select>
 
-  <select id="selectAllTravelPlans" resultType="Plan">
-    SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title
-    FROM plans
-    ORDER BY created_at DESC
-  </select>
+    <!-- 완료된 여행 계획 조회: 사용자의 종료된 여행 계획 목록 조회 (is_ended=true) -->
+    <select id="selectCompletedTravelPlansByUserId" parameterType="long" resultType="Plan"> SELECT
+        id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title FROM
+        plans WHERE user_id = #{userId} AND is_ended = true ORDER BY created_at DESC </select>
 
-  <insert id="insertPlan" parameterType="Plan" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO plans (user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title)
-    VALUES (#{userId}, #{budget}, #{startDate}, #{endDate}, now(), now(), #{isEnded}, #{title})
-  </insert>
+    <!-- 전체 여행 계획 조회: 모든 사용자의 모든 여행 계획 조회 (관리자용) -->
+    <select id="selectAllTravelPlans" resultType="Plan"> SELECT id, user_id, budget, start_date,
+        end_date, created_at, updated_at, is_ended, title FROM plans ORDER BY created_at DESC </select>
 
-  <update id="updatePlan" parameterType="Plan">
-    UPDATE plans
-    SET user_id = #{userId},
-        budget = #{budget},
-        start_date = #{startDate},
-        end_date = #{endDate},
-        updated_at = now(),
-        is_ended = #{isEnded},
-        title = #{title}
-    WHERE id = #{id}
-  </update>
+    <!-- 제목 없는 완료된 여행 계획 조회: 종료되었지만 제목이 없는 Plan 조회 (자동 제목 생성용) -->
+    <select id="selectEndedPlansWithNoTitle" resultType="Plan"> SELECT id, user_id, budget,
+        start_date, end_date, created_at, updated_at, is_ended, title FROM plans WHERE is_ended =
+        true AND (title IS NULL OR title = '') ORDER BY created_at DESC </select>
 
-  <update id="updatePlanTitleById" parameterType="Plan">
-    UPDATE plans
-    SET title = #{title}
-    WHERE id = #{id}
-  </update>
+    <!-- ==================== 생성(CREATE) 기능 ==================== -->
 
-  <update id="updatePlanDates">
-    UPDATE plans
-    SET start_date = #{startDate},
-        end_date = #{endDate},
-        updated_at = now()
-    WHERE id = #{planId}
-  </update>
+    <!-- 여행 계획 생성: 새로운 여행 계획 추가 -->
+    <insert id="insertPlan" parameterType="Plan" useGeneratedKeys="true" keyProperty="id"
+        keyColumn="id"> INSERT INTO plans (user_id, budget, start_date, end_date, created_at,
+        updated_at, is_ended, title) VALUES (#{userId}, #{budget}, #{startDate}, #{endDate}, now(),
+        now(), #{isEnded}, #{title}) </insert>
 
-  <delete id="deletePlan" parameterType="long">
-    DELETE FROM plans
-    WHERE id = #{id}
-  </delete>
+    <!-- ==================== 수정(UPDATE) 기능 ==================== -->
 
-  <select id="selectEndedPlansWithNoTitle" resultType="Plan">
-        SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title
-        FROM plans
-        WHERE is_ended = true 
-          AND (title IS NULL OR title = '')
-        ORDER BY created_at DESC
-    </select>
+    <!-- 여행 계획 전체 수정: Plan의 모든 정보를 업데이트 -->
+    <update id="updatePlan" parameterType="Plan"> UPDATE plans SET user_id = #{userId}, budget =
+        #{budget}, start_date = #{startDate}, end_date = #{endDate}, updated_at = now(), is_ended =
+        #{isEnded}, title = #{title} WHERE id = #{id} </update>
+
+    <!-- 여행 제목만 수정: title만 업데이트 (제목 변경 시 사용) -->
+    <update id="updatePlanTitleById" parameterType="Plan"> UPDATE plans SET title = #{title} WHERE
+        id = #{id} </update>
+
+    <!-- 여행 기간 수정: 시작일, 종료일만 업데이트 (기간 조정 시 사용) -->
+    <update id="updatePlanDates"> UPDATE plans SET start_date = #{startDate}, end_date = #{endDate},
+        updated_at = now() WHERE id = #{planId} </update>
+
+    <!-- ==================== 삭제(DELETE) 기능 ==================== -->
+
+    <!-- 여행 계획 삭제: ID로 특정 여행 계획 삭제 -->
+    <delete id="deletePlan" parameterType="long"> DELETE FROM plans WHERE id = #{id} </delete>
+
 </mapper>

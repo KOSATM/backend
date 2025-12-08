@@ -1,87 +1,66 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
-  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.planner.plan.dao.PlanDayDao">
 
-  <select id="selectPlanDayById" parameterType="long" resultType="PlanDay">
-    SELECT id, plan_id, day_index, title, plan_date
-    FROM plan_days
-    WHERE id = #{id}
-  </select>
+    <!-- ==================== 조회(READ) 기능 ==================== -->
 
-  <select id="selectPlanDayIdsByPlanId" parameterType="Long" resultType="Long">
-    SELECT id
-    FROM plan_days
-    WHERE plan_id = #{id}
-  </select>
+    <!-- 단일 일자 조회: ID로 특정 여행 일자 하나를 조회 -->
+    <select id="selectPlanDayById" parameterType="long" resultType="PlanDay"> SELECT id, plan_id,
+        day_index, title, plan_date FROM plan_days WHERE id = #{id} </select>
 
-  <select id="selectPlanDaysByPlanId" parameterType="long" resultType="PlanDay">
-    SELECT id, plan_id, day_index, title, plan_date
-    FROM plan_days
-    WHERE plan_id = #{planId}
-    ORDER BY day_index ASC
-  </select>
+    <!-- 여행 계획의 일자 ID 목록 조회: Plan의 모든 Day ID만 가져오기 -->
+    <select id="selectPlanDayIdsByPlanId" parameterType="Long" resultType="Long"> SELECT id FROM
+        plan_days WHERE plan_id = #{id} </select>
 
-  <insert id="insertPlanDay" parameterType="PlanDay" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO plan_days (plan_id, day_index, title, plan_date)
-    VALUES (#{planId}, #{dayIndex}, #{title}, #{planDate})
-  </insert>
+    <!-- 여행 계획의 모든 일자 조회: Plan의 모든 Day를 일자순으로 조회 -->
+    <select id="selectPlanDaysByPlanId" parameterType="long" resultType="PlanDay"> SELECT id,
+        plan_id, day_index, title, plan_date FROM plan_days WHERE plan_id = #{planId} ORDER BY
+        day_index ASC </select>
 
-    <insert id="insertPlanDayBatch">
-  INSERT INTO plan_days (plan_id, day_index, plan_date)
-  VALUES
-  <foreach collection="list" item="days" separator=",">
-    (#{days.planId}, #{days.dayIndex}, #{days.planDate})
-  </foreach>
-  </insert>
+    <!-- 특정 여행 계획의 특정 일자 조회: planId와 dayIndex로 Day 조회 (예: 3일차) -->
+    <select id="selectPlanDayByPlanIdAndDayIndex" resultType="PlanDay"> SELECT id, plan_id,
+        day_index, title, plan_date FROM plan_days WHERE plan_id = #{planId} AND day_index =
+        #{dayIndex} </select>
 
-  <update id="updatePlanDay" parameterType="PlanDay">
-    UPDATE plan_days
-    SET plan_id = #{planId},
-        day_index = #{dayIndex},
-        title = #{title},
-        plan_date = #{planDate}
-    WHERE id = #{id}
-  </update>
+    <!-- 최대 일자 번호 조회: 해당 Plan의 가장 큰 day_index 값 조회 (새 일자 추가 시 사용) -->
+    <select id="selectMaxDayIndexByPlanId" parameterType="long" resultType="Integer"> SELECT
+        MAX(day_index) FROM plan_days WHERE plan_id = #{planId} </select>
 
-  <delete id="deletePlanDay" parameterType="long">
-    DELETE FROM plan_days
-    WHERE id = #{id}
-  </delete>
+    <!-- ==================== 생성(CREATE) 기능 ==================== -->
 
-  <delete id="deletePlanDaysByPlanId" parameterType="long">
-    DELETE FROM plan_days
-    WHERE plan_id = #{planId}
-  </delete>
+    <!-- 일자 단건 생성: 새로운 여행 일자 하나를 추가 -->
+    <insert id="insertPlanDay" parameterType="PlanDay" useGeneratedKeys="true" keyProperty="id"
+        keyColumn="id"> INSERT INTO plan_days (plan_id, day_index, title, plan_date) VALUES
+        (#{planId}, #{dayIndex}, #{title}, #{planDate}) </insert>
 
-  <select id="selectPlanDayByPlanIdAndDayIndex" resultType="PlanDay">
-    SELECT id, plan_id, day_index, title, plan_date
-    FROM plan_days
-    WHERE plan_id = #{planId} AND day_index = #{dayIndex}
-  </select>
+    <!-- 일자 일괄 생성: 여러 일자를 한번에 추가 (배치 insert) -->
+    <insert id="insertPlanDayBatch"> INSERT INTO plan_days (plan_id, day_index, plan_date) VALUES <foreach
+            collection="list" item="days" separator=","> (#{days.planId}, #{days.dayIndex},
+        #{days.planDate}) </foreach>
+    </insert>
 
-  <select id="selectMaxDayIndexByPlanId" parameterType="long" resultType="Integer">
-    SELECT MAX(day_index)
-    FROM plan_days
-    WHERE plan_id = #{planId}
-  </select>
+    <!-- ==================== 수정(UPDATE) 기능 ==================== -->
 
-  <update id="updateDayIndex">
-    UPDATE plan_days
-    SET day_index = #{dayIndex}
-    WHERE id = #{id}
-  </update>
+    <!-- 일자 전체 수정: 일자의 모든 정보를 업데이트 -->
+    <update id="updatePlanDay" parameterType="PlanDay"> UPDATE plan_days SET plan_id = #{planId},
+        day_index = #{dayIndex}, title = #{title}, plan_date = #{planDate} WHERE id = #{id} </update>
 
-  <update id="updatePlanDate">
-    UPDATE plan_days
-    SET plan_date = #{planDate}
-    WHERE id = #{id}
-  </update>
+    <!-- 일자 순서 변경: day_index만 수정 (일자 순서 교환 시 사용) -->
+    <update id="updateDayIndex"> UPDATE plan_days SET day_index = #{dayIndex} WHERE id = #{id} </update>
 
-  <delete id="deletePlanDayById" parameterType="long">
-    DELETE FROM plan_days
-    WHERE id = #{id}
-  </delete>
+    <!-- 일자 날짜 변경: plan_date만 수정 (여행 기간 조정 시 사용) -->
+    <update id="updatePlanDate"> UPDATE plan_days SET plan_date = #{planDate} WHERE id = #{id} </update>
+
+    <!-- ==================== 삭제(DELETE) 기능 ==================== -->
+
+    <!-- 일자 단건 삭제: ID로 특정 일자 하나만 삭제 -->
+    <delete id="deletePlanDay" parameterType="long"> DELETE FROM plan_days WHERE id = #{id} </delete>
+
+    <!-- 여행 계획의 모든 일자 삭제: 특정 Plan의 모든 Day 삭제 (Plan 삭제 시 사용) -->
+    <delete id="deletePlanDaysByPlanId" parameterType="long"> DELETE FROM plan_days WHERE plan_id =
+        #{planId} </delete>
+
+    <!-- 일자 삭제 (ID로): deletePlanDay와 동일, 다른 이름으로 제공 -->
+    <delete id="deletePlanDayById" parameterType="long"> DELETE FROM plan_days WHERE id = #{id} </delete>
 
 </mapper>
