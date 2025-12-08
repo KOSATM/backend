@@ -16,7 +16,7 @@ public interface PlanDao {
     /**
      * ID로 여행 계획을 조회합니다.
      */
-    
+
     Plan selectPlanById(Long id);
 
     /**
@@ -44,8 +44,8 @@ public interface PlanDao {
     /**
      * 여행 기간 변경 (startDate, endDate 업데이트)
      */
-    void updatePlanDates(@Param("planId") Long planId, 
-                         @Param("startDate") java.time.LocalDate startDate, 
+    void updatePlanDates(@Param("planId") Long planId,
+                         @Param("startDate") java.time.LocalDate startDate,
                          @Param("endDate") java.time.LocalDate endDate);
 
     /**

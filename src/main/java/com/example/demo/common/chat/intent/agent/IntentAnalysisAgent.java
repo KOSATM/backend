@@ -159,6 +159,44 @@ public class IntentAnalysisAgent {
                  * "두번째", "second", "2번째" → placeIndex: 2
                  * "마지막", "last" → placeIndex: -1
 
+            7. **PLACE-LEVEL SWAP DETECTION (CRITICAL - Prevents Misclassification)**
+               - If user mentions swapping TWO PLACES BY NAME, DO NOT classify as DAY_SWAP
+               - DAY_SWAP = swapping entire days (e.g., "swap day 1 and day 3")
+               - PLACE_SWAP = swapping specific places (e.g., "swap Starlit Seongsu and Danil Seoul")
+
+               KOREAN Examples (PLACE_SWAP_INNER or PLACE_SWAP_BETWEEN):
+                 * "스탈릿 성수하고 단일 서울 바꿔줘"
+                 * "명동교자랑 강남역 교체해줘"
+                 * "첫번째 장소랑 세번째 장소 바꿔"
+                 * "타워차이랑 성수연방 순서 바꿔"
+
+               ENGLISH Examples (PLACE_SWAP_INNER or PLACE_SWAP_BETWEEN):
+                 * "Swap Starlit Seongsu and Danil Seoul"
+                 * "Switch these two places: Myeongdong Kyoja and Gangnam"
+                 * "Exchange first place and third place"
+                 * "Swap Tower Chai and Seongsu Yeonbang"
+
+               DETECTION RULE:
+                 * If input contains TWO place names → intent = place_swap_inner OR place_swap_between
+                 * Backend will determine INNER (same day) vs BETWEEN (different days)
+                 * Extract both place names and normalize them
+
+               OUTPUT FORMAT (when place names given):
+                 {
+                   "intent": "place_swap_inner",
+                   "arguments": { "placeNameA": "스탈릿 성수", "placeNameB": "단일서울", "lang": "ko" }
+                 }
+
+               OUTPUT FORMAT (when day + order given):
+                 {
+                   "intent": "place_swap_inner",
+                   "arguments": { "dayIndex": 1, "placeIndexA": 1, "placeIndexB": 2, "lang": "ko" }
+                 }
+
+               NEVER confuse this with DAY_SWAP which requires explicit day numbers:
+                 * "1일차와 3일차 바꿔줘" → DAY_SWAP (correct)
+                 * "스탈릿 성수하고 단일 서울 바꿔줘" → PLACE_SWAP (NOT DAY_SWAP!)
+
             ---
 
             # ✔ Intent-specific Arguments Examples
@@ -206,17 +244,23 @@ public class IntentAnalysisAgent {
               * Korean patterns: "일차 바꿔", "일정 교체", "순서 바꿔"
               * English patterns: "swap day X and Y", "switch day X with day Y", "exchange schedules"
 
-            - place_swap_inner → { "dayIndex": 1, "placeIndexA": 1, "placeIndexB": 2, "lang": "en" }
-              * Examples: "Swap the first and second items on day 1", "1일차 첫번째랑 두번째 바꿔줘"
-              * CRITICAL: Same day, different place order numbers
-              * Korean patterns: "첫번째랑 두번째 교체", "순서 바꿔줘"
-              * English patterns: "swap first and second", "switch places", "exchange order"
+            - place_swap_inner → { "placeNameA": "스탈릿 성수", "placeNameB": "단일서울", "lang": "ko" } OR { "dayIndex": 1, "placeIndexA": 1, "placeIndexB": 2, "lang": "en" }
+              * Examples:
+                - BY NAME: "스탈릿 성수하고 단일 서울 바꿔줘", "Swap Starlit Seongsu and Danil Seoul"
+                - BY ORDER: "Swap the first and second items on day 1", "1일차 첫번째랑 두번째 바꿔줘"
+              * CRITICAL: Can use EITHER place names OR (dayIndex + order numbers)
+              * Backend will determine if places are on same day (INNER) or different days (BETWEEN)
+              * Korean patterns: "A하고 B 바꿔", "첫번째랑 두번째 교체", "순서 바꿔줘"
+              * English patterns: "swap A and B", "swap first and second", "switch places", "exchange order"
 
-            - place_swap_between → { "dayIndexA": 1, "placeIndexA": 1, "dayIndexB": 2, "placeIndexB": 1, "lang": "ko" }
-              * Examples: "Swap day 1 first item with day 2 first item", "1일차 첫번째랑 2일차 첫번째 바꿔줘"
-              * CRITICAL: Different days, each with specific place order
-              * Korean patterns: "A일차 B번째와 C일차 D번째 교체"
-              * English patterns: "swap day X place Y with day A place B"
+            - place_swap_between → { "placeNameA": "명동교자", "placeNameB": "강남역", "lang": "ko" } OR { "dayIndexA": 1, "placeIndexA": 1, "dayIndexB": 2, "placeIndexB": 1, "lang": "ko" }
+              * Examples:
+                - BY NAME: "명동교자랑 강남역 바꿔줘", "Swap Myeongdong Kyoja and Gangnam Station"
+                - BY ORDER: "Swap day 1 first item with day 2 first item", "1일차 첫번째랑 2일차 첫번째 바꿔줘"
+              * CRITICAL: Can use EITHER place names OR (specific day+order for each)
+              * Backend will determine if places are on same day (INNER) or different days (BETWEEN)
+              * Korean patterns: "A하고 B 교체", "A일차 B번째와 C일차 D번째 교체"
+              * English patterns: "swap A and B", "swap day X place Y with day A place B"
 
             - place_replace → { "targetPlace": "스탈릿성수", "newPlace": "김밥천국", "lang": "ko" }
               * Examples: "스탈릿 성수 말고 김밥천국 가고 싶어", "Replace Starlit Seongsu with Kimbap Heaven", "불고기 먹고 싶어"

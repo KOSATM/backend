@@ -78,7 +78,7 @@ public interface PlanDayDao {
     /**
      * planDate를 업데이트합니다
      */
-    void updatePlanDate(@org.apache.ibatis.annotations.Param("id") Long id, 
+    void updatePlanDate(@org.apache.ibatis.annotations.Param("id") Long id,
                         @org.apache.ibatis.annotations.Param("planDate") java.time.LocalDate planDate);
 
     /**

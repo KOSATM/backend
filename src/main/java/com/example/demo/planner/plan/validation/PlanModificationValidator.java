@@ -13,12 +13,12 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Safety Layer for Plan Modifications
- * 
+ *
  * Purpose:
  * - Prevent LLM from making invalid modifications
  * - Validate all edit/delete operations before execution
  * - Ensure data integrity and consistency
- * 
+ *
  * 3-Layer Protection:
  * 1. Intent Level Validation (existence, range, ownership)
  * 2. Schema Level Protection (allowed fields only)
@@ -123,10 +123,10 @@ public class PlanModificationValidator {
      */
     public void validateDateRangeChange(Plan currentPlan, LocalDate newStartDate, LocalDate newEndDate) {
         validateDateRange(newStartDate, newEndDate);
-        
+
         long currentDays = currentPlan.getEndDate().toEpochDay() - currentPlan.getStartDate().toEpochDay() + 1;
         long newDays = newEndDate.toEpochDay() - newStartDate.toEpochDay() + 1;
-        
+
         if (newDays != currentDays) {
             log.warn("Trip duration is changing from {} days to {} days", currentDays, newDays);
         }
@@ -173,7 +173,7 @@ public class PlanModificationValidator {
      */
     public void validatePlaceDelete(Long planId, int dayIndex, int placeIndex) {
         validatePlaceExists(planId, dayIndex, placeIndex);
-        
+
         // Check if this is the last place in the day (optional warning)
         try {
             var dayWithPlaces = planService.queryDay(planId, dayIndex);
@@ -190,7 +190,7 @@ public class PlanModificationValidator {
      */
     public void validateDayDelete(Long planId, int dayIndex) {
         validateDayExists(planId, dayIndex);
-        
+
         // Log deletion for monitoring
         log.info("Deleting day {} from plan {}", dayIndex, planId);
     }
@@ -203,11 +203,11 @@ public class PlanModificationValidator {
      */
     public void validateAllowedFieldUpdate(String fieldName) {
         List<String> allowedFields = List.of(
-            "placeName", "address", "startTime", "endTime", 
+            "placeName", "address", "startTime", "endTime",
             "duration", "cost", "lat", "lng", "category",
             "planDayId", "order", "title"
         );
-        
+
         if (!allowedFields.contains(fieldName)) {
             throw new PlanValidationException(
                 "Field '" + fieldName + "' is not allowed to be updated"
@@ -222,7 +222,7 @@ public class PlanModificationValidator {
         List<String> forbiddenFields = List.of(
             "id", "userId", "createdAt", "planId"
         );
-        
+
         if (forbiddenFields.contains(fieldName)) {
             throw new PlanValidationException(
                 "Field '" + fieldName + "' is forbidden from being updated"

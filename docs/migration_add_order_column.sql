@@ -8,7 +8,7 @@ ALTER TABLE plan_places ADD COLUMN IF NOT EXISTS "order" INTEGER;
 -- Step 2: Initialize order values based on existing start_at times
 -- This uses a window function to assign sequential numbers within each day
 WITH ordered_places AS (
-    SELECT 
+    SELECT
         id,
         ROW_NUMBER() OVER (PARTITION BY day_id ORDER BY start_at, id) as new_order
     FROM plan_places
@@ -19,7 +19,7 @@ FROM ordered_places
 WHERE plan_places.id = ordered_places.id;
 
 -- Step 3: Verify the migration
-SELECT 
+SELECT
     pp.id,
     pp.day_id,
     pp."order",
@@ -29,7 +29,7 @@ FROM plan_places pp
 ORDER BY pp.day_id, pp."order";
 
 -- Optional: Add index for better performance
-CREATE INDEX IF NOT EXISTS idx_plan_places_day_order 
+CREATE INDEX IF NOT EXISTS idx_plan_places_day_order
 ON plan_places(day_id, "order");
 
 -- Optional: Add constraint to ensure order is not null for future inserts

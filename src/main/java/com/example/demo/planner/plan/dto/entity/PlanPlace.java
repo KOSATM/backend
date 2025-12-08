@@ -15,8 +15,8 @@ public class PlanPlace {
     private Long dayId;
     private Integer order; // 같은 날 내에서의 장소 순서 (1-based)
     private String title;
-    private OffsetDateTime startAt; 
-    private OffsetDateTime endAt; 
+    private OffsetDateTime startAt;
+    private OffsetDateTime endAt;
     private String placeName;
     private String address;
     private double lat;
