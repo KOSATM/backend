@@ -45,11 +45,11 @@ public class TestSuggestController {
   // }
   // }
 
-  @PostMapping("/test")
-  public String test(@RequestParam("question") String question) {
-    IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").userMessage(question).build();
+  // @PostMapping("/test")
+  // public String test(@RequestParam("question") String question) {
+  //   IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").userMessage(question).build();
 
-    return defaultChatPipeline.execute(intentRequest).getMainResponse().getMessage().toString();
-  }
+  //   return defaultChatPipeline.execute(intentRequest).getMainResponse().getMessage().toString();
+  // }
 
 }
