@@ -18,7 +18,7 @@ public class SearchController {
     private final NaverSearchService naverSearchService;
 
     @GetMapping("/blog")
-    public ResponseEntity<List<BlogItem>> searchBlog(@RequestParam String keyword) {
+    public ResponseEntity<List<BlogItem>> searchBlog(@RequestParam("keyword") String keyword) {
         // 1. 서비스 호출
         List<BlogItem> result = naverSearchService.searchBlog(keyword);
         
