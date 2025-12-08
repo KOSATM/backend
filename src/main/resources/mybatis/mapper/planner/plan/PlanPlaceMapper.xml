@@ -5,16 +5,16 @@
 <mapper namespace="com.example.demo.planner.plan.dao.PlanPlaceDao">
 
   <select id="selectPlanPlaceById" parameterType="long" resultType="PlanPlace">
-    SELECT id, day_id, "order", title, start_at, end_at, place_name, address, lat, lng, expected_cost
+    SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost
     FROM plan_places
     WHERE id = #{id}
   </select>
 
   <select id="selectPlanPlacesByPlanDayId" parameterType="long" resultType="PlanPlace">
-    SELECT id, day_id, "order", title, start_at, end_at, place_name, address, lat, lng, expected_cost
+    SELECT id, day_id,  title, start_at, end_at, place_name, address, lat, lng, expected_cost
     FROM plan_places
     WHERE day_id = #{dayId}
-    ORDER BY COALESCE("order", 999), start_at ASC
+    ORDER BY start_at ASC
   </select>
 
   <select id="selectPlanPlacesByPlanId" parameterType="long" resultType="PlanPlace">
@@ -26,14 +26,13 @@
   </select>
 
   <insert id="insertPlanPlace" parameterType="PlanPlace" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO plan_places (day_id, "order", title, start_at, end_at, place_name, address, lat, lng, expected_cost)
-    VALUES (#{dayId}, #{order}, #{title}, #{startAt}, #{endAt}, #{placeName}, #{address}, #{lat}, #{lng}, #{expectedCost})
+    INSERT INTO plan_places (day_id,  title, start_at, end_at, place_name, address, lat, lng, expected_cost)
+    VALUES (#{dayId}, #{title}, #{startAt}, #{endAt}, #{placeName}, #{address}, #{lat}, #{lng}, #{expectedCost})
   </insert>
 
   <insert id="insertPlanPlaceBatch">
     INSERT INTO plan_places (
         day_id,
-        "order",
         title,
         start_at,
         end_at,
@@ -47,7 +46,6 @@
     <foreach collection="list" item="place" separator=",">
         (
             #{place.dayId},
-            #{place.order},
             #{place.title},
             #{place.startAt},
             #{place.endAt},
@@ -92,18 +90,6 @@
     WHERE id = #{id}
   </update>
 
-  <update id="updatePlaceOrder">
-    UPDATE plan_places
-    SET "order" = #{order}
-    WHERE id = #{id}
-  </update>
-
-  <update id="updatePlanDayIdAndOrder">
-    UPDATE plan_places
-    SET day_id = #{planDayId},
-        "order" = #{order}
-    WHERE id = #{id}
-  </update>
 
   <update id="updatePlaceInfo">
     UPDATE plan_places
