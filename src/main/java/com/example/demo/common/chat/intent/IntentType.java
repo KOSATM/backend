@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 public enum IntentType {
 
     // -------------------- PLANNER --------------------
-    TRAVEL_PLAN("travel_plan", CategoryType.PLANNER, "/planner", "여행 일정 추천", TravelPlannerService.class),
+    TRAVEL_PLAN("travel_plan", CategoryType.PLANNER, "/planner/edit", "여행 일정 생성", TravelPlannerService.class),
     PLAN_ADD("plan_add", CategoryType.PLANNER, "/planner", "일정에 장소 추가", null),
     PLAN_DELETE("plan_delete", CategoryType.PLANNER, "/planner", "일정에서 장소 삭제", null),
     PLAN_MODIFY("plan_modify", CategoryType.PLANNER, "/planner", "일정 수정", null),

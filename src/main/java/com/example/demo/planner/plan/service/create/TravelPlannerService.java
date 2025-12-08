@@ -13,7 +13,6 @@ import com.example.demo.common.chat.intent.dto.IntentCommand;
 import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.planner.plan.agent.DurationNormalizerAgent;
-import com.example.demo.planner.plan.agent.PlanSchedulerAgent;
 import com.example.demo.planner.plan.agent.SeedQueryAgent;
 import com.example.demo.planner.plan.agent.StartDateNormalizerAgent;
 import com.example.demo.planner.plan.dao.PlanDao;
@@ -22,6 +21,7 @@ import com.example.demo.planner.plan.dto.ClusterBundle;
 import com.example.demo.planner.plan.dto.ClusterPlace;
 import com.example.demo.planner.plan.dto.TravelPlaceCandidate;
 import com.example.demo.planner.plan.dto.response.DayPlanResult;
+import com.example.demo.planner.plan.dto.response.PlanDetailResponse;
 import com.example.demo.planner.plan.strategy.StandardTravelStrategy;
 import com.example.demo.planner.plan.strategy.TravelPlanStrategy;
 
@@ -104,15 +104,17 @@ public class TravelPlannerService implements AiAgent {
         logDayPlans(dayPlans);
 
         log.info("▷▷ 10. 최종 일정 배치 후 저장 및 응답");
-        planAssemblerService.createAndSavePlan(dayPlans, arguments, userId);
+        PlanDetailResponse response = planAssemblerService.createAndSavePlan(dayPlans, arguments, userId);
         
 
         log.info("▷▷ 11. TravelPlannerAgent 완료");
 
         printDayPlans(dayPlans);
 
+        // planDao.
+
         // return AiAgentResponse.of(buildResponse(dayPlans));
-        return AiAgentResponse.of(null);
+        return AiAgentResponse.ofData("일정 생성이 완료되었습니다.", command.getRequiredUrl(), response);
 
     }
 

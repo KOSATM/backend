@@ -17,9 +17,11 @@ import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.planner.plan.dto.entity.PlanScheduleRow;
 import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
 import com.example.demo.planner.plan.dto.entity.TravelPlaces;
 import com.example.demo.planner.plan.dto.response.DayPlanResult;
+import com.example.demo.planner.plan.dto.response.PlanDetailResponse;
 import com.example.demo.planner.plan.dto.response.PlanScheduleResult;
 import com.example.demo.planner.plan.service.PlanSnapshotService;
 import com.example.demo.planner.plan.utils.DateTimeUtil;
@@ -42,7 +44,7 @@ public class PlanAssemblerService {
 
 
     @Transactional
-    public void createAndSavePlan(
+    public PlanDetailResponse createAndSavePlan(
             List<DayPlanResult> dayPlans,
             Map<String, Object> arguments,
             Long userId) {
@@ -82,6 +84,10 @@ public class PlanAssemblerService {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        List<PlanScheduleRow> planScheduleRows = planDao.selectPlanWithAllByPlanId(plan.getId());
+        PlanDetailResponse reponse = PlanDetailResponse.fromRows(planScheduleRows);
+        return reponse;
     }
 
 

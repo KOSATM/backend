@@ -8,10 +8,15 @@ import org.apache.ibatis.annotations.Param;
 
 import com.example.demo.planner.plan.dto.TravelPlaceCandidate;
 import com.example.demo.planner.plan.dto.entity.Plan;
+import com.example.demo.planner.plan.dto.entity.PlanScheduleRow;
 import com.example.demo.planner.plan.dto.entity.TravelPlaces;
 
 @Mapper
 public interface PlanDao {
+
+    List<PlanScheduleRow> selectPlanWithAllByPlanId(Long planId);
+    List<PlanScheduleRow> selectPlanWithAllByUserId(Long userId);
+
 
     /**
      * ID로 여행 계획을 조회합니다.
