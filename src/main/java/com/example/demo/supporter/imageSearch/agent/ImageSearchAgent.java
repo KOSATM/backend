@@ -73,8 +73,8 @@ public class ImageSearchAgent {
     String response = analyzeImage(placeType, contentType, bytes);
     List<PlaceCandidateResponse> candidates = generateCandidates(response.toString(), placeType, address);
     return candidates;
-    // return null;
   }
+
 
   // 1단계: 이미지 분석 (요소 추출, type 지정, confidence 평가) //요소 추출 -> type 지정
   public String analyzeImage(String placeType, String contentType, byte[] bytes) {
@@ -86,7 +86,7 @@ public class ImageSearchAgent {
             ## 역할(핵심)
             1. 업로드된 이미지를 분석하여, 그 안에서 시각적으로 식별 가능한 요소(feature)를 추출합니다.
             2. 추출된 요소를 사용자가 지정한 type(landscape | food | activities)에 따라 **정확히 필터링**합니다.
-            3. placeType과 직접적으로 연결되지 않는 요소는 어떤 경우에도 포함하면 안 됩니다.
+            3. type과 직접적으로 연결되지 않는 요소는 어떤 경우에도 포함하면 안 됩니다.
             4. 최종 결과는 JSON 배열로만 출력합니다.
 
             ## 요소 분류 규칙

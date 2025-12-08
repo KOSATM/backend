@@ -13,12 +13,6 @@ public class PlaceCandidateResponse {
     private String type; // "poi" | "category"
     @NotBlank
     private String address;
-    // @NotNull
-    // private double lat; // 위도
-    // @NotNull
-    // private double lng; // 경도
-    @NotBlank
-    private String location;
     @NotBlank
     private String association; //step1 요소와의 관계
     @NotBlank

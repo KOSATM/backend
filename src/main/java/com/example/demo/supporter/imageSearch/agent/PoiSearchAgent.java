@@ -101,6 +101,8 @@ public class PoiSearchAgent {
     String searchPlanJson = generatePoiSearchPlan(llmResponse, address);
 
     // 원본 systemText (프롬프트 내용은 절대 변경하지 않음)
+
+    /* address와 location의 차이가 무엇인지,  */
     String systemText = """
         당신은 이미지 기반 장소 추천 전문가입니다.
 
@@ -142,7 +144,6 @@ public class PoiSearchAgent {
               "placeName": "",
               "type": "poi",
               "address": "",
-              "location": "",
               "association": "인터넷 검색 실패",
               "description": "인터넷 검색 오류로 후보 생성 불가",
               "similarity": "low",
@@ -183,8 +184,7 @@ public class PoiSearchAgent {
           {
             "placeName": "장소명",
             "type": "poi",
-            "address": "주소",
-            "location": "주소 또는 지역 (구까지 포함)",
+            "address": "장소의 full 주소",
             "association": "Step1 요소와의 관계",
             "description": "해당 장소에 대한 핵심 설명 (200자 이내)",
             "similarity": "high | medium | low",
