@@ -34,7 +34,7 @@ public class PlaceSuggestAgent implements AiAgent {
   }
 
   @Override
-  public AiAgentResponse execute(IntentCommand command) {
+  public AiAgentResponse execute(IntentCommand command, Long userId) {
     long start = System.nanoTime();
     log.info(command.toString());
     StringBuilder sb = new StringBuilder();
