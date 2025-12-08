@@ -12,10 +12,26 @@ public class TravelChatSendResponse {
     private Object data;
 
     public static TravelChatSendResponse success(String message, Object data) {
-        return new TravelChatSendResponse(true, message, message, data);
+        String safeMessage = message != null ? message : "";
+        return new TravelChatSendResponse(true, safeMessage, safeMessage, data);
     }
 
     public static TravelChatSendResponse error(String message) {
-        return new TravelChatSendResponse(false, message, message, null);
+        String safeMessage = message != null ? message : "An error occurred";
+        return new TravelChatSendResponse(false, safeMessage, safeMessage, null);
+    }
+
+    /**
+     * Null-safe getter for message
+     */
+    public String getMessage() {
+        return message != null ? message : "";
+    }
+
+    /**
+     * Null-safe getter for response
+     */
+    public String getResponse() {
+        return response != null ? response : "";
     }
 }

@@ -20,6 +20,7 @@ import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
 import com.example.demo.planner.plan.dto.response.PlanDayWithPlaces;
 import com.example.demo.planner.plan.dto.response.PlanDetail;
+import com.example.demo.planner.plan.dto.response.PlacePosition;
 import com.example.demo.planner.plan.dto.response.PlanSnapshotContent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -35,6 +36,57 @@ public class PlanService {
   private final PlanPlaceDao planPlaceDao;
   private final PlanSnapshotDao planSnapshotDao;
   private final UserDao userDao;
+
+  /**
+   * 두 일차(PlanDay)의 dayIndex를 서로 교체 (장소는 그대로)
+   */
+  @Transactional
+  public void swapDay(Long planId, int dayA, int dayB) {
+    if (dayA == dayB) return;
+    PlanDay d1 = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayA);
+    PlanDay d2 = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayB);
+    if (d1 == null || d2 == null) throw new IllegalArgumentException("해당 일차가 존재하지 않습니다.");
+    // 임시 인덱스(-1)로 충돌 방지 후 교체
+    planDayDao.updateDayIndex(d1.getId(), -1);
+    planDayDao.updateDayIndex(d2.getId(), dayA);
+    planDayDao.updateDayIndex(d1.getId(), dayB);
+  }
+
+  /**
+   * 사용자의 활성(진행 중인) 여행 계획 조회
+   * isEnded=false 또는 NULL인 Plan 반환
+   */
+  public Plan findActiveByUserId(Long userId) {
+    log.info("활성 Plan 조회: userId={}", userId);
+    Plan activePlan = planDao.selectActiveTravelPlanByUserId(userId);
+    log.info("활성 Plan 조회 결과: {}", activePlan);
+    return activePlan;
+  }
+
+  /**
+   * 특정 일차의 전체 일정 조회 (PlanDay + PlanPlace 리스트)
+   */
+  public PlanDayWithPlaces queryDay(Long planId, int dayIndex) {
+    log.info("일차 조회: planId={}, dayIndex={}", planId, dayIndex);
+    PlanDay day = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndex);
+    if (day == null) throw new IllegalArgumentException(dayIndex + "일차가 존재하지 않습니다.");
+    java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+    return new PlanDayWithPlaces(day, places);
+  }
+
+  /**
+   * 특정 일차의 특정 장소 조회 (placeIndex는 1부터 시작)
+   */
+  public PlanPlace queryPlace(Long planId, int dayIndex, int placeIndex) {
+    log.info("장소 조회: planId={}, dayIndex={}, placeIndex={}", planId, dayIndex, placeIndex);
+    PlanDay day = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndex);
+    if (day == null) throw new IllegalArgumentException(dayIndex + "일차가 존재하지 않습니다.");
+    java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+    if (placeIndex < 1 || placeIndex > places.size()) {
+      throw new IllegalArgumentException(dayIndex + "일차의 " + placeIndex + "번째 장소가 존재하지 않습니다.");
+    }
+    return places.get(placeIndex - 1);
+  }
 
   // 스냅샷을 여행 계획, 여행 일자, 여행 장소로 분리
   public PlanSnapshotContent parseSnapshot(String snapshotJson) throws Exception {
@@ -324,8 +376,8 @@ public class PlanService {
     }
 
     // planDate 자동 계산: Plan의 startDate + (dayIndex - 1)일
-    LocalDate planDate = plan.getStartDate() != null 
-        ? plan.getStartDate().plusDays(dayIndex - 1) 
+    LocalDate planDate = plan.getStartDate() != null
+        ? plan.getStartDate().plusDays(dayIndex - 1)
         : null;
 
     // Plan 기간 초과인 경우: 사용자 승인(confirm)이 있어야만 확장
@@ -342,7 +394,7 @@ public class PlanService {
 
         // 승인된 경우에만 endDate 확장 수행
         LocalDate newEndDate = plan.getStartDate().plusDays(dayIndex - 1);
-        log.info("🔄 Plan 기간 자동 확장(승인됨): planId={}, {}일 → {}일 (endDate: {} → {})", 
+        log.info("🔄 Plan 기간 자동 확장(승인됨): planId={}, {}일 → {}일 (endDate: {} → {})",
             plan.getId(), planDuration, dayIndex, plan.getEndDate(), newEndDate);
         Plan updatedPlan = Plan.builder()
             .id(plan.getId())
@@ -698,6 +750,351 @@ public class PlanService {
 
     log.info("사용자별 Plan 상세 목록 조회 완료: userId={}, 총 {}개 Plan", userId, planDetails.size());
     return planDetails;
+  }
+
+  // ========== 추가 조회 메서드 (VIEW Intent 지원) ==========
+
+  /**
+   * 전체 일정 조회 (모든 Day + Place)
+   */
+  public java.util.List<PlanDayWithPlaces> queryAllDays(Long planId) {
+    log.info("전체 일정 조회: planId={}", planId);
+    java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
+    return days.stream()
+        .map(day -> {
+          java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+          return new PlanDayWithPlaces(day, places);
+        })
+        .collect(java.util.stream.Collectors.toList());
+  }
+
+  /**
+   * 날짜로 일정 조회
+   */
+  public PlanDayWithPlaces queryDayByDate(Long planId, String dateStr) {
+    log.info("날짜로 일정 조회: planId={}, date={}", planId, dateStr);
+    LocalDate date = LocalDate.parse(dateStr);
+    Plan plan = planDao.selectPlanById(planId);
+    if (plan == null) {
+      throw new IllegalArgumentException("Plan not found: " + planId);
+    }
+    
+    // 시작일로부터 몇 일째인지 계산
+    int dayIndex = (int) java.time.temporal.ChronoUnit.DAYS.between(plan.getStartDate(), date) + 1;
+    return queryDay(planId, dayIndex);
+  }
+
+  /**
+   * 장소명으로 검색 (부분 일치)
+   */
+  public java.util.List<PlanPlace> queryPlacesByName(Long planId, String placeName) {
+    log.info("장소명 검색: planId={}, placeName={}", planId, placeName);
+    java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
+    return days.stream()
+        .flatMap(day -> planPlaceDao.selectPlanPlacesByPlanDayId(day.getId()).stream())
+        .filter(place -> place.getPlaceName().toLowerCase().contains(placeName.toLowerCase()) ||
+                        place.getTitle().toLowerCase().contains(placeName.toLowerCase()))
+        .collect(java.util.stream.Collectors.toList());
+  }
+
+  /**
+   * 현재 시간 기준 일정 조회
+   */
+  public PlanPlace queryCurrentActivity(Long planId) {
+    log.info("현재 일정 조회: planId={}", planId);
+    OffsetDateTime now = OffsetDateTime.now();
+    java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
+    
+    return days.stream()
+        .flatMap(day -> planPlaceDao.selectPlanPlacesByPlanDayId(day.getId()).stream())
+        .filter(place -> place.getStartAt() != null && place.getEndAt() != null)
+        .filter(place -> !now.isBefore(place.getStartAt()) && !now.isAfter(place.getEndAt()))
+        .findFirst()
+        .orElse(null);
+  }
+
+  /**
+   * 다음 일정 조회
+   */
+  public PlanPlace queryNextActivity(Long planId) {
+    log.info("다음 일정 조회: planId={}", planId);
+    OffsetDateTime now = OffsetDateTime.now();
+    java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
+    
+    return days.stream()
+        .flatMap(day -> planPlaceDao.selectPlanPlacesByPlanDayId(day.getId()).stream())
+        .filter(place -> place.getStartAt() != null)
+        .filter(place -> place.getStartAt().isAfter(now))
+        .sorted((p1, p2) -> p1.getStartAt().compareTo(p2.getStartAt()))
+        .findFirst()
+        .orElse(null);
+  }
+
+  /**
+   * 특정 장소가 몇일차에 있는지 조회 (Fuzzy matching 지원)
+   */
+  public PlanDayWithPlaces findPlaceDay(Long planId, String placeName) {
+    log.info("장소→날짜 조회 (fuzzy): planId={}, placeName={}", planId, placeName);
+    java.util.List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
+    
+    // 1. 모든 장소명 수집
+    java.util.List<String> allPlaceNames = new java.util.ArrayList<>();
+    java.util.Map<String, PlanDay> placeToDay = new java.util.HashMap<>();
+    
+    for (PlanDay day : days) {
+      java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+      for (PlanPlace place : places) {
+        allPlaceNames.add(place.getPlaceName());
+        allPlaceNames.add(place.getTitle());
+        placeToDay.put(place.getPlaceName(), day);
+        placeToDay.put(place.getTitle(), day);
+      }
+    }
+    
+    // 2. Fuzzy matching으로 가장 가까운 장소명 찾기
+    String bestMatch = findClosestPlaceName(placeName, allPlaceNames);
+    
+    if (bestMatch == null) {
+      return null;
+    }
+    
+    log.info("Fuzzy match result: '{}' → '{}'", placeName, bestMatch);
+    
+    // 3. 매칭된 장소가 속한 Day 반환
+    PlanDay matchedDay = placeToDay.get(bestMatch);
+    if (matchedDay != null) {
+      java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(matchedDay.getId());
+      return new PlanDayWithPlaces(matchedDay, places);
+    }
+    
+    return null;
+  }
+
+  /**
+   * 장소의 위치 정보 조회 (dayIndex, order, date 포함)
+   * Fuzzy matching 기반
+   */
+  public PlacePosition findPlacePosition(String placeName, Long userId) {
+    log.info("장소 위치 조회: placeName={}, userId={}", placeName, userId);
+    
+    // 1. 활성 Plan 조회
+    Plan activePlan = findActiveByUserId(userId);
+    if (activePlan == null) {
+      log.info("활성 여행 계획이 없습니다: userId={}", userId);
+      return null;
+    }
+    
+    // 2. 모든 PlanDay 조회
+    java.util.List<PlanDay> allDays = planDayDao.selectPlanDaysByPlanId(activePlan.getId());
+    if (allDays.isEmpty()) {
+      return null;
+    }
+    
+    // 3. 모든 PlanPlace 조회하여 fuzzy matching
+    java.util.Map<String, PlacePosition> placePositions = new java.util.HashMap<>();
+    
+    for (PlanDay day : allDays) {
+      java.util.List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+      for (int i = 0; i < places.size(); i++) {
+        PlanPlace place = places.get(i);
+        placePositions.put(place.getPlaceName(), PlacePosition.builder()
+            .dayIndex(day.getDayIndex())
+            .order(i + 1)
+            .date(day.getPlanDate())
+            .placeName(place.getPlaceName())
+            .dayId(day.getId())
+            .build());
+      }
+    }
+    
+    // 4. Fuzzy matching으로 가장 가까운 장소명 찾기
+    java.util.List<String> allPlaceNames = new java.util.ArrayList<>(placePositions.keySet());
+    String bestMatch = findClosestPlaceName(placeName, allPlaceNames);
+    
+    if (bestMatch == null) {
+      log.info("장소를 찾을 수 없습니다: '{}'", placeName);
+      return null;
+    }
+    
+    log.info("Fuzzy match result: '{}' → '{}'", placeName, bestMatch);
+    return placePositions.get(bestMatch);
+  }
+
+  /**
+   * 특정 Day의 모든 장소 조회 (order 순서대로)
+   */
+  public java.util.List<PlanPlace> getDayPlaces(Long dayId) {
+    log.info("Day 장소 목록 조회: dayId={}", dayId);
+    return planPlaceDao.selectPlanPlacesByPlanDayId(dayId);
+  }
+
+  /**
+   * 시간대별 일정 조회 (아침/점심/저녁)
+   * @param userId 사용자 ID
+   * @param timeRange "morning", "lunch", "evening"
+   * @return 해당 시간대의 모든 장소 목록
+   */
+  public java.util.List<PlanPlace> getPlansByTimeRange(Long userId, String timeRange) {
+    log.info("시간대별 일정 조회: userId={}, timeRange={}", userId, timeRange);
+    
+    // 활성 Plan 조회
+    Plan activePlan = findActiveByUserId(userId);
+    if (activePlan == null) {
+      log.info("활성 여행 계획이 없습니다: userId={}", userId);
+      return java.util.Collections.emptyList();
+    }
+    
+    // 시간대 범위 정의
+    java.time.LocalTime startTime, endTime;
+    switch (timeRange.toLowerCase()) {
+      case "morning":
+        startTime = java.time.LocalTime.of(5, 0);
+        endTime = java.time.LocalTime.of(11, 0);
+        break;
+      case "lunch":
+        startTime = java.time.LocalTime.of(11, 0);
+        endTime = java.time.LocalTime.of(15, 0);
+        break;
+      case "evening":
+        startTime = java.time.LocalTime.of(17, 0);
+        endTime = java.time.LocalTime.of(23, 59);
+        break;
+      default:
+        log.warn("알 수 없는 시간대: {}", timeRange);
+        return java.util.Collections.emptyList();
+    }
+    
+    // 모든 Day 조회
+    java.util.List<PlanDay> allDays = planDayDao.selectPlanDaysByPlanId(activePlan.getId());
+    java.util.List<PlanPlace> filteredPlaces = new java.util.ArrayList<>();
+    
+    // 각 Day의 장소를 시간대로 필터링
+    for (PlanDay day : allDays) {
+      java.util.List<PlanPlace> dayPlaces = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+      for (PlanPlace place : dayPlaces) {
+        if (place.getStartAt() != null) {
+          java.time.LocalTime placeTime = place.getStartAt().toLocalTime();
+          if (!placeTime.isBefore(startTime) && placeTime.isBefore(endTime)) {
+            filteredPlaces.add(place);
+          }
+        }
+      }
+    }
+    
+    log.info("시간대 '{}' 조회 결과: {}개 장소", timeRange, filteredPlaces.size());
+    return filteredPlaces;
+  }
+
+  /**
+   * Fuzzy matching: 가장 유사한 장소명 찾기 (개선된 버전)
+   * 한글/영어 혼용, 띄어쓰기 무시, 유사도 계산
+   */
+  private String findClosestPlaceName(String userInput, java.util.List<String> placeNames) {
+    if (userInput == null || userInput.isEmpty() || placeNames.isEmpty()) {
+      return null;
+    }
+    
+    // 정규화: 소문자 + 공백 제거 + 특수문자 제거
+    String normalizedInput = normalizeForMatching(userInput);
+    
+    String bestMatch = null;
+    int bestScore = Integer.MAX_VALUE;
+    double bestSimilarity = 0.0;
+    
+    for (String placeName : placeNames) {
+      String normalizedPlace = normalizeForMatching(placeName);
+      
+      // 1. 완전 일치 체크 (최우선)
+      if (normalizedPlace.equals(normalizedInput)) {
+        return placeName;
+      }
+      
+      // 2. 부분 일치 체크 (높은 우선순위)
+      if (normalizedPlace.contains(normalizedInput)) {
+        int score = normalizedPlace.length() - normalizedInput.length();
+        if (score < bestScore) {
+          bestScore = score;
+          bestMatch = placeName;
+          bestSimilarity = 1.0;
+        }
+        continue;
+      }
+      
+      if (normalizedInput.contains(normalizedPlace)) {
+        int score = normalizedInput.length() - normalizedPlace.length();
+        if (score < bestScore) {
+          bestScore = score;
+          bestMatch = placeName;
+          bestSimilarity = 0.9;
+        }
+        continue;
+      }
+      
+      // 3. Levenshtein distance 계산
+      int distance = levenshteinDistance(normalizedInput, normalizedPlace);
+      double similarity = 1.0 - ((double) distance / Math.max(normalizedInput.length(), normalizedPlace.length()));
+      
+      // 유사도가 60% 이상이고, 이전 best보다 좋으면 업데이트
+      if (similarity >= 0.6 && (bestMatch == null || similarity > bestSimilarity || 
+          (similarity == bestSimilarity && distance < bestScore))) {
+        bestScore = distance;
+        bestMatch = placeName;
+        bestSimilarity = similarity;
+      }
+    }
+    
+    // 최소 유사도 40% 이상만 반환
+    if (bestSimilarity < 0.4) {
+      log.info("No match found for '{}' (best similarity: {})", userInput, bestSimilarity);
+      return null;
+    }
+    
+    log.info("Fuzzy match: '{}' → '{}' (similarity: {}, distance: {})", 
+        userInput, bestMatch, String.format("%.2f", bestSimilarity), bestScore);
+    return bestMatch;
+  }
+  
+  /**
+   * 매칭을 위한 문자열 정규화
+   * - 소문자 변환
+   * - 공백 제거
+   * - 특수문자 제거
+   */
+  private String normalizeForMatching(String input) {
+    return input.toLowerCase()
+        .replace(" ", "")
+        .replace("-", "")
+        .replace("_", "")
+        .replace("(", "")
+        .replace(")", "")
+        .replace("[", "")
+        .replace("]", "");
+  }
+
+  /**
+   * Levenshtein Distance 계산 (편집 거리)
+   */
+  private int levenshteinDistance(String a, String b) {
+    int[][] dp = new int[a.length() + 1][b.length() + 1];
+    
+    for (int i = 0; i <= a.length(); i++) {
+      dp[i][0] = i;
+    }
+    for (int j = 0; j <= b.length(); j++) {
+      dp[0][j] = j;
+    }
+    
+    for (int i = 1; i <= a.length(); i++) {
+      for (int j = 1; j <= b.length(); j++) {
+        int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+        dp[i][j] = Math.min(
+            Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1),
+            dp[i - 1][j - 1] + cost
+        );
+      }
+    }
+    
+    return dp[a.length()][b.length()];
   }
 
 }
