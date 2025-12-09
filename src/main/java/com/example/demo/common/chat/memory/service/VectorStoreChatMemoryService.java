@@ -53,7 +53,7 @@ public class VectorStoreChatMemoryService implements ChatMemory {
     public List<Message> get(String conversationId) {
         List<Document> documents = vectorStore.similaritySearch(
             SearchRequest.builder()
-                .query("")
+                .query("추천")
                 .filterExpression("conversationId == '" + conversationId + "'")
                 .topK(100)
                 .build()
