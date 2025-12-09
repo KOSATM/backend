@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.tool.annotation.Tool;
@@ -24,6 +27,9 @@ public class PlaceSuggestAgent implements AiAgent {
   private ChatClient chatClient;
 
   @Autowired
+  private ChatMemory chatMemory;
+
+  @Autowired
   private EmbeddingModel embeddingModel;
 
   @Autowired
@@ -37,16 +43,20 @@ public class PlaceSuggestAgent implements AiAgent {
   public AiAgentResponse execute(IntentCommand command, Long userId) {
     long start = System.nanoTime();
     log.info(command.toString());
+    
     StringBuilder sb = new StringBuilder();
     for (Object value : command.getArguments().values()) {
       sb.append((String) value);
     }
     String question = sb.toString();
+    String conversationId = "user_" + userId;
+    
     String answer = this.chatClient.prompt()
         .system("""
             당신은 여행 전문가입니다.
             사용자의 질문에서 키워드를 추출하여 키워드에 관한 데이터베이스를 조회하고 사용자에게 여행 장소를 추천하세요.
             데이터베이스 조회는 `dbSearch` 도구를 사용하세요.
+            이전 대화 내용을 참고하여 일관성 있는 응답을 해주세요.
 
             중요 포맷팅 지시사항:
         
@@ -82,9 +92,17 @@ public class PlaceSuggestAgent implements AiAgent {
             [기타정보]: ...
             """)
         .user(question)
+        .messages(chatMemory.get(conversationId))
         .tools(new DBSearchTools())
         .call()
         .content();
+    
+    // 대화를 메모리에 저장
+    chatMemory.add(conversationId, List.of(
+        new UserMessage(question),
+        new AssistantMessage(answer)
+    ));
+    
     AiAgentResponse response = AiAgentResponse.builder().message(answer).build();
     long end = System.nanoTime();
     log.info("실행시간: {}", (end - start) / 1000000);
@@ -118,26 +136,6 @@ public class PlaceSuggestAgent implements AiAgent {
         return "해당 키워드와 관련된 검색 결과가 없습니다.";
       }
 
-      // StringBuilder sb = new StringBuilder();
-
-      // for (Map<String, Object> map : res) {
-      //   String title = (String) map.get("title");
-      //   String address = (String) map.get("address");
-      //   String tel = ((String) map.get("tel")).trim().isEmpty() ? (String) map.get("tel") : "미제공";
-      //   String description = (String) map.get("description");
-      //   String detailInfo = (String) map.get("detail_info");
-
-      //   sb.append("[장소]" + "\t" + title + "\n");
-      //   sb.append("[주소]" + "\t" + address + "\n");
-      //   sb.append("[전화번호]" + "\t" + tel + "\n");
-      //   sb.append("[설명]\n");
-      //   sb.append(description + "\n");
-      //   sb.append("[기타정보]\n");
-      //   sb.append(detailInfo + "\n\n");
-      // }
-
-      // String output = sb.toString();
-      // log.info(output);
       long end = System.nanoTime();
       log.info("실행시간: {}", (end - start) / 1000000);
       return res;
