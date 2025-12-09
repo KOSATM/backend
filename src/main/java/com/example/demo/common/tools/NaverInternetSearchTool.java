@@ -10,6 +10,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.example.demo.common.naver.dto.LocalItem;
 import com.example.demo.common.naver.dto.NaverImageSearchResponse;
 import com.example.demo.common.naver.dto.NaverLocalSearchResponse;
+import com.example.demo.planner.blog.BlogItem;
+import com.example.demo.planner.blog.BlogSearchResponse;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -89,5 +91,53 @@ public class NaverInternetSearchTool {
             log.error("네이버 지역 정보 검색 중 오류 발생: {}", e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * 블로그 검색(Open API)
+     */
+    @Tool(description = "여행지 후기나 블로그 정보를 검색하여 제공합니다.")
+    public List<BlogItem> getBlogInfo(String query) {
+        log.info("네이버 블로그 검색 시작: {}", query);
+        try {
+            // 1. 블로그 검색 (Search WebClient 사용)
+            BlogSearchResponse response = webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                    .path("/v1/search/blog.json")
+                    .queryParam("query", query)
+                    .queryParam("display", 5)
+                    .queryParam("sort", "sim")
+                    .build())
+                .header("X-Naver-Client-Id", naverClientId)
+                .header("X-Naver-Client-Secret", naverClientSecret)
+                .retrieve()
+                .bodyToMono(BlogSearchResponse.class)
+                .block();
+
+            if (response == null || response.getItems() == null) {
+                log.warn("네이버 블로그 검색 결과 body가 비어있습니다.");
+                return null;
+            }
+
+            List<BlogItem> items = response.getItems();
+            log.info("블로그 검색 성공! 개수: {}", items.size()); // 성공 로그 확인용
+
+            for (BlogItem item : items) {
+                String cleanTitle = removeTags(item.getTitle());
+                String cleanDesc = removeTags(item.getDescription());
+                item.setTitle(cleanTitle);
+                item.setDescription(cleanDesc);
+            }
+            return items;
+
+        } catch (Exception e) {
+            log.error("네이버 검색 API 호출 중 에러 발생: ", e); // 에러 로그를 확실히 봅니다.
+            return null;
+        }
+    }
+
+    private String removeTags(String text) {
+        if (text == null) return "";
+        return text.replaceAll("<[^>]*>", "").replaceAll("&quot;", "\"").replaceAll("&amp;", "&");
     }
 }
