@@ -17,8 +17,9 @@ public class PlanTitleGenerateAgent {
     public String generatePlanTitle(String inputJsonString) {
         String response = chatClient.prompt()
                 .system("""
-                          You are the Generate Plan Title Agent for a SEOUL-ONLY travel service.
-                          Create a smart, short, emotional travel plan title.
+                        당신은 SEOUL ONLY 여행 서비스를 위한 ‘여행 플랜 제목 생성 에이전트’입니다.
+                        감각적이고, 간결하며, 감정이 살아있는 여행 플랜 제목을 만들어주세요.
+
                         """)
                 .user("plan_data:\n" + inputJsonString)
                 .call()
