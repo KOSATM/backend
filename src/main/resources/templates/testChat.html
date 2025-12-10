@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatMemory 테스트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px 15px 0 0;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .user-info {
+            padding: 15px 20px;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #666;
+            gap: 10px;
+        }
+
+        .user-info input {
+            width: 100px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        .chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-msg {
+            text-align: right;
+        }
+
+        .user-msg .msg-content {
+            background: #667eea;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 15px 15px 0 15px;
+            display: inline-block;
+            max-width: 70%;
+            word-wrap: break-word;
+            font-size: 14px;
+        }
+
+        .ai-msg .msg-content {
+            background: #e0e0e0;
+            color: #333;
+            padding: 10px 15px;
+            border-radius: 15px 15px 15px 0;
+            display: inline-block;
+            max-width: 70%;
+            word-wrap: break-word;
+            font-size: 14px;
+        }
+
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .clear-btn {
+            background: #ff6b6b;
+            padding: 8px 15px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .clear-btn:hover {
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: blink 1.4s infinite;
+            margin-left: 5px;
+        }
+
+        @keyframes blink {
+            0%, 60%, 100% { opacity: 0.3; }
+            30% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💬 ChatMemory 테스트</h1>
+            <p>이전 대화를 기억하는 AI 어시스턴트</p>
+        </div>
+
+        <div class="user-info">
+            <span>사용자 ID:</span>
+            <input 
+                type="number" 
+                id="userIdInput" 
+                value="15"
+            >
+            <button class="clear-btn" onclick="clearMemory()">메모리 초기화</button>
+        </div>
+
+        <div class="chat-box" id="chatBox"></div>
+
+        <div class="input-area">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    placeholder="메시지를 입력하세요..." 
+                    onkeypress="handleKeyPress(event)"
+                >
+                <button onclick="sendMessage()">전송</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let userId = document.getElementById('userIdInput').value;
+        const userIdInput = document.getElementById('userIdInput');
+        const chatBox = document.getElementById('chatBox');
+        const messageInput = document.getElementById('messageInput');
+
+        // userId 변경 감지
+        userIdInput.addEventListener('change', () => {
+            userId = userIdInput.value;
+            chatBox.innerHTML = '';
+            addMessage('새로운 사용자로 전환했습니다! 😊', false);
+            messageInput.focus();
+        });
+
+        function addMessage(content, isUser) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-msg' : 'ai-msg'}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'msg-content';
+            contentDiv.textContent = content;
+            
+            messageDiv.appendChild(contentDiv);
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function addLoadingMessage() {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ai-msg';
+            messageDiv.id = 'loading-msg';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'msg-content';
+            contentDiv.innerHTML = 'AI가 생각 중입니다<span class="loading"></span>';
+            
+            messageDiv.appendChild(contentDiv);
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function removeLoadingMessage() {
+            const loadingMsg = document.getElementById('loading-msg');
+            if (loadingMsg) {
+                loadingMsg.remove();
+            }
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            
+            if (!message) {
+                alert('메시지를 입력하세요');
+                return;
+            }
+
+            addMessage(message, true);
+            messageInput.value = '';
+            messageInput.focus();
+            addLoadingMessage();
+
+            try {
+                const params = new URLSearchParams();
+                params.append('message', message);
+
+                const response = await fetch(`/test/chat/api/${userId}`, {
+                    method: 'POST',
+                    body: params
+                });
+
+                removeLoadingMessage();
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const aiResponse = await response.text();
+                addMessage(aiResponse, false);
+            } catch (error) {
+                removeLoadingMessage();
+                addMessage('오류: ' + error.message, false);
+                console.error('Error:', error);
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function clearMemory() {
+            if (confirm('메모리를 초기화하시겠습니까?')) {
+                try {
+                    const response = await fetch(`/test/chat/api/${userId}/clear`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    chatBox.innerHTML = '';
+                    addMessage('메모리가 초기화되었습니다! 😊', false);
+                } catch (error) {
+                    alert('오류: ' + error.message);
+                    console.error('Error:', error);
+                }
+            }
+        }
+
+        window.addEventListener('load', () => {
+            addMessage('안녕하세요! 저는 당신과의 대화를 기억하는 AI 어시스턴트입니다. 편하게 대화해주세요! 😊', false);
+            messageInput.focus();
+        });
+    </script>
+</body>
+</html>
