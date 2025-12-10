@@ -10,6 +10,7 @@
   <typeAliases>
     <package name="com.example.demo.travelgram.review.dto.entity"/>
     <package name="com.example.demo.planner.plan.dto.entity"/>
+    <package name="com.example.demo.common.chat.dto"/>
 
     <package name="com.example.demo.travelgram.review.ai.dto.entity"/>
     <package name="com.example.demo.supporter.checklist.dto.entity"/>
