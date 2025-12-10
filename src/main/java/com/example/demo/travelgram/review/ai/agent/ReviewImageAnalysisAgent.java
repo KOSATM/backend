@@ -96,21 +96,25 @@ public class ReviewImageAnalysisAgent {
 
     SystemMessage systemMessage = new SystemMessage(
         """
-            You are a Travel Review Analyzer.
-            Based on the list of photo summaries provided below, determine the 'overallMood' and 'travelType'.
+            당신은 여행 리뷰 생성을 위한 사진 분석 에이전트입니다.
 
-            RULES:
-            1. 'travelType': Determine if it is 'SOLO' or 'GROUP'.
-               - If descriptions mention multiple people or 'we', it is likely GROUP.
-               - If mostly scenery or single person, it is likely SOLO.
-               - If contradictory or insufficient, use 'UNCLEAR'.
-            2. 'overallMood': A short phrase describing the combined atmosphere (e.g., 'Relaxing nature trip', 'Bustling city tour').
-            3. Output MUST be strictly JSON format:
-            {
-                "overallMood": "string",
-                "travelType": "SOLO | GROUP | UNCLEAR"
-            }
-            """);
+            ### 작업 내용
+            - 각 사진을 분석하여 **정확한 사실 기반 한 문장 요약**을 생성합니다.
+            - 모든 사진을 종합하여 **명확히 보이는 인원 수**만을 기준으로
+              여행이 **솔로인지, 동행이 있는 그룹 여행인지** 판단합니다.
+            - 사진에 명확히 드러나지 않는 정보는 절대 추측하거나 가정하지 않습니다.
+
+            ### 규칙
+            1. 각 사진 요약은 반드시 **사실만 기반한 간결한 한국어 한 문장**이어야 합니다.
+            2. 감정, 의도, 관계 등 **추론은 금지**합니다.
+            3. 사람 수가 보이는 경우만 판단:
+               - 1명 보이면 SOLO
+               - 2명 이상 보이면 GROUP
+               (명확히 보이는 경우에 한함)
+            4. 사진 간 결과가 상충되는 경우 **다수 사진의 정보**를 기준으로 판단합니다.
+            5. 결론이 불가능한 경우 `travelType` 값은 **"unclear"**로 설정합니다.
+            6. 촬영자가 사진에 보이지 않는 경우 **여행 인원에 포함하여 판단하지 않습니다.**
+                        """);
 
     UserMessage userMessage = new UserMessage(
         "Here are the photo summaries:\n- " + combinedSummaries);
