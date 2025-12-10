@@ -39,21 +39,32 @@ public class ReviewImageAnalysisAgent {
     // 1. 시스템 프롬프트: 여행스타그램 리뷰어 페르소나 부여
     SystemMessage systemMessage = new SystemMessage(
         """
-                You are a Photo Analysis Agent for a travel review generator.
+              ⭐ 모든 출력값(사진 요약문 포함)은 반드시 한국어로 작성합니다.
+              ⭐ 단, travelType은 예외적으로 영어 값(SOLO, GROUP, UNCLEAR)으로만 출력합니다.
 
-                    Your tasks:
-                    - Analyze each photo and produce a one-sentence factual summary.
-                    - Evaluate all photos together to determine whether the trip appears to be a solo trip or group trip based only on visible human counts.
-                    - Never guess or infer any detail that is not clearly visible.
+              당신은 여행 리뷰 생성을 위한 사진 분석 에이전트입니다.
 
-                    RULES:
-                    1. Each photo summary must be exactly one concise factual sentence.
-                    2. Never infer emotions, intentions, or relationships.
-                    3. You may count visible humans: one person = solo, two or more = group (only if clearly visible).
-                    4. If different photos conflict, decide based on majority visible evidence.
-                    5. If no conclusion is possible, travelType must be "unclear".
-                    6. Do not assume the photographer is included unless visible.
-            """);
+              ### 작업 내용
+              - 각 사진을 분석하여 정확한 사실 기반 한국어 한 문장 요약을 생성합니다.
+              - 모든 사진을 종합해, 명확히 보이는 사람 수를 기준으로 travelType을 결정합니다.
+              - 사진에 명확히 드러나지 않는 정보는 절대 추측하지 않습니다.
+
+              ### 규칙
+              1. 사진 요약은 반드시 한국어 한 문장.
+              2. 감정·의도·관계 추론 금지.
+              3. 사람 수 기준:
+                 - 1명 보이면 travelType = SOLO
+                 - 2명 이상 보이면 travelType = GROUP
+              4. 판단 불가 시 travelType = UNCLEAR
+
+              {
+              "photoSummaries": [
+                "한 명의 여성이 강가를 따라 걸어가는 모습이 보입니다.",
+                "사람이 보이지 않는 자연 풍경 사진입니다."
+              ],
+              "travelType": "SOLO"
+            }
+                          """);
 
     // 2. 미디어(이미지) 객체 생성
     Resource resource = new ByteArrayResource(bytes);
@@ -64,7 +75,7 @@ public class ReviewImageAnalysisAgent {
 
     // 3. 사용자 메시지 (이미지 포함)
     UserMessage userMessage = UserMessage.builder()
-        .text("Analyze this image according to the system rules.")
+        .text("⭐ 모든 출력은 한국어로 작성하며, travelType만 영어 (SOLO, GROUP, UNCLEAR)로 출력합니다.\\n")
         .media(media)
         .build();
 
@@ -92,24 +103,35 @@ public class ReviewImageAnalysisAgent {
 
     SystemMessage systemMessage = new SystemMessage(
         """
-            You are a Travel Review Analyzer.
-            Based on the list of photo summaries provided below, determine the 'overallMood' and 'travelType'.
+            당신은 Travel Review Analyzer입니다.
 
-            RULES:
-            1. 'travelType': Determine if it is 'SOLO' or 'GROUP'.
-               - If descriptions mention multiple people or 'we', it is likely GROUP.
-               - If mostly scenery or single person, it is likely SOLO.
-               - If contradictory or insufficient, use 'UNCLEAR'.
-            2. 'overallMood': A short phrase describing the combined atmosphere (e.g., 'Relaxing nature trip', 'Bustling city tour').
-            3. Output MUST be strictly JSON format:
+            아래에 제공되는 사진 요약 리스트를 기반으로 'overallMood'와 'travelType'을 결정해야 합니다.
+
+            ⭐ 언어 규칙
+            - 설명 및 분위기 표현(overallMood)은 반드시 한국어로 작성합니다.
+            - travelType은 영어 (SOLO, GROUP, UNCLEAR) 값으로만 출력합니다.
+
+            ## 판단 규칙
+            1. travelType 결정
+               - 여러 사람이 언급되거나 복수 표현(예: "둘", "함께")이 반복되면 GROUP.
+               - 대부분 풍경이거나 한 명만 언급되면 SOLO.
+               - 정보가 모호하거나 서로 충돌하면 UNCLEAR.
+
+            2. overallMood 결정
+               - 전체 사진이 주는 분위기를 한국어 한 문장으로 표현합니다.
+               - 예: "조용하고 여유로운 자연 감성", "활기 넘치는 도시 산책 분위기"
+
+            3. 출력 형식(반드시 STRICT JSON)
             {
-                "overallMood": "string",
-                "travelType": "SOLO | GROUP | UNCLEAR"
+              "overallMood": "string",
+              "travelType": "SOLO | GROUP | UNCLEAR"
             }
+
+            출력 시 한국어 설명과 영어 ENUM 규칙을 반드시 지키세요.
             """);
 
     UserMessage userMessage = new UserMessage(
-        "Here are the photo summaries:\n- " + combinedSummaries);
+        "사진 요약 모음입니다. :\n- " + combinedSummaries);
 
     try {
       // 1. LLM에게 응답 받기 (아직은 String 상태)
@@ -133,7 +155,7 @@ public class ReviewImageAnalysisAgent {
       return result;
 
     } catch (Exception e) {
-      log.error("Trip Context Analysis Failed", e);
+      log.error("여행 상황 분석이 실패했습니다.", e);
       return new PhotoAnalysisResult(); // 실패 시 빈 객체 반환
     }
   }
