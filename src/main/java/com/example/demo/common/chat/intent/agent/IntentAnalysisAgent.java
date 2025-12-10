@@ -75,14 +75,15 @@ public class IntentAnalysisAgent {
 
             # ✔ 예외 / 분석 불가 입력 규칙
 
-            - 입력이 의미 없는 문자이거나 의도를 추론할 수 없는 경우, intent를 unknown로 분류하고 arguments는 빈 객체로 반환한다.
+            - 입력이 의미 없는 문자이거나 의도를 추론할 수 없는 경우, intent를 "other"로 분류하고 arguments는 빈 객체로 반환한다.
+            - 분류가 불확실하거나 모호한 경우도 "other"로 분류하면 SmartPlanAgent가 대화형으로 처리합니다.
             - arguments는 빈 객체 {}로 반환한다.
 
             # ✔ confidence 규칙
             - 0.0 ~ 1.0 사이 값
             - 0.8 이상: 매우 확신
             - 0.5 ~ 0.8: 중간 확신
-            - 0.5 미만: 불확실 → etc 가능성 높음
+            - 0.5 미만: 불확실 → "other"로 분류하면 SmartPlanAgent가 처리
 
             ---
 
@@ -148,11 +149,11 @@ public class IntentAnalysisAgent {
     IntentResponse intentResponse = beanOutputConverter.convert(responseJSON);
 
     if (intentResponse == null)
-      // fallback — etc 단일 intent 생성
+      // fallback — other 단일 intent 생성 (SmartPlanAgent로 라우팅됨)
       return IntentResponse.builder()
           .intents(List.of(
               IntentItem.builder()
-                  .intent("etc")
+                  .intent("other")
                   .confidence(0.0)
                   .arguments(Map.of())
                   .build()))

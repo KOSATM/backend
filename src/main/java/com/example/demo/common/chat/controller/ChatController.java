@@ -13,7 +13,6 @@ import com.example.demo.common.chat.intent.agent.IntentAnalysisAgent;
 import com.example.demo.common.chat.intent.dto.request.IntentRequest;
 import com.example.demo.common.chat.pipeline.DefaultChatPipeline;
 import com.example.demo.common.chat.pipeline.PipelineResult;
-import com.example.demo.planner.plan.agent.PlanAgent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +26,34 @@ public class ChatController {
 
     private final IntentAnalysisAgent intentAnalysisAgent;
     private final DefaultChatPipeline defaultChatPipeline;
-    private final PlanAgent planAgent;
+
+    /**
+     * 🧪 SmartPlanAgent 테스트 엔드포인트
+     * GET /api/chat/test/smart-plan?msg={message}&userId={userId}
+     */
+    @GetMapping("/api/chat/test/smart-plan")
+    public ResponseEntity<String> testSmartPlan(
+            @RequestParam String msg,
+            @RequestParam(defaultValue = "1") Long userId) {
+
+        log.info("🧪 === SmartPlanAgent 테스트 시작 ===");
+        log.info("메시지: {}", msg);
+        log.info("사용자: {}", userId);
+
+        IntentRequest intentRequest = IntentRequest.builder()
+                .message(msg)
+                .currentUrl("/planner")
+                .userId(userId)
+                .build();
+
+        PipelineResult result = defaultChatPipeline.execute(intentRequest, userId);
+
+        String response = result.getMainResponse().getMessage();
+
+        log.info("🧪 === 응답: {} ===", response);
+
+        return ResponseEntity.ok(response);
+    }
 
     @GetMapping("/api/chat/intent/analyze")
     public String getMethodName() {
@@ -47,11 +73,10 @@ public class ChatController {
     // }
 
     @PostMapping("/chat")
-    public ResponseEntity<PipelineResult> analyzeChat(@RequestBody IntentRequest
-    intentRequest) {
-    log.info(intentRequest.toString()+";;;;;;;;");
+public ResponseEntity<PipelineResult> analyzeChat(@RequestBody IntentRequest intentRequest) {
+	log.info(intentRequest.toString()+";;;;;;;;");
     return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest, intentRequest.getUserId()));
-    }
+}
 
 
     /**
@@ -59,22 +84,31 @@ public class ChatController {
      * /api/chat 경로
      */
     @PostMapping("/api/chat")
-    public ResponseEntity<TravelChatSendResponse> chat(@RequestBody TravelChatSendRequest request) {
-        try {
-            Long userId = request.getUserId() != null ? request.getUserId() : 1L;
+public ResponseEntity<TravelChatSendResponse> chat(@RequestBody TravelChatSendRequest request) {
+    try {
+        Long userId = request.getUserId() != null ? request.getUserId() : 1L;
 
-            log.info("Chat request from user {}: {}", userId, request.getMessage());
+        IntentRequest intentRequest = IntentRequest.builder()
+                .message(request.getMessage())
+                .currentUrl("/planner")
+                .userId(userId)
+                .build();
 
-            // Agent에게 처리 위임 - LLM이 자동으로 적절한 Tool 선택
-            String response = planAgent.chat(request.getMessage(), userId);
+        PipelineResult result = defaultChatPipeline.execute(intentRequest, userId);
 
-            return ResponseEntity.ok(TravelChatSendResponse.success(response, null));
+        String response = result.getMainResponse().getMessage(); // 핵심 수정 부분
 
-        } catch (Exception e) {
-            log.error("Error processing chat request", e);
-            return ResponseEntity.ok(TravelChatSendResponse.error(e.getMessage()));
-        }
+        return ResponseEntity.ok(
+                TravelChatSendResponse.success(response, null)
+        );
+
+    } catch (Exception e) {
+        log.error("Error processing chat request", e);
+        return ResponseEntity.ok(TravelChatSendResponse.error(e.getMessage()));
     }
+}
+
+
 
 
 }
