@@ -653,7 +653,7 @@ public class PlanService {
     Plan plan = planDao.selectActiveTravelPlanByUserId(userId);
     if (plan == null) {
       log.warn("사용자의 활성화된 Plan을 찾을 수 없음: userId={}", userId);
-      throw new IllegalArgumentException("존재하지 않는 Plan입니다: userId=" + userId);
+      throw new IllegalArgumentException("활성화된 Plan이 없습니다: userId=" + userId);
     }
     long planId = plan.getId();
 
