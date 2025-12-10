@@ -93,6 +93,7 @@ public class IntentAnalysisAgent {
             {
               "intents": [
                 {
+                  "originalUserMessage": "일정 하나 추가해줘"
                   "intent": "plan_add",
                   "confidence": 0.92,
                   "arguments": {
@@ -103,6 +104,7 @@ public class IntentAnalysisAgent {
               ]
             }
 
+            - originalUserMessage: 사용자 메시지 원문
             - intent: IntentType 중 하나
             - confidence: 0.0~1.0
             - arguments: 필요한 정보만 포함
