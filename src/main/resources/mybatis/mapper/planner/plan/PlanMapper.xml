@@ -26,7 +26,10 @@
         pp.end_at,
         pp.place_name,
         pp.address,
-        pp.expected_cost
+        pp.expected_cost,
+        pp.normalized_category,
+        pp.first_image,
+        pp.first_image2
 
     FROM plans p
     JOIN plan_days d   ON p.id = d.plan_id
@@ -65,7 +68,10 @@
         pp.end_at,
         pp.place_name,
         pp.address,
-        pp.expected_cost
+        pp.expected_cost,
+        pp.normalized_category,
+        pp.first_image,
+        pp.first_image2
 
     FROM plans p
     JOIN plan_days d   ON p.id = d.plan_id
@@ -74,6 +80,23 @@
     WHERE p.id = #{planId}
 
     ORDER BY d.day_index ASC, pp.start_at ASC
+</select>
+
+<select id="getUserLastVisitedPlaces" resultType="String">
+    SELECT DISTINCT
+        pp.place_name
+
+    FROM plans p
+    JOIN plan_days d    ON p.id = d.plan_id
+    JOIN plan_places pp ON d.id = pp.day_id
+
+    WHERE p.id = (
+        SELECT id
+        FROM plans
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT 1
+    )
 </select>
 
 

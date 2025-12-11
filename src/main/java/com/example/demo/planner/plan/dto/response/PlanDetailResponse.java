@@ -40,6 +40,9 @@ public class PlanDetailResponse {
         private String placeName;
         private String address;
         private BigDecimal expectedCost;
+        private String normalizedCategory;
+        private String firstImage;
+        private String firstImage2;
     }
 
     /**
@@ -83,6 +86,9 @@ public class PlanDetailResponse {
                 s.setPlaceName(r.getPlaceName());
                 s.setAddress(r.getAddress());
                 s.setExpectedCost(r.getExpectedCost());
+                s.setNormalizedCategory(r.getNormalizedCategory());
+                s.setFirstImage(r.getFirstImage());
+                s.setFirstImage2(r.getFirstImage2());
                 return s;
             }).toList();
 

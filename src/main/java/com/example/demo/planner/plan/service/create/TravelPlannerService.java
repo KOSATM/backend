@@ -2,8 +2,10 @@ package com.example.demo.planner.plan.service.create;
 
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -52,65 +54,87 @@ public class TravelPlannerService implements AiAgent {
 
     @Override
     public AiAgentResponse execute(IntentCommand command, Long userId) {
+
         log.info("▷▷ 1. TravelPlannerAgent 시작");
 
         Map<String, Object> arguments = command.getArguments();
 
         // 전략 선택
         TravelPlanStrategy strategy = selectStrategy(arguments);
-        log.info("  선택된 전략: {}", strategy.getClass().getSimpleName());
 
         // Duration 정규화
-        log.info("▷▷ 2. 입력값 정규화");
         normalizeDuration(arguments);
         int duration = (int) arguments.get("duration");
         String location = (String) arguments.getOrDefault("location", "서울");
 
         int minSpot = strategy.getTotalMinSpot(duration);
         int minFood = strategy.getTotalMinFood(duration);
-        log.info("  필요량 - FOOD: {}개, SPOT: {}개", minFood, minSpot);
 
-        // Seed Query 생성
-        log.info("▷▷ 3. SeedQuery 생성");
-        String seedQuery = seedQueryAgent.generateSeedQuery(arguments);
-        log.info("  SeedQuery: {}", seedQuery);
+        //  변경됨: 멀티 SeedQuery 생성
+        log.info("▷▷ 3. SeedQuery 생성 (Multi Query)");
+        List<String> seedQueries = seedQueryAgent.generateMultiSeedQueries(arguments);
+        seedQueries.forEach(q -> log.info("  SeedQuery: {}", q));
 
-        // 벡터 검색
-        log.info("▷▷ 4. 벡터 검색 & 셔플");
-        float[] embedding = embeddingModel.embed(seedQuery);
-        List<TravelPlaceCandidate> candidates = searchAndShuffle(embedding);
-        log.info("  초기 후보: {}개", candidates.size());
+        //  변경됨: 멀티 벡터 검색 + 병합
+        log.info("▷▷ 4. 벡터 검색 (Multi Search) & 병합");
+        List<TravelPlaceCandidate> candidates = seedQueries.stream()
+                .flatMap(q -> {
+                    float[] embedding = embeddingModel.embed(q);
+                    return searchAndShuffle(embedding).stream();
+                })
+                .distinct()
+                .toList();
+
+        //  중복 제거
+        candidates = candidates.stream()
+                .collect(Collectors.toMap(
+                        c -> c.getTravelPlaces().getId(),
+                        c -> c,
+                        (c1, c2) -> c1))
+                .values().stream()
+                .collect(Collectors.toList());
+
+        log.info("  멀티 검색 후보 총 {}개", candidates.size());
+
+        // 방문 이력 제외
+        List<String> visited = planDao.getUserLastVisitedPlaces(userId);
+        if (visited != null && !visited.isEmpty()) {
+            int beforeSize = candidates.size();
+            candidates = candidates.stream()
+                    .filter(c -> !visited.contains(c.getTravelPlaces().getTitle()))
+                    .collect(Collectors.toList());
+
+            log.info("  방문 이력 제외 - {}개 → {}개", beforeSize, candidates.size());
+        }
 
         // 지역 필터링
         log.info("▷▷ 5. 지역 필터링");
-        List<TravelPlaceCandidate> filtered = regionService
-                .applyRegionPreference(candidates, location, duration);
+        List<TravelPlaceCandidate> filtered = regionService.applyRegionPreference(
+                candidates, location, duration);
+
         log.info("  필터 후: {}개 ({}개 제거)",
                 filtered.size(), candidates.size() - filtered.size());
 
         // 카테고리 보강
         log.info("▷▷ 6. 카테고리 보강");
-        Map<String, List<TravelPlaceCandidate>> categoryMap = categoryFillService.fill(filtered, arguments, minFood, minSpot);
+        Map<String, List<TravelPlaceCandidate>> categoryMap = categoryFillService.fill(filtered, arguments, minFood,
+                minSpot);
 
         // 병합
         log.info("▷▷ 7. 카테고리 병합");
         List<TravelPlaceCandidate> merged = categoryFillService.merge(categoryMap);
-        log.info("  병합 결과: {}개", merged.size());
 
         // 클러스터링
         log.info("▷▷ 8. KMeans 클러스터링");
         ClusterBundle clusters = kMeansClusterService.cluster(merged, duration);
-        logClusterResults(clusters);
-        logClusterInfoResult(clusters);
 
         // Day 분할
         log.info("▷▷ 9. 일정 분배");
-        List<DayPlanResult> dayPlans = daySplitService.split(clusters, duration, strategy);
-        logDayPlans(dayPlans);
+        List<DayPlanResult> dayPlans = daySplitService.split(clusters, duration, strategy, merged);
 
-        log.info("▷▷ 10. 최종 일정 배치 후 저장 및 응답");
+        // 저장
+        log.info("▷▷ 10. 최종 일정 배치 후 저장");
         PlanDetailResponse response = planAssemblerService.createAndSavePlan(dayPlans, arguments, userId);
-        
 
         log.info("▷▷ 11. TravelPlannerAgent 완료");
 
@@ -118,16 +142,29 @@ public class TravelPlannerService implements AiAgent {
 
         // planDao.
         
-        PlanSnapshot snapshot = planSnapshotDao.selectLatestPlanSnapshotByUserId(userId);
-        String snapshotJson = snapshot.getSnapshotJson();
+        // PlanSnapshot snapshot = planSnapshotDao.selectLatestPlanSnapshotByUserId(userId);
+        // String snapshotJson = snapshot.getSnapshotJson();
 
         
         // return AiAgentResponse.of(buildResponse(dayPlans));
-        return AiAgentResponse.ofData("일정이 생성되었습니다.", command.getRequiredUrl(), snapshotJson);
+        return AiAgentResponse.ofData("일정이 생성되었습니다.", command.getRequiredUrl(), response);
 
     }
 
     // ==================== Private 메서드 ====================
+    // 로그
+    private void logDuplicatePlaces(List<DayPlanResult> dayPlans) {
+        Set<Long> used = new HashSet<>();
+
+        for (DayPlanResult day : dayPlans) {
+            for (ClusterPlace cp : day.getPlaces()) {
+                long id = cp.getOriginal().getId();
+                if (!used.add(id)) {
+                    log.warn(" DUPLICATE DETECTED: placeId={} on day={}", id, day.getDayNumber());
+                }
+            }
+        }
+    }
 
     private TravelPlanStrategy selectStrategy(Map<String, Object> args) {
         // 추후 확장
@@ -147,7 +184,7 @@ public class TravelPlannerService implements AiAgent {
     // 벡터 검색 & 셔플
     private List<TravelPlaceCandidate> searchAndShuffle(float[] embedding) {
         List<TravelPlaceCandidate> results = planDao.searchByVector(embedding, 100);
-        int shuffleRange = Math.min(50, results.size());
+        int shuffleRange = Math.min(80, results.size());
         Collections.shuffle(results.subList(0, shuffleRange));
         return results;
     }

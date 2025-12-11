@@ -4,6 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.common.chat.dto.TravelChatSendRequest;
@@ -49,6 +50,11 @@ public class ChatController {
     public ResponseEntity<PipelineResult> analyzeChat(@RequestBody IntentRequest
     intentRequest) {
     log.info(intentRequest.toString()+";;;;;;;;");
+    return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest, intentRequest.getUserId()));
+    }
+    @PostMapping("/test")
+    public ResponseEntity<PipelineResult> analyzeChat1(@RequestParam("message") String message) {
+    IntentRequest intentRequest = IntentRequest.builder().userId(Long.valueOf(19)).message(message).currentUrl("planner/create").build();
     return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest, intentRequest.getUserId()));
     }
 

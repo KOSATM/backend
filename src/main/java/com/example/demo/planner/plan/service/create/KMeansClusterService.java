@@ -2,7 +2,9 @@ package com.example.demo.planner.plan.service.create;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.math3.ml.clustering.CentroidCluster;
@@ -82,7 +84,7 @@ public class KMeansClusterService {
     }
 
     // ============================================================
-    // ★ 클러스터 보강 로직 (SPOT·FOOD 최소 개수 보장)
+    // 클러스터 보강 로직 (SPOT·FOOD 최소 개수 보장)
     // ============================================================
     private void strengthenAllClusters(ClusterBundle bundle, List<TravelPlaceCandidate> global) {
 
@@ -91,16 +93,29 @@ public class KMeansClusterService {
         int MIN_SPOT = 3;
         int MIN_FOOD = 3;
 
+        // 전역 중복 방지 set
+        Set<Long> usedIds = new HashSet<>();
+
+        // 1) 기본 클러스터 장소 모두 usedIds에 등록
         for (Cluster cl : bundle.getClusters()) {
-            strengthenCluster(cl, global, CategoryNames.SPOT, MIN_SPOT);
-            strengthenCluster(cl, global, CategoryNames.FOOD, MIN_FOOD);
+            for (ClusterPlace cp : cl.getPlaces()) {
+                usedIds.add(cp.getOriginal().getId());
+            }
+        }
+
+        // 2) 클러스터별 보강
+        for (Cluster cl : bundle.getClusters()) {
+            strengthenCluster(cl, global, usedIds, CategoryNames.SPOT, MIN_SPOT);
+            strengthenCluster(cl, global, usedIds, CategoryNames.FOOD, MIN_FOOD);
         }
 
         log.info("=== 클러스터 보강 완료 ===");
     }
 
-    private void strengthenCluster(Cluster cluster,
+    private void strengthenCluster(
+            Cluster cluster,
             List<TravelPlaceCandidate> global,
+            Set<Long> usedIds,
             String category,
             int minCount) {
 
@@ -112,35 +127,37 @@ public class KMeansClusterService {
             return;
 
         int lack = (int) (minCount - current);
-
-        log.warn("[Cluster {}] {} 부족 → {}개 보강 시작",
-                cluster.getId(), category, lack);
+        log.warn("[Cluster {}] {} 부족 → {}개 보강 시작", cluster.getId(), category, lack);
 
         double cx = cluster.getCenterLat();
         double cy = cluster.getCenterLng();
 
-        // 전역 후보 중 아직 해당 클러스터에서 사용되지 않은 동일 카테고리
+        // 후보 필터: 같은 카테고리 + 전역 usedIds에 없는 애들만
         List<TravelPlaceCandidate> candidates = global.stream()
                 .filter(p -> p.getNormalizedCategory().equals(category))
-                .filter(p -> cluster.getPlaces().stream()
-                        .noneMatch(cp -> cp.getOriginal().getId().equals(p.getId())))
+                .filter(p -> !usedIds.contains(p.getId()))
                 .sorted(Comparator.comparingDouble(p -> GeoUtils.haversine(
                         cx, cy,
                         p.getTravelPlacesLat(),
                         p.getTravelPlacesLng())))
                 .toList();
 
+        // lack만큼 추가
         for (int i = 0; i < Math.min(lack, candidates.size()); i++) {
             TravelPlaceCandidate p = candidates.get(i);
+
+            // 클러스터에 추가
             cluster.getPlaces().add(new ClusterPlace(p, cx, cy));
+
+            // 전역 usedIds 업데이트 → 중복 절대 불가!
+            usedIds.add(p.getId());
         }
 
         long after = cluster.getPlaces().stream()
                 .filter(p -> p.getOriginal().getNormalizedCategory().equals(category))
                 .count();
 
-        log.info("[Cluster {}] {} 보강 완료 → {}개",
-                cluster.getId(), category, after);
+        log.info("[Cluster {}] {} 보강 완료 → 최종 {}개", cluster.getId(), category, after);
     }
 
     // KMeans index finder

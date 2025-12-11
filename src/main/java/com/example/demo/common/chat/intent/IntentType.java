@@ -37,6 +37,7 @@ public enum IntentType {
     CREATE_POST("create_post", CategoryType.TRAVELGRAM, "/travelgram", "여행 기록 작성", null),
     ADD_PHOTO("add_photo", CategoryType.TRAVELGRAM, "/travelgram", "여행 사진 업로드", null),
 
+
     // -------------------- ETC --------------------
     ETC("etc", CategoryType.ETC, "/", "기타 요청", null);
 

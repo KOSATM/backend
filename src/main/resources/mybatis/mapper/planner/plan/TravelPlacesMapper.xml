@@ -19,6 +19,7 @@
       <result column="tags" property="tags" typeHandler="com.example.demo.common.global.typehandler.JsonListTypeHandler"/>
       <result column="detail_info" property="detailInfo"/>
       <result column="normalized_category" property="normalizedCategory"/>
+      <result column="zone_id" property="zoneId"/>
   </resultMap>
 
   <!-- 기본 컬럼 매핑 -->
@@ -46,6 +47,7 @@
         <result column="updated_at" property="updatedAt"/>
         <result column="detail_info" property="detailInfo"/>
         <result column="normalized_category" property="normalizedCategory"/>
+        <result column="zone_id" property="zoneId"/>
     </association>
 </resultMap>
 
@@ -67,7 +69,7 @@
   <!-- 백터 검색 -->
   <select id="searchByVector" resultMap="TravelPlaceSearchResultMap">
       <![CDATA[ 
-      SELECT id, content_id, title, address, tel, first_image, first_image2, lat, lng, description, detail_info, normalized_category,
+      SELECT id, content_id, title, address, tel, first_image, first_image2, lat, lng, description, detail_info, normalized_category, zone_id,
       1 - (embedding <=> #{embedding, typeHandler=com.example.demo.common.global.typehandler.VectorTypeHandler}) AS score
         FROM travel_places
         WHERE embedding IS NOT NULL
@@ -75,6 +77,33 @@
         LIMIT #{limit}
       ]]>
   </select>
+
+  <!-- <select id="searchByVectorExcluding" resultMap="TravelPlacesMap">
+  <![CDATA[ 
+  SELECT id, content_id, title, address, tel, first_image, first_image2, 
+         lat, lng, description, detail_info, normalized_category, zone_id
+  FROM travel_places
+  WHERE embedding IS NOT NULL
+  ]]>
+  <if test="excludeIds != null and excludeIds.size() > 0">
+    AND id NOT IN
+    <foreach collection="excludeIds" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </if>
+  <![CDATA[
+  ORDER BY score DESC
+  LIMIT #{limit}
+  ]]>
+</select> -->
+
+<select id="findByTitleContaining" resultMap="TravelPlacesMap">
+  SELECT id, content_id, title, address, tel, first_image, first_image2, 
+         lat, lng, description, detail_info, normalized_category, zone_id
+  FROM travel_places
+  WHERE title ILIKE '%' || #{title} || '%'
+  LIMIT 10
+</select>
   
   <select id="searchMissingCategoryByVector" parameterType="map" resultMap="TravelPlaceSearchResultMap">
     <![CDATA[ 
