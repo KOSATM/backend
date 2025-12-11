@@ -114,4 +114,11 @@
         WHERE user_id = #{userId}
     </select>
 
+    <!-- 장기 기억(벡터) 개수 -->
+    <select id="countVectorByUserId" parameterType="long" resultType="int">
+        SELECT COUNT(*)
+        FROM chat_memory_vectors
+        WHERE user_id = #{userId}
+    </select>
+
 </mapper>

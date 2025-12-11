@@ -26,6 +26,16 @@ public class ChatMemoryService {
         this.dao = dao;
     }
 
+    // 🔹 단기 기억 개수 로그용
+    public int countShortTerm(Long userId) {
+        return dao.countByConversationId(userId);
+    }
+
+    // 🔹 장기 기억 개수 로그용
+    public int countLongTerm(Long userId) {
+        return dao.countVectorByUserId(userId);
+    }
+
     // db에 대화메시지 저장 (String)
     public void add(Long userId, String message, String role) {
 

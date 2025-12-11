@@ -26,4 +26,8 @@ public interface ChatMemoryDao {
 
     // ✅ 추가: 해당 user의 마지막 order_index 조회
     Integer findMaxOrderIndex(@Param("userId") Long userId);
+
+    // 🔹 장기 기억(벡터) 개수
+    int countVectorByUserId(@Param("userId") Long userId);
+    
 }
