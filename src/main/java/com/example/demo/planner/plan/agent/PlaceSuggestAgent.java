@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.tool.annotation.Tool;
@@ -15,6 +16,11 @@ import org.springframework.stereotype.Component;
 import com.example.demo.common.chat.intent.dto.IntentCommand;
 import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.common.global.agent.AiAgent;
+import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.planner.plan.dto.response.PlanDayWithPlaces;
+import com.example.demo.planner.plan.dto.response.PlanDetail;
+import com.example.demo.planner.plan.service.create.PlanService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,8 +35,12 @@ public class PlaceSuggestAgent implements AiAgent {
   @Autowired
   private JdbcTemplate jdbcTemplate;
 
+  @Autowired
+  private PlanService planService;
+
   public PlaceSuggestAgent(ChatClient.Builder chatClientBuilder) {
-    this.chatClient = chatClientBuilder.build();
+    this.chatClient = chatClientBuilder
+      .build();
   }
 
   @Override
@@ -47,14 +57,21 @@ public class PlaceSuggestAgent implements AiAgent {
     String answer = this.chatClient.prompt()
         .system("""
             당신은 여행 전문가입니다.
-            사용자의 질문에서 키워드를 추출하여 키워드에 관한 데이터베이스를 조회하고 사용자에게 여행 장소를 추천하세요.
+            사용자의 질문에서 키워드를 추출하여 현재 사용자의 여행 계획을 참고한 후
+            키워드에 관한 데이터베이스를 조회하고 사용자에게 여행 장소를 추천하세요.
+
+            여행 계획 조회는 동선을 최적화하기 위함입니다.
+            데이터베이스 조회 쿼리는 사용자의 질문과 동선(장소의 주소)을 참고하여 작성하세요.
+
+            여행 계획 조회는 `getCurrentPlan` 도구를 사용하세요.
             데이터베이스 조회는 `dbSearch` 도구를 사용하세요.
 
             사용자에게는 title, address, tel, description, detail_info를 응답하되,
             해당 값이 없다면 '미제공'이라고 응답하세요.
             """)
         .user(question)
-        .tools(new DBSearchTools())
+        .tools(new SuggestReferenceTools())
+        .toolContext(Map.of("userId", userId))
         .call()
         .content();
     
@@ -65,7 +82,22 @@ public class PlaceSuggestAgent implements AiAgent {
     return response;
   }
 
-  class DBSearchTools {
+  class SuggestReferenceTools {
+    @Tool(description = "추천을 하기 전 현재 여행 계획을 조회합니다")
+    public Object getCurrentPlan(ToolContext toolContext) throws JsonProcessingException {
+      // ObjectMapper objectMapper = new ObjectMapper();
+      PlanDetail planDetail = planService.getLatestPlanDetail((Long) toolContext.getContext().get("userId"));
+      List<PlanDayWithPlaces> days = planDetail.getDays();
+      for (PlanDayWithPlaces day : days) {
+        log.info("day: {}", day.getDay().toString());
+        List<PlanPlace> places = day.getPlaces();
+        for (PlanPlace place : places) {
+          log.info("place: {}", place.toString());
+        }
+      }
+      return planDetail;
+    }
+
     @Tool(description = "자료를 찾기 위해 DB를 조회합니다", returnDirect = true)
     public Object dbSearch(String query) {
       long start = System.nanoTime();
@@ -81,7 +113,7 @@ public class PlaceSuggestAgent implements AiAgent {
                    (embedding <=> ?::vector) AS distance
             FROM travel_places
             ORDER BY embedding <=> ?::vector
-            LIMIT 5
+            LIMIT 10
             """;
         
         List<Map<String, Object>> res = jdbcTemplate.queryForList(sql, strVector, strVector);
