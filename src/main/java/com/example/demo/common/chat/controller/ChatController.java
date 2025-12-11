@@ -52,6 +52,11 @@ public class ChatController {
     log.info(intentRequest.toString()+";;;;;;;;");
     return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest, intentRequest.getUserId()));
     }
+    @PostMapping("/test")
+    public ResponseEntity<PipelineResult> analyzeChat1(@RequestParam("message") String message) {
+    IntentRequest intentRequest = IntentRequest.builder().userId(Long.valueOf(19)).message(message).currentUrl("planner/create").build();
+    return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest, intentRequest.getUserId()));
+    }
 
 
     /**

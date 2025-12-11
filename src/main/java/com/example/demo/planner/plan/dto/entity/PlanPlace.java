@@ -21,4 +21,6 @@ public class PlanPlace {
     private double lat;
     private double lng;
     private BigDecimal expectedCost;
+    private String normalizedCategory;
+
 }

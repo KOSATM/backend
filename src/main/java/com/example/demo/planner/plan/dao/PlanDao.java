@@ -63,7 +63,10 @@ public interface PlanDao {
     TravelPlaces findById(@Param("id") Long id);
     List<TravelPlaces> findAll(@Param("limit") int limit, @Param("offset") int offset);
     List<TravelPlaceCandidate> searchByVector(@Param("embedding") float[] embedding, @Param("limit") int limit);
+    List<TravelPlaces> findByTitleContaining(@Param("title") String title);
     List<TravelPlaceCandidate> searchMissingCategoryByVector(Map<String, Object> params);
+    List<String> getUserLastVisitedPlaces(@Param("userId") Long userId);
+
 
     /*is_ended=true && title = null일시 제목 자동생성위해 조회 */
     List<Plan> selectEndedPlansWithNoTitle();

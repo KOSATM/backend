@@ -9,6 +9,8 @@ import com.example.demo.common.chat.intent.dto.IntentCommand;
 import com.example.demo.common.chat.intent.dto.request.IntentRequest;
 import com.example.demo.common.chat.intent.dto.response.IntentResponse;
 import com.example.demo.common.chat.intent.service.IntentProcessor;
+import com.example.demo.planner.plan.agent.test.TravelPlanAgent;
+import com.example.demo.planner.plan.service.create.TravelPlannerService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,8 @@ public class DefaultChatPipeline implements ChatPipeline {
     private final IntentAnalysisAgent intentAnalysisAgent;
     private final IntentProcessor intentProcessor;
     private final AiAgentRouter agentRouter;
+    private final TravelPlanAgent travelPlanAgent;
+    private final TravelPlannerService travelPlannerService;
 
     @Override
     public PipelineResult execute(IntentRequest request, Long userId) {

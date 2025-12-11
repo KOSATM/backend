@@ -76,6 +76,23 @@
     ORDER BY d.day_index ASC, pp.start_at ASC
 </select>
 
+<select id="getUserLastVisitedPlaces" resultType="String">
+    SELECT DISTINCT
+        pp.place_name
+
+    FROM plans p
+    JOIN plan_days d    ON p.id = d.plan_id
+    JOIN plan_places pp ON d.id = pp.day_id
+
+    WHERE p.id = (
+        SELECT id
+        FROM plans
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT 1
+    )
+</select>
+
 
   <select id="selectPlanById" parameterType="long" resultType="Plan">
     SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title
