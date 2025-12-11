@@ -58,14 +58,15 @@ public class PlaceSuggestAgent implements AiAgent {
         .call()
         .content();
     
-    AiAgentResponse response = AiAgentResponse.builder().message(answer).build();
+    AiAgentResponse response = AiAgentResponse.builder().message("장소 선정이 완료되었습니다.").data(answer).build();
+    log.info("response: {}", response.toString());
     long end = System.nanoTime();
     log.info("실행시간: {}ms", (end - start) / 1_000_000);
     return response;
   }
 
   class DBSearchTools {
-    @Tool(description = "자료를 찾기 위해 DB를 조회합니다")
+    @Tool(description = "자료를 찾기 위해 DB를 조회합니다", returnDirect = true)
     public Object dbSearch(String query) {
       long start = System.nanoTime();
       log.info("검색 쿼리: {}", query);
