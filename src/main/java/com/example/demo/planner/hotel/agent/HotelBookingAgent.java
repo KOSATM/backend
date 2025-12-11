@@ -7,7 +7,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.tool.annotation.Tool;
@@ -31,7 +30,6 @@ public class HotelBookingAgent {
     private HotelCandidateService hotelCandidateService;
     private PlanService planService;
     private ObjectMapper objectMapper;
-    private ChatMemory chatMemory;
     private List<HotelRatePlanCandidate> candidates;
 
     @Autowired
@@ -39,14 +37,12 @@ public class HotelBookingAgent {
             ChatClient.Builder chatClientBuilder,
             HotelCandidateService hotelCandidateService,
             PlanService planService,
-            ObjectMapper objectMapper,
-            ChatMemory chatMemory
+            ObjectMapper objectMapper
     ) {
         this.chatClient = chatClientBuilder.build();
         this.hotelCandidateService = hotelCandidateService;
         this.planService = planService;
         this.objectMapper = objectMapper;
-        this.chatMemory = chatMemory;
     }
 
     public List<HotelBookingRequest> createBookingFromItinerary(
@@ -97,13 +93,6 @@ public class HotelBookingAgent {
 
             log.info("📊 Found {} hotel candidates from DB", candidates.size());
 
-            // 이전 대화 이력 조회
-            String conversationId = "hotel_user_" + userId;
-            List<org.springframework.ai.chat.messages.Message> previousMessages = chatMemory.get(conversationId);
-
-            // 디버그: 메모리 상태 확인
-            debugChatMemory(conversationId);
-
             // 사용자 쿼리 미리 정의
             String userQuery = "여행 일정: " + startDate + " ~ " + endDate +
                     (userPreferences != null && !userPreferences.isEmpty() ? "\n사용자 요청사항: " + userPreferences : "");
@@ -112,7 +101,7 @@ public class HotelBookingAgent {
             log.info("🤖 Calling LLM to select top 3 hotels...");
             log.info("📥 사용자 입력: {}", userQuery);
             
-            var promptBuilder = chatClient.prompt()
+            String llmResponse = chatClient.prompt()
                     .system("""
                             당신은 호텔 추천 전문가입니다.
                             사용자의 여행 일정에 맞는 호텔 3개를 반드시 JSON 형식으로만 추천하세요.
@@ -121,7 +110,7 @@ public class HotelBookingAgent {
                             """ + planContext + """
 
                             [호텔 선택 기준]
-                            1. 사용자 요청사항 필수 만족하고 이전 기억을 반영
+                            1. 사용자 요청사항 필수 만족
                             2. 여행 일정 및 방문 장소와의 거리 고려
                             3. 거리가 가까운 호텔
                             4. 가격이 합리적
@@ -140,32 +129,12 @@ public class HotelBookingAgent {
                               {"hotelId": 6, "roomTypeId": 7, "ratePlanId": 8}
                             ]
                             """)
-                    .user(userQuery);
-            
-            // 이전 대화가 있으면 추가
-            if (previousMessages != null && !previousMessages.isEmpty()) {
-                promptBuilder.messages(previousMessages);
-                log.info("이전 대화 {} 개 포함", previousMessages.size());
-            } else {
-                log.info("이전 대화 없음 (첫 호텔 예약)");
-            }
-            
-            String llmResponse = promptBuilder
+                    .user(userQuery)
                     .tools(new HotelSelectionTools())
                     .call()
                     .content();
 
             log.info("📝 LLM Response: {}", llmResponse);
-
-            // 대화를 메모리에 저장
-            chatMemory.add(conversationId, List.of(
-                    new UserMessage(userQuery),
-                    new AssistantMessage(llmResponse)
-            ));
-            log.info("✅ 대화 저장 완료: conversationId={}", conversationId);
-
-            // 저장 후 메모리 상태 확인
-            debugChatMemory(conversationId);
 
             // 3) LLM이 선택한 호텔ID 파싱
             List<HotelBookingRequest> selectedHotels = parseSelectedHotels(llmResponse, candidates);
@@ -186,31 +155,6 @@ public class HotelBookingAgent {
             log.error("HotelBookingAgent error", e);
             throw new RuntimeException("Failed to create booking from itinerary", e);
         }
-    }
-
-    private void debugChatMemory(String conversationId) {
-        List<org.springframework.ai.chat.messages.Message> messages = chatMemory.get(conversationId);
-        
-        log.info("\n\n========== 📊 ChatMemory 상태 ==========");
-        log.info("conversationId: {}", conversationId);
-        log.info("총 메시지 수: {}", messages != null ? messages.size() : 0);
-        
-        if (messages != null && !messages.isEmpty()) {
-            for (int i = 0; i < messages.size(); i++) {
-                org.springframework.ai.chat.messages.Message msg = messages.get(i);
-                String type = msg.getClass().getSimpleName();
-                String content = msg instanceof org.springframework.ai.chat.messages.UserMessage ? 
-                    ((org.springframework.ai.chat.messages.UserMessage) msg).getText() :
-                    msg instanceof org.springframework.ai.chat.messages.AssistantMessage ?
-                    ((org.springframework.ai.chat.messages.AssistantMessage) msg).getText() : "";
-                
-                String truncated = content.length() > 100 ? content.substring(0, 100) + "..." : content;
-                log.info("[메시지 #{}] {} - {}", i, type, truncated);
-            }
-        } else {
-            log.info("저장된 메시지 없음");
-        }
-        log.info("========================================\n");
     }
 
     private List<HotelBookingRequest> parseSelectedHotels(
