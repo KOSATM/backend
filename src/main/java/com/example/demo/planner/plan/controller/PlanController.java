@@ -57,7 +57,7 @@ public class PlanController {
   // 여행 계획 생성 (샘플 데이터 포함) - POST /plans/with-sample?days=3
   @PostMapping("/with-sample")
   public ResponseEntity<Plan> createPlanWithSample(
-      @RequestParam("userId") Long userId,
+      @RequestParam(value = "userId", required = false) Long userId,
       @RequestParam(value = "days", required = false) Integer days,
       @RequestParam(value = "budget", required = false) java.math.BigDecimal budget,
       @RequestParam(value = "startDate", required = false) java.time.LocalDate startDate) {
