@@ -1,8 +1,13 @@
 package com.example.demo.planner.plan.agent;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ToolContext;
@@ -16,11 +21,11 @@ import org.springframework.stereotype.Component;
 import com.example.demo.common.chat.intent.dto.IntentCommand;
 import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.common.global.agent.AiAgent;
-import com.example.demo.planner.plan.dto.entity.PlanPlace;
-import com.example.demo.planner.plan.dto.response.PlanDayWithPlaces;
-import com.example.demo.planner.plan.dto.response.PlanDetail;
-import com.example.demo.planner.plan.service.create.PlanService;
+import com.example.demo.planner.plan.dao.PlanSnapshotDao;
+import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
+import com.example.demo.planner.plan.dto.response.PlanSnapshotContent;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,7 +41,7 @@ public class PlaceSuggestAgent implements AiAgent {
   private JdbcTemplate jdbcTemplate;
 
   @Autowired
-  private PlanService planService;
+  private PlanSnapshotDao planSnapshotDao;
 
   public PlaceSuggestAgent(ChatClient.Builder chatClientBuilder) {
     this.chatClient = chatClientBuilder
@@ -48,13 +53,10 @@ public class PlaceSuggestAgent implements AiAgent {
     long start = System.nanoTime();
     log.info(command.toString());
     
-    StringBuilder sb = new StringBuilder();
-    for (Object value : command.getArguments().values()) {
-      sb.append((String) value);
-    }
-    String question = sb.toString();
+    String originalUserMessage = command.getOriginalUserMessage();
+    String commandArguments = command.getArguments().toString();
     
-    String answer = this.chatClient.prompt()
+    String answer = chatClient.prompt()
         .system("""
             당신은 여행 전문가입니다.
             사용자의 질문에서 키워드를 추출하여 현재 사용자의 여행 계획을 참고한 후
@@ -63,13 +65,19 @@ public class PlaceSuggestAgent implements AiAgent {
             여행 계획 조회는 동선을 최적화하기 위함입니다.
             데이터베이스 조회 쿼리는 사용자의 질문과 동선(장소의 주소)을 참고하여 작성하세요.
 
-            여행 계획 조회는 `getCurrentPlan` 도구를 사용하세요.
-            데이터베이스 조회는 `dbSearch` 도구를 사용하세요.
+            ⚠️ 중요 지시사항:
+            1. 먼저 `getCurrentPlan` 도구를 사용하여 사용자의 현재 여행 계획을 조회하세요
+            2. 사용자의 질문에 날짜 정보가 있으면 `validateDate` 도구를 사용하여 검증하세요
+            3. `validateDate`가 false를 반환하면, 날짜가 여행 계획 범위를 벗어난다고 사용자에게 알리세요
+            4. 날짜가 유효한 경우에만 `dbSearch` 도구를 사용하여 데이터베이스를 조회하세요
+            5. 데이터베이스 조회는 `dbSearch` 도구를 사용하세요
 
             사용자에게는 title, address, tel, description, detail_info를 응답하되,
             해당 값이 없다면 '미제공'이라고 응답하세요.
             """)
-        .user(question)
+        .user("""
+            originalUserMessage: %s, commandArguments: %s
+            """.formatted(originalUserMessage, commandArguments))
         .tools(new SuggestReferenceTools())
         .toolContext(Map.of("userId", userId))
         .call()
@@ -83,19 +91,87 @@ public class PlaceSuggestAgent implements AiAgent {
   }
 
   class SuggestReferenceTools {
+    // 현재 계획을 저장하는 필드 (validateDate에서 사용)
+    private PlanSnapshotContent currentPlanSnapshot = null;
+    
     @Tool(description = "추천을 하기 전 현재 여행 계획을 조회합니다")
     public Object getCurrentPlan(ToolContext toolContext) throws JsonProcessingException {
-      // ObjectMapper objectMapper = new ObjectMapper();
-      PlanDetail planDetail = planService.getLatestPlanDetail((Long) toolContext.getContext().get("userId"));
-      List<PlanDayWithPlaces> days = planDetail.getDays();
-      for (PlanDayWithPlaces day : days) {
-        log.info("day: {}", day.getDay().toString());
-        List<PlanPlace> places = day.getPlaces();
-        for (PlanPlace place : places) {
-          log.info("place: {}", place.toString());
+      ObjectMapper objectMapper = new ObjectMapper();
+      long start = System.nanoTime();
+      
+      try {
+        PlanSnapshot planSnapshot = planSnapshotDao.selectLatestPlanSnapshotByUserId((Long) toolContext.getContext().get("userId"));
+        
+        if (planSnapshot == null) {
+          log.warn("⚠️ 사용자의 여행 계획을 찾을 수 없습니다");
+          return "저장된 여행 계획이 없습니다. 먼저 여행 계획을 생성해주세요.";
         }
+        
+        String snapshotJson = planSnapshot.getSnapshotJson();
+        PlanSnapshotContent snapshotContent = objectMapper.readValue(snapshotJson, PlanSnapshotContent.class);
+        
+        // 현재 계획을 저장 (날짜 검증용)
+        this.currentPlanSnapshot = snapshotContent;
+        
+        log.info("📅 현재 여행 계획 조회 완료");
+        log.info("   기간: {} ~ {}", snapshotContent.getStartDate(), snapshotContent.getEndDate());
+        log.info("   일정 수: {}일", snapshotContent.getDays().size());
+        
+        long end = System.nanoTime();
+        log.info("⏱️ 계획 조회 시간: {}ms", (end - start) / 1_000_000);
+        
+        return snapshotContent;
+        
+      } catch (Exception e) {
+        log.error("❌ 현재 여행 계획 조회 실패", e);
+        return "여행 계획 조회 중 오류가 발생했습니다.";
       }
-      return planDetail;
+    }
+
+    @Tool(description = "사용자의 입력 날짜가 여행 계획의 범위 내에 있는지 검증합니다")
+    public boolean validateDate(String userInput) {
+      log.info("🔍 날짜 검증 시작: {}", userInput);
+      
+      try {
+        // 현재 계획이 없으면 검증 불가
+        if (this.currentPlanSnapshot == null) {
+          log.warn("⚠️ 현재 계획이 로드되지 않음");
+          return true; // 계획이 없으면 검증 스킵
+        }
+        
+        // 사용자 입력에서 날짜 추출
+        LocalDate extractedDate = extractDateFromInput(userInput);
+        
+        if (extractedDate == null) {
+          log.info("ℹ️ 사용자 입력에서 날짜 정보를 찾을 수 없습니다");
+          return true; // 날짜 정보가 없으면 검증 스킵
+        }
+        
+        // 여행 계획의 시작일과 종료일 파싱
+        LocalDate planStartDate = LocalDate.parse(this.currentPlanSnapshot.getStartDate());
+        LocalDate planEndDate = LocalDate.parse(this.currentPlanSnapshot.getEndDate());
+        
+        log.info("📅 검증 정보:");
+        log.info("   여행 기간: {} ~ {}", planStartDate, planEndDate);
+        log.info("   사용자 입력 날짜: {}", extractedDate);
+        
+        // 날짜 범위 검증
+        boolean isValid = !extractedDate.isBefore(planStartDate) && !extractedDate.isAfter(planEndDate);
+        
+        if (isValid) {
+          log.info("✅ 날짜 검증 성공");
+        } else {
+          log.warn("❌ 날짜가 여행 계획 범위를 벗어남");
+          log.warn("   여행 기간: {} ~ {}", planStartDate, planEndDate);
+          log.warn("   입력 날짜: {}", extractedDate);
+        }
+        
+        return isValid;
+        
+      } catch (Exception e) {
+        log.error("❌ 날짜 검증 중 오류 발생", e);
+        return true; // 검증 실패 시 통과 (보수적 접근)
+      }
     }
 
     @Tool(description = "자료를 찾기 위해 DB를 조회합니다", returnDirect = true)
@@ -108,12 +184,12 @@ public class PlaceSuggestAgent implements AiAgent {
         String strVector = Arrays.toString(vector).replace(" ", "");
         
         String sql = """
-            SELECT id, content_id, title, address, tel, first_image, first_image2, lat, lng, 
+            SELECT id, content_id, title, address, tel, first_image2, lat, lng, 
                    category_code, description, tags, detail_info, normalized_category, 
                    (embedding <=> ?::vector) AS distance
             FROM travel_places
             ORDER BY embedding <=> ?::vector
-            LIMIT 10
+            LIMIT 20
             """;
         
         List<Map<String, Object>> res = jdbcTemplate.queryForList(sql, strVector, strVector);
@@ -163,6 +239,53 @@ public class PlaceSuggestAgent implements AiAgent {
         log.error("임베딩 생성 실패: {}", e.getMessage(), e);
         throw new RuntimeException("임베딩 생성 실패", e);
       }
+    }
+
+    /**
+     * 사용자 입력에서 날짜 추출
+     * 지원 형식: "YYYY-MM-DD", "YYYY년 MM월 DD일", "MM월 DD일" 등
+     */
+    private LocalDate extractDateFromInput(String input) {
+      log.debug("🔎 입력에서 날짜 추출: {}", input);
+      
+      // YYYY-MM-DD, YYYY/MM/DD, YYYYMMDD 형식 매칭
+      Pattern datePattern = Pattern.compile("(\\d{4})[/-]?(\\d{2})[/-]?(\\d{2})");
+      Matcher dateMatcher = datePattern.matcher(input);
+      
+      if (dateMatcher.find()) {
+        String dateStr = dateMatcher.group(1) + "-" + dateMatcher.group(2) + "-" + dateMatcher.group(3);
+        try {
+          LocalDate date = LocalDate.parse(dateStr, DateTimeFormatter.ISO_DATE);
+          log.debug("✅ 날짜 추출 성공: {}", date);
+          return date;
+        } catch (DateTimeParseException e) {
+          log.debug("⚠️ 날짜 파싱 실패: {}", dateStr);
+        }
+      }
+      
+      // MM월 DD일 형식 (올해 기준)
+      Pattern monthDayPattern = Pattern.compile("(\\d{1,2})월\\s*(\\d{1,2})일");
+      Matcher monthDayMatcher = monthDayPattern.matcher(input);
+      
+      if (monthDayMatcher.find()) {
+        try {
+          int month = Integer.parseInt(monthDayMatcher.group(1));
+          int day = Integer.parseInt(monthDayMatcher.group(2));
+          
+          if (this.currentPlanSnapshot != null) {
+            // 여행 계획의 연도를 기반으로 날짜 구성
+            LocalDate planStartDate = LocalDate.parse(this.currentPlanSnapshot.getStartDate());
+            LocalDate date = LocalDate.of(planStartDate.getYear(), month, day);
+            log.debug("✅ 월일 날짜 추출 성공: {}", date);
+            return date;
+          }
+        } catch (Exception e) {
+          log.debug("⚠️ 월일 날짜 파싱 실패", e);
+        }
+      }
+      
+      log.debug("⚠️ 입력에서 날짜를 찾을 수 없음");
+      return null;
     }
   }
 }
