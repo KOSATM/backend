@@ -23,4 +23,7 @@ public interface ChatMemoryDao {
     void deleteChatMemoryById(@Param("id") Long id);
     
     ChatMemory findOldestMessage(Long userId);
+
+    // ✅ 추가: 해당 user의 마지막 order_index 조회
+    Integer findMaxOrderIndex(@Param("userId") Long userId);
 }

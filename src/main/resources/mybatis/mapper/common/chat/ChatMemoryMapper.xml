@@ -107,4 +107,11 @@
         LIMIT 1
     </select>
 
+    <!-- 해당 user의 마지막 order_index (가장 큰 값) -->
+    <select id="findMaxOrderIndex" parameterType="long" resultType="java.lang.Integer">
+        SELECT MAX(order_index)
+        FROM chat_memories
+        WHERE user_id = #{userId}
+    </select>
+
 </mapper>
