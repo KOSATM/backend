@@ -43,6 +43,7 @@ public class PlanDetailResponse {
         private String normalizedCategory;
         private String firstImage;
         private String firstImage2;
+        private Boolean isEnded;
     }
 
     /**
@@ -89,6 +90,7 @@ public class PlanDetailResponse {
                 s.setNormalizedCategory(r.getNormalizedCategory());
                 s.setFirstImage(r.getFirstImage());
                 s.setFirstImage2(r.getFirstImage2());
+                s.setIsEnded(r.getIsEnded());
                 return s;
             }).toList();
 

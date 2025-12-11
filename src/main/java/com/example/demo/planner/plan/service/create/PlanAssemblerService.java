@@ -78,7 +78,6 @@ public class PlanAssemblerService {
         //     System.err.println(" >>>");
         // }
 
-        log.info(planPlaces.toString()+"++++++++++++++++++++++++++++++++++");
         planPlaceDao.insertPlanPlaceBatch(planPlaces);
 
         try {
@@ -184,10 +183,10 @@ public class PlanAssemblerService {
                         .normalizedCategory(p.getNormalizedCategory())
                         .firstImage(p.getFirstImage())
                         .firstImage2(p.getFirstImage2())
+                        .isEnded(false)
                         .build();
 
                 result.add(place);
-                log.info(place.toString()+";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;");
             }
         }
 
