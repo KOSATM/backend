@@ -15,7 +15,7 @@ import lombok.ToString;
 @Builder
 @ToString
 public class IntentItem {
-
+    private String originalUserMessage;
     private String intent;              // plan_add, translation, create_post, etc
     private double confidence;              // LLM confidence
     private Map<String, Object> arguments;  // dynamic params

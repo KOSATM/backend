@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.common.chat.dao.ChatMemoryDao">
+    <!-- 최신 20개까지 일반 메시지 저장 -->
+    <insert id="insertChatMemory" parameterType="ChatMemory">
+        <selectKey keyProperty="id" resultType="long" order="AFTER">
+            SELECT currval('chat_memories_id_seq')
+        </selectKey>
+        INSERT INTO chat_memories (
+            user_id,
+            agent_name,
+            order_index,
+            content,
+            token_usage,
+            created_at,
+            role
+        ) VALUES (
+            #{userId},
+            #{agentName},
+            #{orderIndex},
+            #{content},
+            #{tokenUsage},
+            now(),
+            #{role}
+        )
+    </insert>
+
+    <!-- 21번째부터 임베딩 벡터 메시지 저장 -->
+    <insert id="insertChatMemoryVector" parameterType="ChatMemoryVector">
+        <selectKey keyProperty="id" resultType="long" order="AFTER">
+            SELECT currval('chat_memory_vectors_id_seq')
+        </selectKey>
+        INSERT INTO chat_memory_vectors (
+            user_id,
+            agent_name,
+            order_index,
+            content,
+            token_usage,
+            created_at,
+            role,
+            embedding
+        ) VALUES (
+            #{userId},
+            #{agentName},
+            #{orderIndex},
+            #{content},
+            #{tokenUsage},
+            now(),
+            #{role},
+            #{embedding}
+        )
+    </insert>
+
+    <!-- conversationId(agent_name)별 메시지 개수 조회 -->
+    <select id="countByConversationId" parameterType="long" resultType="int">
+        SELECT COUNT(*) FROM chat_memories WHERE user_id = #{userId}
+    </select>
+
+    <select id="getSimilarMessages" parameterType="map" resultType="ChatMemoryVector">
+    <![CDATA[
+        SELECT *
+        FROM chat_memory_vectors
+        WHERE user_id = #{userId}
+        ORDER BY embedding <-> #{queryEmbedding}
+        LIMIT #{topK}
+    ]]>
+    </select>
+
+    <!-- 최근 20개 일반 메시지 불러오기 -->
+    <select id="findRecentMessages" resultType="ChatMemory">
+        SELECT *
+        FROM chat_memories
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <delete id="deleteChatMemory" parameterType="long">
+        DELETE FROM chat_memories WHERE user_id = #{userId}
+    </delete>
+    <delete id="deleteVectorByUserId" parameterType="long">
+        DELETE FROM chat_memory_vectors WHERE user_id = #{userId}
+    </delete>
+
+    <!-- 가장 오래된 단기기억 1개 가져오기 -->
+    <select id="findOldestMessage" parameterType="long" resultType="com.example.demo.common.chat.dto.ChatMemory">
+        SELECT *
+        FROM chat_memories
+        WHERE user_id = #{userId}
+        ORDER BY created_at ASC
+        LIMIT 1
+    </select>
+</mapper>

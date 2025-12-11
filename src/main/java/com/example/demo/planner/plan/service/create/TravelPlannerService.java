@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Component;
 
+import com.example.demo.common.chat.intent.agent.ResponseAgent;
 import com.example.demo.common.chat.intent.dto.IntentCommand;
 import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.common.global.agent.AiAgent;
@@ -18,10 +19,12 @@ import com.example.demo.planner.plan.agent.DurationNormalizerAgent;
 import com.example.demo.planner.plan.agent.SeedQueryAgent;
 import com.example.demo.planner.plan.agent.StartDateNormalizerAgent;
 import com.example.demo.planner.plan.dao.PlanDao;
+import com.example.demo.planner.plan.dao.PlanSnapshotDao;
 import com.example.demo.planner.plan.dto.Cluster;
 import com.example.demo.planner.plan.dto.ClusterBundle;
 import com.example.demo.planner.plan.dto.ClusterPlace;
 import com.example.demo.planner.plan.dto.TravelPlaceCandidate;
+import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
 import com.example.demo.planner.plan.dto.response.DayPlanResult;
 import com.example.demo.planner.plan.dto.response.PlanDetailResponse;
 import com.example.demo.planner.plan.strategy.StandardTravelStrategy;
@@ -45,6 +48,9 @@ public class TravelPlannerService implements AiAgent {
     private final RegionService regionService;
     private final StartDateNormalizerAgent startDateNormalizerAgent;
     private final PlanAssemblerService planAssemblerService;
+    private final PlanService planService;
+    private final PlanSnapshotDao planSnapshotDao;
+    private final ResponseAgent responseAgent;
 
     @Override
     public AiAgentResponse execute(IntentCommand command, Long userId) {
@@ -132,7 +138,17 @@ public class TravelPlannerService implements AiAgent {
 
         log.info("▷▷ 11. TravelPlannerAgent 완료");
 
-        return AiAgentResponse.ofData("일정 생성이 완료되었습니다.", command.getRequiredUrl(), response);
+        printDayPlans(dayPlans);
+
+        // planDao.
+        
+        PlanSnapshot snapshot = planSnapshotDao.selectLatestPlanSnapshotByUserId(userId);
+        String snapshotJson = snapshot.getSnapshotJson();
+
+        
+        // return AiAgentResponse.of(buildResponse(dayPlans));
+        return AiAgentResponse.ofData("일정이 생성되었습니다.", command.getRequiredUrl(), snapshotJson);
+
     }
 
     // ==================== Private 메서드 ====================

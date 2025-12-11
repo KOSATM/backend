@@ -13,6 +13,7 @@ import lombok.ToString;
 @Builder
 @ToString
 public class IntentCommand {
+    private String originalUserMessage;
     private CategoryType category;
     private IntentType intent;
     private double confidence;

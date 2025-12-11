@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.common.chat.intent.agent.IntentAnalysisAgent;
+import com.example.demo.common.chat.intent.agent.ResponseAgent;
 import com.example.demo.common.chat.intent.dto.IntentCommand;
 import com.example.demo.common.chat.intent.dto.request.IntentRequest;
 import com.example.demo.common.chat.intent.dto.response.IntentResponse;
@@ -23,8 +24,7 @@ public class DefaultChatPipeline implements ChatPipeline {
     private final IntentAnalysisAgent intentAnalysisAgent;
     private final IntentProcessor intentProcessor;
     private final AiAgentRouter agentRouter;
-    private final TravelPlanAgent travelPlanAgent;
-    private final TravelPlannerService travelPlannerService;
+    private final ResponseAgent responseAgent;
 
     @Override
     public PipelineResult execute(IntentRequest request, Long userId) {
@@ -55,11 +55,18 @@ public class DefaultChatPipeline implements ChatPipeline {
         log.info("▶ 5. 가장 우선되는 Main Intent 기능 실행");
         AiAgentResponse mainIntentResponse = agentRouter.route(main, userId);
 
+        // 응답 에이전트 사용
+        String message = responseAgent.generateMessage(mainIntentResponse.getData());
+        AiAgentResponse processedResponse = AiAgentResponse.builder()
+                .message(message)
+                .targetUrl(mainIntentResponse.getTargetUrl())
+                .data(mainIntentResponse.getData())
+                .build();
 
         // 6) 메인 응답 + 추가 Intent 묶어서 반환
         log.info("▶ 6. Main 응답 + 추가 Intent 묶어서 반환");
         return PipelineResult.builder()
-                .mainResponse(mainIntentResponse)
+                .mainResponse(processedResponse)
                 .additionalIntents(additional)
                 .build();
     }
