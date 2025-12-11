@@ -73,12 +73,12 @@ public class ChecklistAgent {
                 }
 
                 규칙:
-                1. 5개까지의 항목만 생성(그 미만이면 그만큼)
+                1. 3개까지의 항목만 생성(그 미만이면 그만큼)
                 2. 각 항목은 "장소명: 팁" 형식 (예: "경복궁: 한복 입으면 입장료 무료")
                 3. 마크다운, 이모지 절대 금지
                 4. JSON 외의 다른 텍스트는 포함하지 마세요
                 5. **중복된 장소명은 절대 금지** - 각 장소는 정확히 한 번만 나타나야 함
-                6. **제공된 모든 장소를 골고루 포함**해야 함
+                6. **제공된 장소를 골고루 포함**해야 함
                 """)
         .user("""
                 방문 날짜: """ + travelDay.getPlanDate() + """
@@ -141,7 +141,10 @@ public class ChecklistAgent {
 
         } catch (Exception e) {
             log.error("❌ Error parsing LLM response", e);
-            return null;
+            // null이 아닌 빈 response 생성
+            result = new ChecklistItemResponse();
+            result.setTitle("여행 필수 준비물");
+            result.setItems(List.of());
         }
 
         // 5) DB에 저장
@@ -159,18 +162,13 @@ public class ChecklistAgent {
 
             // 0) 기존 데이터 삭제
             log.info("🗑️ Deleting existing checklist for userId: {}", userId);
-
-            // 사용자의 모든 체크리스트 조회
             List<Checklist> existingChecklists = checklistService.findByUserId(userId);
 
-            // 각 체크리스트의 항목 삭제 (자식 먼저)
             for (Checklist checklist : existingChecklists) {
                 checklistItemService.deleteItemsByChecklistId(checklist.getId());
             }
 
-            // 체크리스트 삭제 (부모 나중)
             checklistService.deleteItemsByUserId(userId);
-
             log.info("✅ Existing data deleted");
 
             // 1) Checklist 생성
@@ -183,24 +181,60 @@ public class ChecklistAgent {
             Long checklistId = checklistService.create(checklist);
             log.info("✅ Checklist created with id: {}", checklistId);
 
-            // 2) ChecklistItem 저장
-            if (llmResponse.getItems() != null && !llmResponse.getItems().isEmpty()) {
+            // 2) LLM 생성 항목 저장
+            int llmItemCount = 0;
+            if (llmResponse != null && llmResponse.getItems() != null && !llmResponse.getItems().isEmpty()) {
                 for (String item : llmResponse.getItems()) {
                     ChecklistItem checklistItem = ChecklistItem.builder()
                             .checklistId(checklistId)
                             .content(item)
-                            .category("GENERAL")
+                            .category("LOCATION")
                             .isChecked(false)
                             .createdAt(OffsetDateTime.now())
                             .build();
 
                     checklistItemService.create(checklistItem);
-                    log.debug("✅ ChecklistItem created - content: {}", item);
+                    log.debug("✅ LLM ChecklistItem created - content: {}", item);
+                    llmItemCount++;
                 }
-                log.info("✅ Total {} items saved", llmResponse.getItems().size());
+                log.info("✅ Total {} LLM items saved", llmItemCount);
+            } else {
+                log.warn("⚠️ No LLM items to save");
             }
 
-            log.info("🎉 Checklist saved successfully to DB");
+            // 3) 추가 고정 항목 저장
+            List<ChecklistItem> fixedItems = List.of(
+                    ChecklistItem.builder()
+                            .checklistId(checklistId)
+                            .content("날씨가 춥고 비가 올 가능성이 있으니 우산을 챙기고 옷을 따뜻하게 입으세요")
+                            .category("WEATHER")
+                            .isChecked(false)
+                            .createdAt(OffsetDateTime.now())
+                            .build(),
+                    ChecklistItem.builder()
+                            .checklistId(checklistId)
+                            .content("교통카드를 반드시 챙기고 교통카드 충전을 위한 현금도 챙기세요")
+                            .category("GENERAL")
+                            .isChecked(false)
+                            .createdAt(OffsetDateTime.now())
+                            .build(),
+                    ChecklistItem.builder()
+                            .checklistId(checklistId)
+                            .content("보조 배터리를 챙기고 휴대폰도 충분하게 충전해두세요")
+                            .category("GENERAL")
+                            .isChecked(false)
+                            .createdAt(OffsetDateTime.now())
+                            .build()
+            );
+
+            for (ChecklistItem item : fixedItems) {
+                checklistItemService.create(item);
+                log.debug("✅ Fixed ChecklistItem created - content: {}, category: {}", item.getContent(), item.getCategory());
+            }
+
+            log.info("✅ Total {} fixed items saved", fixedItems.size());
+            log.info("🎉 Checklist saved successfully to DB (LLM: {} items + Fixed: {} items = Total: {} items)",
+                    llmItemCount, fixedItems.size(), (llmItemCount + fixedItems.size()));
 
         } catch (Exception e) {
             log.error("❌ Error saving checklist to DB", e);
