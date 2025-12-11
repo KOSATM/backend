@@ -89,7 +89,9 @@ public class PlanSnapshotService {
                 pscItem.setLat(planPlace.getLat());
                 pscItem.setLng(planPlace.getLng());
                 pscItem.setExpectedCost(planPlace.getExpectedCost());
-
+                pscItem.setNormalizedCategory(planPlace.getNormalizedCategory());
+                pscItem.setFirstImage(planPlace.getFirstImage());
+                pscItem.setFirstImage2(planPlace.getFirstImage2());
                 pscItems.add(pscItem);
             }
             pscDay.setSchedules(pscItems);

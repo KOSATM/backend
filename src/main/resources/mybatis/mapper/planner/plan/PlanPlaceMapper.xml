@@ -5,20 +5,20 @@
 <mapper namespace="com.example.demo.planner.plan.dao.PlanPlaceDao">
 
   <select id="selectPlanPlaceById" parameterType="long" resultType="PlanPlace">
-    SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost
+    SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost, normalized_category, first_image, first_image2
     FROM plan_places
     WHERE id = #{id}
   </select>
 
   <select id="selectPlanPlacesByPlanDayId" parameterType="long" resultType="PlanPlace">
-    SELECT id, day_id,  title, start_at, end_at, place_name, address, lat, lng, expected_cost
+    SELECT id, day_id,  title, start_at, end_at, place_name, address, lat, lng, expected_cost, normalized_category, first_image, first_image2
     FROM plan_places
     WHERE day_id = #{dayId}
     ORDER BY start_at ASC
   </select>
 
   <select id="selectPlanPlacesByPlanId" parameterType="long" resultType="PlanPlace">
-    SELECT tplace.id, tplace.day_id, tplace.title, tplace.start_at, tplace.end_at, tplace.place_name, tplace.address, tplace.lat, tplace.lng, tplace.expected_cost
+    SELECT tplace.id, tplace.day_id, tplace.title, tplace.start_at, tplace.end_at, tplace.place_name, tplace.address, tplace.lat, tplace.lng, tplace.expected_cost, tplace.normalized_category, tplace.first_image, tplace.first_image2
     FROM plan_places tp
     INNER JOIN plan_days td ON tplace.day_id = td.id
     WHERE td.plan_id = #{planId}
@@ -26,8 +26,8 @@
   </select>
 
   <insert id="insertPlanPlace" parameterType="PlanPlace" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-    INSERT INTO plan_places (day_id,  title, start_at, end_at, place_name, address, lat, lng, expected_cost)
-    VALUES (#{dayId}, #{title}, #{startAt}, #{endAt}, #{placeName}, #{address}, #{lat}, #{lng}, #{expectedCost})
+    INSERT INTO plan_places (day_id,  title, start_at, end_at, place_name, address, lat, lng, expected_cost, normalized_category, first_image, first_image2)
+    VALUES (#{dayId}, #{title}, #{startAt}, #{endAt}, #{placeName}, #{address}, #{lat}, #{lng}, #{expectedCost}, #{normalizedCategory}, #{firstImage}, #{firstImage2})
   </insert>
 
   <insert id="insertPlanPlaceBatch">
@@ -40,7 +40,10 @@
         address,
         lat,
         lng,
-        expected_cost
+        expected_cost,
+        normalized_category,
+        first_image,
+        first_image2
     )
     VALUES
     <foreach collection="list" item="place" separator=",">
@@ -53,7 +56,10 @@
             #{place.address},
             #{place.lat},
             #{place.lng},
-            #{place.expectedCost}
+            #{place.expectedCost},
+            #{place.normalizedCategory},
+            #{place.firstImage},
+            #{place.firstImage2}
         )
     </foreach>
 </insert>
@@ -68,7 +74,8 @@
         address = #{address},
         lat = #{lat},
         lng = #{lng},
-        expected_cost = #{expectedCost}
+        expected_cost = #{expectedCost},
+        normalized_category = #{normalizedCategory}
     WHERE id = #{id}
   </update>
 

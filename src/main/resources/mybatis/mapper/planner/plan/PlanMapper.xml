@@ -26,7 +26,10 @@
         pp.end_at,
         pp.place_name,
         pp.address,
-        pp.expected_cost
+        pp.expected_cost,
+        pp.normalized_category,
+        pp.first_image,
+        pp.first_image2
 
     FROM plans p
     JOIN plan_days d   ON p.id = d.plan_id
@@ -65,7 +68,10 @@
         pp.end_at,
         pp.place_name,
         pp.address,
-        pp.expected_cost
+        pp.expected_cost,
+        pp.normalized_category,
+        pp.first_image,
+        pp.first_image2
 
     FROM plans p
     JOIN plan_days d   ON p.id = d.plan_id

@@ -12,21 +12,24 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 public class PlanScheduleRow {
-    Long planId;
-    BigDecimal budget;
-    LocalDate startDate;
-    LocalDate endDate;
+    private Long planId;
+    private BigDecimal budget;
+    private LocalDate startDate;
+    private LocalDate endDate;
 
-    Long dayId;
-    Integer dayIndex;
-    LocalDate planDate;
-    String dayTitle;
+    private Long dayId;
+    private Integer dayIndex;
+    private LocalDate planDate;
+    private String dayTitle;
 
-    Long placeId;
-    String placeTitle;
-    OffsetDateTime startAt;
-    OffsetDateTime endAt;
-    String placeName;
-    String address;
-    BigDecimal expectedCost;
+    private Long placeId;
+    private String placeTitle;
+    private OffsetDateTime startAt;
+    private OffsetDateTime endAt;
+    private String placeName;
+    private String address;
+    private BigDecimal expectedCost;
+    private String normalizedCategory;
+    private String firstImage;
+    private String firstImage2;
 }

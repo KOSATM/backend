@@ -22,5 +22,7 @@ public class PlanPlace {
     private double lng;
     private BigDecimal expectedCost;
     private String normalizedCategory;
+    private String firstImage;
+    private String firstImage2;
 
 }

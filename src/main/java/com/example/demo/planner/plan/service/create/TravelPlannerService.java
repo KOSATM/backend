@@ -142,12 +142,12 @@ public class TravelPlannerService implements AiAgent {
 
         // planDao.
         
-        PlanSnapshot snapshot = planSnapshotDao.selectLatestPlanSnapshotByUserId(userId);
-        String snapshotJson = snapshot.getSnapshotJson();
+        // PlanSnapshot snapshot = planSnapshotDao.selectLatestPlanSnapshotByUserId(userId);
+        // String snapshotJson = snapshot.getSnapshotJson();
 
         
         // return AiAgentResponse.of(buildResponse(dayPlans));
-        return AiAgentResponse.ofData("일정이 생성되었습니다.", command.getRequiredUrl(), snapshotJson);
+        return AiAgentResponse.ofData("일정이 생성되었습니다.", command.getRequiredUrl(), response);
 
     }
 
