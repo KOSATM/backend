@@ -36,7 +36,7 @@ public class DefaultChatPipeline implements ChatPipeline {
         // 2) IntentItem → IntentCommand 변환
         log.info("▶ 2. IntentItem → IntentCommand 변환");
         List<IntentCommand> commands = intentResponse.getIntents().stream()
-                .map(intentProcessor::toCommand)
+                .map(item -> intentProcessor.toCommand(item, request.getMessage()))
                 .toList();
         log.info(commands.toString());
 
