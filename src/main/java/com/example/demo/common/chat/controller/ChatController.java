@@ -13,6 +13,7 @@ import com.example.demo.common.chat.intent.agent.IntentAnalysisAgent;
 import com.example.demo.common.chat.intent.dto.request.IntentRequest;
 import com.example.demo.common.chat.pipeline.DefaultChatPipeline;
 import com.example.demo.common.chat.pipeline.PipelineResult;
+import com.example.demo.planner.plan.agent.SmartPlanAgent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ public class ChatController {
 
     private final IntentAnalysisAgent intentAnalysisAgent;
     private final DefaultChatPipeline defaultChatPipeline;
+    private final SmartPlanAgent smartPlanAgent;
 
     /**
      * 🧪 SmartPlanAgent 테스트 엔드포인트
@@ -40,19 +42,29 @@ public class ChatController {
         log.info("메시지: {}", msg);
         log.info("사용자: {}", userId);
 
-        IntentRequest intentRequest = IntentRequest.builder()
-                .message(msg)
-                .currentUrl("/planner")
-                .userId(userId)
-                .build();
+        try {
+            IntentRequest intentRequest = IntentRequest.builder()
+                    .message(msg)
+                    .currentUrl("/planner")
+                    .userId(userId)
+                    .build();
 
-        PipelineResult result = defaultChatPipeline.execute(intentRequest, userId);
+            log.info("IntentRequest 생성 완료: {}", intentRequest);
 
-        String response = result.getMainResponse().getMessage();
+            PipelineResult result = defaultChatPipeline.execute(intentRequest, userId);
 
-        log.info("🧪 === 응답: {} ===", response);
+            log.info("Pipeline 실행 완료");
 
-        return ResponseEntity.ok(response);
+            String response = result.getMainResponse().getMessage();
+
+            log.info("🧪 === 응답: {} ===", response);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("❌ 테스트 중 오류 발생!", e);
+            return ResponseEntity.status(500).body("오류: " + e.getMessage() + "\n스택트레이스를 서버 로그에서 확인하세요.");
+        }
     }
 
     @GetMapping("/api/chat/intent/analyze")
@@ -63,6 +75,19 @@ public class ChatController {
                 // .userMessage("오늘 날씨 알려주고 일정 수정하고 싶어?").build();
 
         return intentAnalysisAgent.analyze(intentRequest).toString();
+    }
+
+    /**
+     * 🧪 PlanContext JSON 조회 엔드포인트 (디버깅용)
+     */
+    @GetMapping("/api/chat/test/plan-json")
+    public ResponseEntity<String> getPlanJson(@RequestParam(defaultValue = "1") Long userId) {
+        try {
+            var context = smartPlanAgent.loadPlanContext(userId);
+            return ResponseEntity.ok(context.toJson());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("오류: " + e.getMessage());
+        }
     }
 
     // @GetMapping("/test")

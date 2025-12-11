@@ -144,11 +144,16 @@ public class IntentAnalysisAgent {
         .system(systemPrompt)
         .user(userPrompt)
         .options(ChatOptions.builder().temperature(0.0).build()).call().content();
-    log.info("responseJSON: {}", responseJSON);
+    log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    log.info("🔍 [IntentAnalysis] 사용자 메시지: {}", intentRequest.getMessage());
+    log.info("📋 [IntentAnalysis] LLM 응답 JSON:");
+    log.info("{}", responseJSON);
+    log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     IntentResponse intentResponse = beanOutputConverter.convert(responseJSON);
 
-    if (intentResponse == null)
+    if (intentResponse == null) {
+      log.warn("⚠️ IntentResponse is null! Fallback to 'other'");
       // fallback — other 단일 intent 생성 (SmartPlanAgent로 라우팅됨)
       return IntentResponse.builder()
           .intents(List.of(
@@ -158,6 +163,11 @@ public class IntentAnalysisAgent {
                   .arguments(Map.of())
                   .build()))
           .build();
+    }
+
+    log.info("✅ [IntentAnalysis] 분류 결과: intent={}, confidence={}",
+        intentResponse.getIntents().get(0).getIntent(),
+        intentResponse.getIntents().get(0).getConfidence());
 
     return intentResponse;
 

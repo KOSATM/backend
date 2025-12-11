@@ -18,11 +18,11 @@
   </select>
 
   <select id="selectPlanPlacesByPlanId" parameterType="long" resultType="PlanPlace">
-    SELECT tplace.id, tplace.day_id, tplace.title, tplace.start_at, tplace.end_at, tplace.place_name, tplace.address, tplace.lat, tplace.lng, tplace.expected_cost
+    SELECT tp.id, tp.day_id, tp.title, tp.start_at, tp.end_at, tp.place_name, tp.address, tp.lat, tp.lng, tp.expected_cost
     FROM plan_places tp
-    INNER JOIN plan_days td ON tplace.day_id = td.id
+    INNER JOIN plan_days td ON tp.day_id = td.id
     WHERE td.plan_id = #{planId}
-    ORDER BY td.day_index ASC, tplace.start_at ASC
+    ORDER BY td.day_index ASC, tp.start_at ASC
   </select>
 
   <insert id="insertPlanPlace" parameterType="PlanPlace" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
@@ -93,11 +93,12 @@
 
   <update id="updatePlaceInfo">
     UPDATE plan_places
-    SET place_name = #{placeName},
+    SET 
+        place_name = #{placeName},
+        title = #{placeName},
         address = #{address},
         lat = #{latitude},
         lng = #{longitude},
-        title = #{category},
         expected_cost = #{cost}
     WHERE id = #{id}
   </update>
@@ -111,6 +112,27 @@
   <update id="updatePlaceDuration">
     UPDATE plan_places
     SET end_at = start_at + (#{duration} || ' minutes')::interval
+    WHERE id = #{id}
+  </update>
+
+  <update id="updatePlaceTimeRange">
+    UPDATE plan_places
+    SET start_at = #{startAt}, end_at = #{endAt}
+    WHERE id = #{id}
+  </update>
+
+  <update id="updatePlaceAllFields">
+    UPDATE plan_places
+    SET
+        day_id = #{dayId},
+        title = #{title},
+        start_at = #{startAt},
+        end_at = #{endAt},
+        place_name = #{placeName},
+        address = #{address},
+        lat = #{lat},
+        lng = #{lng},
+        expected_cost = #{expectedCost}
     WHERE id = #{id}
   </update>
 

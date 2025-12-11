@@ -96,6 +96,18 @@ public interface PlanPlaceDao {
                              @org.apache.ibatis.annotations.Param("duration") Integer duration);
 
     /**
+     * place의 시작/종료 시간 범위 변경 (일정 삽입 시 밀어내기용)
+     */
+    void updatePlaceTimeRange(@org.apache.ibatis.annotations.Param("id") Long id,
+                              @org.apache.ibatis.annotations.Param("startAt") java.time.OffsetDateTime startAt,
+                              @org.apache.ibatis.annotations.Param("endAt") java.time.OffsetDateTime endAt);
+
+    /**
+     * place의 모든 필드 업데이트
+     */
+    void updatePlaceAllFields(PlanPlace place);
+
+    /**
      * place 삭제 (ID로)
      */
     void deletePlanPlaceById(Long id);

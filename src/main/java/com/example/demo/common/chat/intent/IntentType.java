@@ -17,9 +17,9 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public enum IntentType {
 
-    // -------------------- PLANNER --------------------
     TRAVEL_PLAN(
         "travel_plan",
+        List.of("create_plan", "make_plan", "new_plan", "start_trip"),
         CategoryType.PLANNER,
         "/planner/edit",
         "여행 일정 생성",
@@ -28,69 +28,58 @@ public enum IntentType {
 
     PLAN_ACTION(
         "plan_action",
+        List.of(
+            "edit_plan", "modify_plan", "update_plan",
+            "show_plan", "show_my_plan", "view_plan",
+            "swap", "move", "change_day", "change_place"
+        ),
         CategoryType.PLANNER,
         "/planner",
-        "일정 관련 자연어 요청 (LLM Full-Reasoning)",
-        SmartPlanAgent.class   // LLM이 전체 JSON 보고 직접 reasoning
+        "자연어 일정 조작 (LLM Full Reasoning)",
+        SmartPlanAgent.class
     ),
 
     PLAN_PLACE_RECOMMEND(
         "plan_place_recommend",
+        List.of("recommend_place", "place_recommend", "suggest_place"),
         CategoryType.PLANNER,
         "/planner/recommend",
-        "여행지/장소 추천",
+        "플레이스 추천",
         PlaceSuggestAgent.class
     ),
 
-    // -------------------- ETC --------------------
     OTHER(
         "other",
+        List.of(),
         CategoryType.ETC,
         "/",
-        "기타 요청 (SmartPlanAgent가 fallback으로 처리)",
-        SmartPlanAgent.class  // Unknown/불확실한 요청을 LLM Full-Reasoning으로 처리
+        "기타 요청",
+        SmartPlanAgent.class
     );
 
     private final String value;
+    private final List<String> aliases;
     private final CategoryType category;
     private final String requiredUrl;
     private final String humanReadable;
     private final Class<? extends AiAgent> agentClass;
 
     public static IntentType fromValue(String value) {
-        for (IntentType t : values()) {
-            if (t.value.equalsIgnoreCase(value)) {
-                return t;
-            }
+        value = value.toLowerCase();
+
+        for (IntentType type : values()) {
+            if (type.value.equalsIgnoreCase(value)) return type;
+            if (type.aliases.contains(value)) return type;
         }
         return OTHER;
     }
 
-    public static Map<CategoryType, List<IntentType>> groupByCategory() {
-        return Arrays.stream(values())
-                .collect(Collectors.groupingBy(IntentType::getCategory));
-    }
-
-    /**
-     * Intent 목록을 Documentation 용으로 반환
-     */
     public static String buildIntentList() {
-        StringBuilder sb = new StringBuilder();
-        Map<CategoryType, List<IntentType>> grouped = groupByCategory();
-
-        for (CategoryType category : CategoryType.values()) {
-            sb.append("## ").append(category.getValue())
-              .append(" : ").append(category.getDescription()).append("\n");
-
-            List<IntentType> list = grouped.get(category);
-            if (list == null) continue;
-
-            for (IntentType type : list) {
-                sb.append("- ").append(type.getValue())
-                  .append(" : ").append(type.getHumanReadable()).append("\n");
-            }
-            sb.append("\n");
-        }
-        return sb.toString();
+        return Arrays.stream(values())
+                .map(type -> String.format("- %s: %s (aliases: %s)",
+                    type.value,
+                    type.humanReadable,
+                    String.join(", ", type.aliases)))
+                .collect(Collectors.joining("\n"));
     }
 }
