@@ -32,4 +32,5 @@ public class PlanScheduleRow {
     private String normalizedCategory;
     private String firstImage;
     private String firstImage2;
+    private Boolean isEnded;
 }

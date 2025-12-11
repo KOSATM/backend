@@ -33,6 +33,7 @@ public class PlanSnapshotContent {
     private String normalizedCategory;
     private String firstImage;
     private String firstImage2;
+    private boolean isEnded;
   }
 
   // public Plan toPlanEntity(List<DayPlanResult> dayPlans) {

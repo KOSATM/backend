@@ -71,7 +71,8 @@
         pp.expected_cost,
         pp.normalized_category,
         pp.first_image,
-        pp.first_image2
+        pp.first_image2,
+        pp.is_Ended
 
     FROM plans p
     JOIN plan_days d   ON p.id = d.plan_id

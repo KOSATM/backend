@@ -92,6 +92,7 @@ public class PlanSnapshotService {
                 pscItem.setNormalizedCategory(planPlace.getNormalizedCategory());
                 pscItem.setFirstImage(planPlace.getFirstImage());
                 pscItem.setFirstImage2(planPlace.getFirstImage2());
+                pscItem.setEnded(planPlace.getIsEnded());
                 pscItems.add(pscItem);
             }
             pscDay.setSchedules(pscItems);
