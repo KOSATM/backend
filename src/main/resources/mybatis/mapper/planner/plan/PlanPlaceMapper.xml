@@ -78,6 +78,7 @@
         lng = #{lng},
         expected_cost = #{expectedCost},
         normalized_category = #{normalizedCategory}
+        is_Ended = #{isEnded}
     WHERE id = #{id}
   </update>
 
