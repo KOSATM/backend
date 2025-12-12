@@ -81,6 +81,7 @@ public class PlanAssemblerService {
         planPlaceDao.insertPlanPlaceBatch(planPlaces);
 
         try {
+            days = planDayDao.selectPlanDaysByPlanId(plan.getId());
             PlanSnapshot snapShot = planSnapshotService.savePlanSnapshot(plan, days, planPlaces);
             log.info(snapShot+"..,.,.,.,");
         } catch (Exception e) {
