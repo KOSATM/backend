@@ -104,7 +104,7 @@ public class HotelBookingAgent {
             String llmResponse = chatClient.prompt()
                     .system("""
                             당신은 호텔 추천 전문가입니다.
-                            사용자의 여행 일정에 맞는 호텔 3개를 반드시 JSON 형식으로만 추천하세요.
+                            사용자의 여행 일정에 맞는 호텔 5개를 반드시 JSON 형식으로만 추천하세요.
                             
                             [현재 여행 계획]
                             """ + planContext + """
@@ -118,7 +118,7 @@ public class HotelBookingAgent {
 
                             [필수 지시사항]
                             - getHotelCandidates 도구를 사용하여 호텔 목록을 먼저 조회하세요.
-                            - 반드시 3개의 호텔을 선택하세요.
+                            - 반드시 5개의 호텔을 선택하세요.
                             - 응답은 JSON 배열 형식ONLY로 반환하세요.
                             - 다른 설명이나 텍스트는 절대 포함하지 마세요.
                             
