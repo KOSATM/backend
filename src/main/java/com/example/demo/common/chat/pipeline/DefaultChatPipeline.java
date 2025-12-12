@@ -56,7 +56,7 @@ public class DefaultChatPipeline implements ChatPipeline {
         AiAgentResponse mainIntentResponse = agentRouter.route(main, userId);
 
         // 응답 에이전트 사용
-        String message = responseAgent.generateMessage(mainIntentResponse.getData());
+        String message = responseAgent.generateMessage(request.getMessage(), mainIntentResponse.getData());
         AiAgentResponse processedResponse = AiAgentResponse.builder()
                 .message(message)
                 .targetUrl(mainIntentResponse.getTargetUrl())
