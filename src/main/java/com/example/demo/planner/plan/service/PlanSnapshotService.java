@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dao.PlanSnapshotDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
@@ -28,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PlanSnapshotService {
     private final PlanSnapshotDao planSnapshotDao;
+    private final PlanPlaceDao planPlaceDao;
 
     // ### 단순 CRUD ###
     // ID로 개별 스냅샷 조회
@@ -79,7 +81,9 @@ public class PlanSnapshotService {
             pscDay.setTitle(planDay.getTitle());
             
             List<PlanSnapshotContent.PlanDayItem> pscItems = new ArrayList<>();
-            for (PlanPlace planPlace : planPlaces) {
+            log.info("planDay: {}", planDay.toString());
+            log.info("planPlaceDao.selectPlanPlacesByPlanDayId(planDay.getId()): {}", planPlaceDao.selectPlanPlacesByPlanDayId(planDay.getId()).toString());
+            for (PlanPlace planPlace : planPlaceDao.selectPlanPlacesByPlanDayId(planDay.getId())) {
                 PlanSnapshotContent.PlanDayItem pscItem = new PlanSnapshotContent.PlanDayItem();
                 pscItem.setTitle(planPlace.getTitle());
                 pscItem.setStartAt(planPlace.getStartAt().format(formatter));
