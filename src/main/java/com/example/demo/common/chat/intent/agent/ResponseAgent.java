@@ -11,14 +11,16 @@ public class ResponseAgent {
     this.chatClient = chatClientBuilder.build();
   }
 
-  public String generateMessage(Object data) {
+  public String generateMessage(String originalUserMessage, Object data) {
     String answer = chatClient.prompt()
       .system("""
-        다른 에이전트로부터 전달 받은 데이터를 바탕으로
+        사용자에게 받은 질문/지시의 원문과
+        다른 에이전트로부터 전달 받은 데이터로
         자연스러운 답변을 생성하세요.
 
         데이터: %s
       """.formatted(data.toString()))
+      .user(originalUserMessage)
       .call()
       .content();
 
