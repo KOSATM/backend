@@ -18,10 +18,13 @@ import com.example.demo.planner.plan.agent.PlaceSuggestAgent;
 import com.example.demo.planner.plan.agent.PlaceSuggestAgentNoChat;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
 import com.example.demo.planner.plan.dto.entity.TravelPlaces;
+import com.example.demo.planner.plan.service.RestPlaceService;
 import com.example.demo.planner.plan.service.create.PlanService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -32,6 +35,8 @@ public class TestSuggestController {
   private final PlaceSuggestAgentNoChat placeSuggestAgentNoChat;
 
   private final DefaultChatPipeline defaultChatPipeline;
+
+  private final RestPlaceService restPlaceService;
 
   @GetMapping("/snapshot/search")
   public String snapshotSearch(@RequestBody String snapshot) {
@@ -66,5 +71,10 @@ public class TestSuggestController {
   // return
   // defaultChatPipeline.execute(intentRequest).getMainResponse().getMessage().toString();
   // }
-
+  @GetMapping("/search-rest-place")
+  public Object searchRestPlace(@RequestParam("lat") Double lat, @RequestParam("lng") Double lng) {
+    return restPlaceService.searchRestPlace(lat, lng);
+    // return new String();
+  }
+  
 }
