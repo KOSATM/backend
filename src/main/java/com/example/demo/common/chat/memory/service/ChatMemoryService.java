@@ -15,6 +15,9 @@ import com.example.demo.common.chat.dto.ChatMemoryVector;
 
 @Service
 public class ChatMemoryService {
+
+    private static final int SHORT_TERM_LIMIT = 10; // <- 너가 말한 슬롯 10개 기준
+
     private final EmbeddingModel embeddingModel;
     private final ChatMemoryDao dao;
 
@@ -23,14 +26,31 @@ public class ChatMemoryService {
         this.dao = dao;
     }
 
+    // 🔹 단기 기억 개수 로그용
+    public int countShortTerm(Long userId) {
+        return dao.countByConversationId(userId);
+    }
+
+    // 🔹 장기 기억 개수 로그용
+    public int countLongTerm(Long userId) {
+        return dao.countVectorByUserId(userId);
+    }
+
     // db에 대화메시지 저장 (String)
     public void add(Long userId, String message, String role) {
-        int count = dao.countByConversationId(userId);
+
+        // 1) 현재 short-term 개수 (슬롯 제한 체크용)
+        int shortMemoryCount = dao.countByConversationId(userId);
+
+        // 2) 마지막 order_index 가져오기 (없으면 null)
+        Integer lastOrderIndex = dao.findMaxOrderIndex(userId);
+        int nextOrderIndex = (lastOrderIndex == null) ? 0 : lastOrderIndex + 1;
+
+        // 3) 새 메시지 저장 (order_index는 항상 이전 + 1)
         ChatMemory chatMemory = ChatMemory.builder()
                 .userId(userId)
-                // 임시 처리
                 .agentName(null)
-                .orderIndex(count)
+                .orderIndex(nextOrderIndex)
                 .content(message)
                 .tokenUsage(null)
                 .createdAt(OffsetDateTime.now())
@@ -38,20 +58,24 @@ public class ChatMemoryService {
                 .build();
         dao.insertChatMemory(chatMemory);
 
-        // 2) 단기기억 개수 확인
-        int shortMemoryCount = dao.countByConversationId(userId);
+        // 4) short-term 개수 + 1 이 제한을 넘는지 확인
+        int afterCount = shortMemoryCount + 1;
 
-        // 3) 20개 초과하면 가장 오래된 1개를 장기기억으로 이동
-        if (shortMemoryCount > 20) {
+        // 5) SHORT_TERM_LIMIT(예: 10) 초과하면 가장 오래된 1개를 long-term으로 이동
+        if (afterCount > SHORT_TERM_LIMIT) {
             ChatMemory oldest = dao.findOldestMessage(userId);
+            if (oldest == null) {
+                return;
+            }
 
-            // --- 3-1. 오래된 메시지를 embedding하고 long-term으로 이동
-            EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of(oldest.getContent()));
+            // 오래된 메시지를 embedding하고 long-term으로 이동
+            EmbeddingResponse embeddingResponse =
+                    embeddingModel.embedForResponse(List.of(oldest.getContent()));
             float[] embedding = embeddingResponse.getResult().getOutput();
 
             ChatMemoryVector chatMemoryVector = ChatMemoryVector.builder()
                     .userId(userId)
-                    .orderIndex(oldest.getOrderIndex())
+                    .orderIndex(oldest.getOrderIndex()) // 기존 order_index 유지
                     .content(oldest.getContent())
                     .embedding(embedding)
                     .createdAt(oldest.getCreatedAt())
@@ -59,8 +83,8 @@ public class ChatMemoryService {
                     .build();
             dao.insertChatMemoryVector(chatMemoryVector);
 
-            // --- 3-2. short-term에서 삭제
-            dao.deleteChatMemory(oldest.getId());
+            // short-term에서 삭제
+            dao.deleteChatMemoryById(oldest.getId());
         }
     }
 

@@ -12,9 +12,22 @@ import com.example.demo.common.chat.dto.ChatMemoryVector;
 public interface ChatMemoryDao {
     void insertChatMemory(ChatMemory chatMemory);
     void insertChatMemoryVector(ChatMemoryVector chatMemoryVector);
-    int countByConversationId(Long userId);
+
+    // 참조는 userId로 확실히
+    int countByConversationId(@Param("userId") Long userId);
+
     List<ChatMemoryVector> getSimilarMessages(java.util.Map<String, Object> paramMap);
     List<ChatMemory> findRecentMessages(@Param("userId") Long userId, @Param("limit") int limit);
-    void deleteChatMemory(Long userId);
+
+    // 삭제는 id(pk) 기준으로
+    void deleteChatMemoryById(@Param("id") Long id);
+    
     ChatMemory findOldestMessage(Long userId);
+
+    // ✅ 추가: 해당 user의 마지막 order_index 조회
+    Integer findMaxOrderIndex(@Param("userId") Long userId);
+
+    // 🔹 장기 기억(벡터) 개수
+    int countVectorByUserId(@Param("userId") Long userId);
+    
 }

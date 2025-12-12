@@ -18,7 +18,8 @@ public class MemoryRetrievalService {
 
     public MemoryBundle retrieveAll(Long userId, String query, Object context ) {
         // 1) Short-term: 최근 N개 (기본 20)
-        List<ChatMemory> shortMemory = chatMemoryService.getRecentMessage(userId, 20);
+        // List<ChatMemory> shortMemory = chatMemoryService.getRecentMessage(userId, 20);
+        List<ChatMemory> shortMemory = chatMemoryService.getRecentMessage(userId, 10);
 
         // 2) Long-term: 벡터 유사도 기반 topK (기본 3)
         List<ChatMemoryVector> longMemory = chatMemoryService.getSimilarMessages(userId, query, 3);

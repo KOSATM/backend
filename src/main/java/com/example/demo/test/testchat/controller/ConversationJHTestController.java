@@ -11,17 +11,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.example.demo.test.testchat.agent.ConversationTestAgent;
+import com.example.demo.test.testchat.agent.ConversationJHTestAgent;
 import lombok.extern.slf4j.Slf4j;
 
 @Controller
 @RequestMapping("/test/chat")
 @CrossOrigin(origins = "*")
 @Slf4j
-public class ConversationTestController {
+public class ConversationJHTestController {
 
     @Autowired
-    private ConversationTestAgent conversationTestAgent;
+    private ConversationJHTestAgent conversationTestAgent;
 
     @Autowired
     private ChatMemory chatMemory;
