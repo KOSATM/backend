@@ -71,6 +71,7 @@ public class PlaceSuggestAgent implements AiAgent {
             3. `validateDate`가 false를 반환하면, 날짜가 여행 계획 범위를 벗어난다고 사용자에게 알리세요
             4. 날짜가 유효한 경우에만 `dbSearch` 도구를 사용하여 데이터베이스를 조회하세요
             5. 데이터베이스 조회는 `dbSearch` 도구를 사용하세요
+            6. 사용자의 질문에 동선 정보가 있다면(예: 마지막 일정 장소 근처) 조회한 여행 계획을 참고하여 동선이 최적화되는 장소를 추천하세요
 
             사용자에게는 title, address, tel, description, detail_info를 응답하되,
             해당 값이 없다면 '미제공'이라고 응답하세요.
