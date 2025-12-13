@@ -74,6 +74,14 @@ public class PlanService {
   }
 
   /**
+   * 활성 Plan ID와 현재 dayIndex 조회
+   */
+  public ActivePlanInfoResponse getActivePlanIdAndDayIndex(Long userId) {
+    log.info("활성 Plan 정보 조회: userId={}", userId);
+    return planDao.selectPlanIdAndCurrentDayIndex(userId);
+  }
+
+  /**
    * 특정 일차의 전체 일정 조회 (PlanDay + PlanPlace 리스트)
    */
   public PlanDayWithPlaces queryDay(Long planId, int dayIndex) {
