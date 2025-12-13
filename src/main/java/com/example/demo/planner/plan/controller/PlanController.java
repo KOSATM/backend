@@ -1,6 +1,7 @@
 package com.example.demo.planner.plan.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.planner.plan.dto.response.ActivePlanInfoResponse;
 import com.example.demo.planner.plan.dto.response.PlanDetail;
 import com.example.demo.planner.plan.service.create.PlanService;
 
@@ -39,6 +41,13 @@ public class PlanController {
     } catch (Exception e) {
       return "에러";
     }
+  }
+
+  
+  // 플랜 id, 해당 날짜 dayindex 조회
+  @GetMapping("/{planId}/active/plan/info")
+  public ResponseEntity<ActivePlanInfoResponse> getActivePlanIdAndDayIndex(@PathVariable("planId") Long planId) {
+    return ResponseEntity.ok(planService.getActivePlanIdAndDayIndex(planId));
   }
 
   // 여행 계획 생성 (빈 Plan만) - POST /plans

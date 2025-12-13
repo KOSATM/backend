@@ -10,6 +10,7 @@ import com.example.demo.planner.plan.dto.TravelPlaceCandidate;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanScheduleRow;
 import com.example.demo.planner.plan.dto.entity.TravelPlaces;
+import com.example.demo.planner.plan.dto.response.ActivePlanInfoResponse;
 
 @Mapper
 public interface PlanDao {
@@ -70,4 +71,7 @@ public interface PlanDao {
 
     /*is_ended=true && title = null일시 제목 자동생성위해 조회 */
     List<Plan> selectEndedPlansWithNoTitle();
+
+    /* 활성화 된 planId 및 해당 날짜의 dayIndex조회 */
+    ActivePlanInfoResponse selectPlanIdAndCurrentDayIndex(Long userId);
 }
