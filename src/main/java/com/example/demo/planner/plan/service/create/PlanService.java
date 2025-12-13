@@ -18,6 +18,7 @@ import com.example.demo.planner.plan.dao.PlanSnapshotDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.planner.plan.dto.response.ActivePlanInfoResponse;
 import com.example.demo.planner.plan.dto.response.PlacePosition;
 import com.example.demo.planner.plan.dto.response.PlanDayWithPlaces;
 import com.example.demo.planner.plan.dto.response.PlanDetail;
@@ -36,6 +37,13 @@ public class PlanService {
   private final PlanPlaceDao planPlaceDao;
   private final PlanSnapshotDao planSnapshotDao;
   private final UserDao userDao;
+
+  /* 활성화된 planId 및 해당 날짜 dayIndex 조회 */
+  public ActivePlanInfoResponse getActivePlanIdAndDayIndex(Long userId){
+    ActivePlanInfoResponse response = planDao.selectPlanIdAndCurrentDayIndex(userId);
+    return response;
+  }
+
 
   /**
    * 두 일차(PlanDay)의 dayIndex를 서로 교체 (장소는 그대로)

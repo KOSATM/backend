@@ -26,6 +26,7 @@ public class PlanDetailResponse {
 
     @Data
     public static class Day {
+        private Long dayId;
         private Integer dayIndex;
         private String date;
         private List<Schedule> schedules;
@@ -73,6 +74,7 @@ public class PlanDetailResponse {
             PlanScheduleRow base = dayRows.get(0);
 
             Day day = new Day();
+            day.setDayId(base.getDayId());
             day.setDayIndex(base.getDayIndex());
             day.setDate(base.getPlanDate().toString());
 

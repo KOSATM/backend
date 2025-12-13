@@ -67,8 +67,8 @@ public class PlanAssemblerService {
         // 3) PlanDays 생성 및 저장
         List<PlanDay> days = createPlanDayEntity(startDate, plan.getId(), scheduleResult);
         planDayDao.insertPlanDayBatch(days);
-        log.info(days.toString() + "<< <<<<");
         List<Long> planDaysIds = planDayDao.selectPlanDayIdsByPlanId(plan.getId());
+        log.info(days.toString() + "<< <<<<");
         
 
         // 4) 각 날짜 엔티티 생성
@@ -125,10 +125,12 @@ public class PlanAssemblerService {
     private List<PlanDay> createPlanDayEntity(
             LocalDate startDate,
             Long planId,
+
             PlanScheduleResult scheduleResult) {
         return scheduleResult.getDays().stream()
                 .map(d -> PlanDay.builder()
                         .planId(planId)
+                        .id(d.getId())
                         .dayIndex(d.getDayIndex())
                         .planDate(startDate.plusDays(d.getDayIndex() - 1))
                         .title(null) // 제목 따로 생성 가능

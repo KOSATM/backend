@@ -14,6 +14,7 @@ public class PlanScheduleResult {
 
     @Data
     public static class Day {
+        private Long id;
         private int dayIndex;
         private List<Item> items;
     }
