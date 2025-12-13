@@ -1,9 +1,19 @@
 package com.example.demo.planner.plan.agent;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.common.naver.dto.LocalItem;
 import com.example.demo.planner.plan.dao.PlanDao;
@@ -12,11 +22,14 @@ import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
+import com.example.demo.planner.plan.dto.response.PlanSnapshotContent;
 import com.example.demo.planner.plan.service.PlanSnapshotService;
 import com.example.demo.planner.plan.service.action.PlanAddAction;
 import com.example.demo.planner.plan.service.action.PlanDeleteAction;
 import com.example.demo.planner.plan.service.action.PlanModifyAction;
 import com.example.demo.planner.plan.service.action.PlanSwapAction;
+import com.example.demo.planner.plan.service.create.PlanService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +45,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PlanTools {
 
+    private final PlanService planService;
+
     private final PlanAddAction addAction;
     private final PlanModifyAction modifyAction;
     private final PlanSwapAction swapAction;
@@ -44,6 +59,9 @@ public class PlanTools {
 
 
     private final ThreadLocal<Long> currentPlanId = new ThreadLocal<>();
+
+    DateTimeFormatter formatter1 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public void setPlanId(Long planId) {
         currentPlanId.set(planId);
@@ -319,6 +337,92 @@ public class PlanTools {
         } catch (Exception e) {
             log.error("전체 일정 삭제 실패", e);
             return String.format("❌ 전체 일정 삭제 중 오류 발생: %s", e.getMessage());
+        }
+    }
+
+    @Transactional
+    @Tool(description = "사용자가 가지고 있는 계획 스냅샷의 바로 이전 버전으로 돌아갑니다.")
+    public String rollBack(@ToolParam(description = "사용자 아이디") ToolContext toolContext) {
+        try {
+            PlanSnapshot planSnapshot = planSnapshotService.getPlanSnapshotsByUserId((Long) toolContext.getContext().get("userId")).get(1);
+            PlanSnapshotContent snapshotContent = planService.parseSnapshot(planSnapshot.getSnapshotJson());
+
+            Long planId = getPlanId();
+            Plan plan = planDao.selectPlanById(getPlanId());
+
+            List<PlanPlace> existingPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
+            for (PlanPlace place : existingPlaces) {
+                planPlaceDao.deletePlanPlace(place.getId());
+            }
+            log.info("plan_places 삭제 완료");
+
+            List<PlanDay> existingDays = planDayDao.selectPlanDaysByPlanId(planId);
+            for (PlanDay day : existingDays) {
+                planDayDao.deletePlanDay(day.getId());
+            }
+            log.info("plan_days 삭제 완료");
+
+            Plan rollbackPlan = Plan.builder()
+                .userId((Long) toolContext.getContext().get("userId"))
+                .budget(snapshotContent.getBudget())
+                .startDate(LocalDate.parse(snapshotContent.getStartDate(), formatter1))
+                .endDate(LocalDate.parse(snapshotContent.getEndDate(), formatter1))
+                .createdAt(plan.getCreatedAt())
+                .updatedAt(OffsetDateTime.now())
+                .build();
+            planDao.updatePlan(rollbackPlan);
+            log.info("Plan 업데이트 완료");
+
+            Map<String, Long> dateToDayId = new HashMap<>();
+            for (int i=0; i<snapshotContent.getDays().size(); i++) {
+                PlanSnapshotContent.PlanDay pscDay = snapshotContent.getDays().get(i);
+
+                PlanDay newDay = PlanDay.builder()
+                    .planId(planId)
+                    .dayIndex(i+1)
+                    .title(pscDay.getTitle())
+                    .planDate(LocalDate.parse(pscDay.getDate(), formatter1))
+                    .build();
+
+                planDayDao.insertPlanDay(newDay);
+                dateToDayId.put(pscDay.getDate(), newDay.getId());
+            }
+            log.info("PlanDays 재생성 완료");
+
+            for (PlanSnapshotContent.PlanDay pscDay : snapshotContent.getDays()) {
+                Long dayId = dateToDayId.get(pscDay.getDate());
+
+                for (PlanSnapshotContent.PlanDayItem pscItem : pscDay.getSchedules()) {
+                    PlanPlace newPlace = PlanPlace.builder()
+                        .dayId(dayId)
+                        .title(pscItem.getTitle())
+                        .startAt(LocalDateTime.parse(pscItem.getStartAt(), formatter2).atOffset(ZoneOffset.of("+09:00")))
+                        .endAt(LocalDateTime.parse(pscItem.getEndAt(), formatter2).atOffset(ZoneOffset.of("+09:00")))
+                        .placeName(pscItem.getPlaceName())
+                        .address(pscItem.getAddress())
+                        .lat(pscItem.getLat())
+                        .lng(pscItem.getLng())
+                        .expectedCost(pscItem.getExpectedCost())
+                        .normalizedCategory(pscItem.getNormalizedCategory())
+                        .firstImage(pscItem.getFirstImage())
+                        .firstImage2(pscItem.getFirstImage2())
+                        .isEnded(pscItem.getIsEnded() == null ? false : pscItem.getIsEnded())
+                        .build();
+                    
+                    planPlaceDao.insertPlanPlace(newPlace);
+                }
+            }
+            log.info("PlanPlaces 재생성 완료");
+
+            List<PlanDay> newDays = planDayDao.selectPlanDaysByPlanId(planId);
+            List<PlanPlace> newPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
+            planSnapshotService.savePlanSnapshot(rollbackPlan, newDays, newPlaces);
+            log.info("버전 환원 완료");
+            return "이전 버전으로 돌아갔습니다";
+
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return String.format("❌ 버전 환원 중 오류 발생: %s", e.getMessage());
         }
     }
 

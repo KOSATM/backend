@@ -65,6 +65,7 @@ public class SmartPlanAgent implements AiAgent {
                     .system(systemPrompt)
                     .user(userPrompt)
                     .tools(planTools)  // PlanTools의 모든 @Description 메서드가 자동 등록됨
+                    .toolContext(Map.of("userId", userId))
                     .call()
                     .content();
 
