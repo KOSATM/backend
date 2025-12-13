@@ -10,8 +10,8 @@ import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.planner.plan.dto.context.PlanContext;
 import com.example.demo.planner.plan.dto.entity.Plan;
-import com.example.demo.planner.plan.service.action.PlanActionExecutor;
-import com.example.demo.planner.plan.service.create.PlanService;
+import com.example.demo.planner.plan.service.PlanCrudService;
+import com.example.demo.planner.plan.service.PlanQueryService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,14 +20,19 @@ import lombok.extern.slf4j.Slf4j;
 public class SmartPlanAgent implements AiAgent {
 
     private final ChatClient chatClient;
-    private final PlanService planService;
-    private final PlanActionExecutor planActionExecutor;
+    private final PlanQueryService queryService;
+    private final PlanCrudService crudService;
+    private final PlanTools planTools;
     private final Map<Long, List<String>> historyMap = new HashMap<>();
 
-    public SmartPlanAgent(ChatClient.Builder builder, PlanService planService, PlanActionExecutor executor) {
+    public SmartPlanAgent(ChatClient.Builder builder,
+                          PlanQueryService queryService,
+                          PlanCrudService crudService,
+                          PlanTools planTools) {
         this.chatClient = builder.build();
-        this.planService = planService;
-        this.planActionExecutor = executor;
+        this.queryService = queryService;
+        this.crudService = crudService;
+        this.planTools = planTools;
     }
 
     @Override
@@ -37,145 +42,66 @@ public class SmartPlanAgent implements AiAgent {
         log.info("[SmartPlanAgent] User({}): {}", userId, userMsg);
 
         PlanContext ctx = loadContext(userId);
-        if (!ctx.hasActivePlan()) return AiAgentResponse.of("현재 활성화된 여행 일정이 없습니다.");
-
-        String planJson = ctx.toJson();
-        List<String> history = historyMap.computeIfAbsent(userId, k -> new ArrayList<>());
-        history.add("User: " + userMsg);
-
-        String systemPrompt = buildSystemPrompt();
-        String userPrompt = buildUserPrompt(planJson, history, userMsg);
-
-        String llm = chatClient.prompt().system(systemPrompt).user(userPrompt).call().content();
-        log.info("[LLM Response]\n{}", llm);
-
-        String clean = llm.replaceAll("```\\s*", "").trim();
-        return clean.startsWith("FUNCTION_CALL:")
-                ? handleFunctionCall(clean, ctx, userId, systemPrompt)
-                : AiAgentResponse.of(llm);
-    }
-
-    /* ─────────────────────────────────────────────
-     * FUNCTION_CALL 처리
-     * ───────────────────────────────────────────── */
-    private AiAgentResponse handleFunctionCall(
-            String clean, PlanContext ctx, Long userId, String systemPrompt
-    ) {
-        String[] parts = clean.split("\n", 2);
-        String callLine = parts[0].replace("FUNCTION_CALL:", "").trim();
-        String naturalMsg = parts.length > 1 ? parts[1].trim() : "";
-
-        String result = executeFunctionCall(callLine, ctx.getActivePlan().getId());
-        log.info("[Function Result] {}", result);
-
-        // 성공 → 최신 일정 로드 + LLM 확인 프롬프트
-        if (result.startsWith("✅")) {
-            PlanContext updated = loadContext(userId);
-            String confirmPrompt = """
-                    Function 실행 결과:
-                    %s
-
-                    변경된 일정:
-                    %s
-
-                    사용자에게 자연스럽게 안내해주세요.
-                    """.formatted(result, updated.toJson());
-
-            String answer = chatClient.prompt().system(systemPrompt).user(confirmPrompt).call().content();
-            saveHistory(userId, answer);
-            return AiAgentResponse.of(answer);
+        if (!ctx.hasActivePlan()) {
+            return AiAgentResponse.of("현재 활성화된 여행 일정이 없습니다. 새로운 여행 계획을 만들어주세요!");
         }
 
-        // 검색 결과 또는 실패
-        String answer = result + (!naturalMsg.isEmpty() ? "\n\n" + naturalMsg : "");
-        saveHistory(userId, answer);
-        return AiAgentResponse.of(answer);
-    }
+        // PlanTools에 planId 설정
+        Long planId = ctx.getActivePlan().getId();
+        planTools.setPlanId(planId);
 
-    /* ─────────────────────────────────────────────
-     * Function Call 파싱 + 실행
-     * ───────────────────────────────────────────── */
-    private String executeFunctionCall(String line, Long planId) {
         try {
-            int idx = line.indexOf('(');
-            if (idx == -1) return "❌ Function Call 형식 오류";
+            String planJson = ctx.toJson();
+            List<String> history = historyMap.computeIfAbsent(userId, k -> new ArrayList<>());
+            history.add("User: " + userMsg);
 
-            String fn = line.substring(0, idx).trim();
-            String args = line.substring(idx + 1, line.lastIndexOf(')')).trim();
+            String systemPrompt = buildSystemPrompt();
+            String userPrompt = buildUserPrompt(planJson, history, userMsg);
 
-            Map<String, String> params = parseArgs(args);
-            return dispatch(fn, params, planId);
+            log.info("[Tool Calling] LLM 호출 with 13 functions");
 
-        } catch (Exception e) {
-            log.error("Function Call 처리 오류", e);
-            return "❌ Function Call 처리 중 오류: " + e.getMessage();
-        }
-    }
+            // Tool Calling 방식으로 LLM 호출
+            String llm = chatClient.prompt()
+                    .system(systemPrompt)
+                    .user(userPrompt)
+                    .tools(planTools)  // PlanTools의 모든 @Description 메서드가 자동 등록됨
+                    .call()
+                    .content();
 
-    private Map<String, String> parseArgs(String argsStr) {
-        Map<String, String> map = new HashMap<>();
-        if (argsStr.isEmpty()) return map;
+            log.info("[LLM Response]\n{}", llm);
 
-        for (String pair : argsStr.split(",")) {
-            String[] kv = pair.split("=", 2);
-            if (kv.length != 2) continue;
+            saveHistory(userId, llm);
 
-            String key = normalizeKey(kv[0].trim());
-            String value = kv[1].trim().replaceAll("^\"|\"$", "");
-
-            if (!value.isBlank() && !"null".equalsIgnoreCase(value)) {
-                map.put(key, value);
+            // 최신 일정 다시 로드 (삭제된 경우 빈 컨텍스트 반환)
+            PlanContext updatedCtx = loadContext(userId);
+            
+            // Plan이 삭제된 경우 처리
+            if (!updatedCtx.hasActivePlan()) {
+                return AiAgentResponse.ofData(
+                        llm + "\n\n새로운 여행 계획을 만들고 싶으시면 말씀해주세요!",
+                        null,
+                        Map.of(
+                            "plan", null,
+                            "days", List.of(),
+                            "planJson", "{}"
+                        )
+                );
             }
+
+            // 응답에 메시지 + JSON 데이터 포함
+            return AiAgentResponse.ofData(
+                    llm,                        // 텍스트 메시지
+                    null,                       // targetUrl
+                    Map.of(
+                        "plan", updatedCtx.getActivePlan(),
+                        "days", updatedCtx.getAllDays(),
+                        "planJson", updatedCtx.toJson()
+                    )
+            );
+        } finally {
+            // planId 정리
+            planTools.clearPlanId();
         }
-        return map;
-    }
-
-    /* ─────────────────────────────────────────────
-     * 디스패처
-     * ───────────────────────────────────────────── */
-    private String dispatch(String fn, Map<String, String> p, Long pid) {
-        try {
-            return switch (fn) {
-                case "deletePlace" -> planActionExecutor.deletePlace(pid, p.get("placeName"));
-                case "swapPlaces" -> planActionExecutor.swapPlaces(pid,
-                        i(p, "dayIndex"), i(p, "index1"), i(p, "index2"));
-                case "swapPlacesBetweenDays" -> planActionExecutor.swapPlacesBetweenDays(pid,
-                        i(p, "day1"), i(p, "index1"), i(p, "day2"), i(p, "index2"));
-                case "replacePlace" -> planActionExecutor.replacePlace(pid,
-                        p.get("oldPlaceName"), p.get("newPlaceName"));
-                case "searchPlace" -> planActionExecutor.searchPlace(p.get("searchQuery"));
-                case "replacePlaceWithSelection" -> planActionExecutor.replacePlaceWithSelection(pid,
-                        p.get("oldPlaceName"), p.get("newPlaceName"), i(p, "selectedIndex"));
-                case "addPlace" -> planActionExecutor.addPlace(pid,
-                        i(p, "dayIndex"), p.get("placeName"), p.get("startTime"));
-                case "addPlaceAtPosition" -> planActionExecutor.addPlaceAtPosition(pid,
-                        i(p, "dayIndex"), i(p, "position"), p.get("placeName"),
-                        p.containsKey("duration") ? i(p, "duration") : null);
-                case "updatePlaceTime" -> planActionExecutor.updatePlaceTime(pid,
-                        p.get("placeName"), p.get("newTime"));
-                case "deleteDay" -> planActionExecutor.deleteDay(pid, i(p, "dayIndex"));
-                case "swapDays" -> planActionExecutor.swapDays(pid,
-                        i(p, "day1"), i(p, "day2"));
-                case "extendPlan" -> planActionExecutor.extendPlan(pid, i(p, "extraDays"));
-                case "deletePlan" -> planActionExecutor.deletePlan(pid);
-
-                default -> "❌ 알 수 없는 함수: " + fn;
-            };
-        } catch (Exception e) {
-            return "❌ Function 실행 중 오류: " + e.getMessage();
-        }
-    }
-
-    private int i(Map<String, String> p, String k) { return Integer.parseInt(p.get(k)); }
-
-    private String normalizeKey(String k) {
-        return switch (k) {
-            case "old", "oldName", "oldPlace" -> "oldPlaceName";
-            case "new", "newName", "newPlace" -> "newPlaceName";
-            case "day", "dayIdx" -> "dayIndex";
-            case "idx" -> "index";
-            default -> k;
-        };
     }
 
     /* ─────────────────────────────────────────────
@@ -204,14 +130,18 @@ public class SmartPlanAgent implements AiAgent {
         historyMap.get(userId).add("Assistant: " + answer);
     }
 
+    public PlanContext loadPlanContext(Long userId) {
+        return loadContext(userId);
+    }
+
     private PlanContext loadContext(Long userId) {
         try {
-            Plan plan = planService.findActiveByUserId(userId);
+            Plan plan = crudService.findActiveByUserId(userId);
             return (plan == null)
                     ? PlanContext.empty()
                     : PlanContext.builder()
                             .activePlan(plan)
-                            .allDays(planService.queryAllDaysOptimized(plan.getId()))
+                            .allDays(queryService.queryAllDaysOptimized(plan.getId()))
                             .build();
         } catch (Exception e) {
             return PlanContext.empty();
@@ -220,9 +150,31 @@ public class SmartPlanAgent implements AiAgent {
 
     private String buildSystemPrompt() {
         return """
-        당신은 여행 일정 관리 AI 입니다. 사용자의 요청을 보고 필요하면 FUNCTION_CALL을 사용하여 일정을 수정하세요.
-        FUNCTION_CALL 형식:
-        FUNCTION_CALL: 함수명(key="value")
+        당신은 여행 일정 관리 AI 어시스턴트입니다.
+        
+        ## 중요한 규칙
+        
+        ### 🔢 dayIndex는 1부터 시작
+        - 1일차 = dayIndex: 1
+        - 2일차 = dayIndex: 2
+        - **0이 아닙니다!**
+        
+        ### 🍽️ 음식/식당 요청 처리
+        - "짜장면 먹고 싶어", "피자 추가해줘" 같은 음식 이름 언급 시:
+          1. searchPlace("음식명") 먼저 호출
+          2. 검색 결과에서 적절한 음식점 찾음
+          3. addPlace() 또는 addPlaceAtPosition()으로 추가
+        
+        ### ⚠️ 전체 일정 삭제 시 반드시 확인 필수!
+        - "일정 삭제", "전체 삭제", "다 지워줘" 등 **전체 일정 삭제** 요청 시:
+          1. **절대 바로 deletePlan() 호출하지 마세요**
+          2. 먼저 "정말로 전체 일정을 삭제하시겠습니까? 삭제하면 복구할 수 없습니다." 확인 요청
+          3. 사용자가 "네", "응", "삭제해", "확인" 등으로 명확히 확인한 경우에만 deletePlan() 호출
+        
+        ### ✅ 일반 작업 (확인 불필요)
+        - 특정 장소 삭제, 장소 추가/수정/교환, 시간 변경, 날짜 삭제: 바로 실행
+        
+        함수 호출 후에는 친절하게 결과를 설명하세요.
         """;
     }
 }
