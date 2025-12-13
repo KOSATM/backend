@@ -19,15 +19,15 @@
 
   <select id="selectPlanPlacesByPlanId" parameterType="long" resultType="PlanPlace">
     SELECT tplace.id, tplace.day_id, tplace.title, tplace.start_at, tplace.end_at, tplace.place_name, tplace.address, tplace.lat, tplace.lng, tplace.expected_cost, tplace.normalized_category, tplace.first_image, tplace.first_image2, tplace.is_Ended
-    FROM plan_places tp
-    INNER JOIN plan_days td ON tp.day_id = td.id
+    FROM plan_places tplace
+    INNER JOIN plan_days td ON tplace.day_id = td.id
     WHERE td.plan_id = #{planId}
-    ORDER BY td.day_index ASC, tp.start_at ASC
+    ORDER BY td.day_index ASC, tplace.start_at ASC
   </select>
 
   <insert id="insertPlanPlace" parameterType="PlanPlace" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO plan_places (day_id,  title, start_at, end_at, place_name, address, lat, lng, expected_cost, normalized_category, first_image, first_image2, is_Ended)
-    VALUES (#{dayId}, #{title}, #{startAt}, #{endAt}, #{placeName}, #{address}, #{lat}, #{lng}, #{expectedCost}, #{normalizedCategory}, #{firstImage}, #{firstImage2}, #{isEnded}
+    VALUES (#{dayId}, #{title}, #{startAt}, #{endAt}, #{placeName}, #{address}, #{lat}, #{lng}, #{expectedCost}, #{normalizedCategory}, #{firstImage}, #{firstImage2}, #{isEnded})
   </insert>
 
   <insert id="insertPlanPlaceBatch">
