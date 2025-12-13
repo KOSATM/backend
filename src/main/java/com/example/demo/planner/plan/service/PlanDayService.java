@@ -12,6 +12,8 @@ import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.planner.plan.dto.response.MovePreview;
+import com.example.demo.planner.plan.dto.response.PlanDetail;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -290,5 +292,204 @@ public class PlanDayService {
         }
 
         log.info("날짜 스왑 완료: {} ↔ {}", dayIndexA, dayIndexB);
+    }
+
+    /**
+     * PlanDay in-place 이동 (트랜잭션)
+     * Day의 dayIndex를 toIndex로 변경하고, 영향받는 다른 Day들의 인덱스 재조정
+     */
+    @Transactional
+    public PlanDetail moveDay(Long dayId, Integer toIndex, Boolean confirm, PlanQueryService planQueryService) {
+        if (toIndex == null || toIndex < 1) {
+            throw new IllegalArgumentException("toIndex는 1 이상의 정수여야 합니다.");
+        }
+
+        // 이동할 Day 조회
+        PlanDay moving = planDayDao.selectPlanDayById(dayId);
+        if (moving == null) {
+            throw new IllegalArgumentException("존재하지 않는 여행 일자입니다: dayId=" + dayId);
+        }
+
+        Plan plan = planDao.selectPlanById(moving.getPlanId());
+        if (plan == null) {
+            throw new IllegalArgumentException("해당 Day의 Plan을 찾을 수 없습니다: planId=" + moving.getPlanId());
+        }
+
+        int fromIndex = moving.getDayIndex();
+        if (toIndex == fromIndex) {
+            // 변경 없음
+            return planQueryService.getPlanDetail(plan.getId());
+        }
+
+        // 전체 Day 목록 조회 (정렬되어 반환된다고 가정)
+        List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(plan.getId());
+
+        // 현재 최대 인덱스 계산 (null 안전 처리)
+        int currentMaxIndex = days.stream()
+                .map(PlanDay::getDayIndex)
+                .filter(idx -> idx != null)
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+        boolean requiresExtension = toIndex > currentMaxIndex;
+
+        // 확장이 필요하지만 사용자 승인이 없으면 예외로 알림
+        if (requiresExtension && (confirm == null || !confirm)) {
+            log.warn("확장 승인 필요: planId={}, currentMaxIndex={}, requestedToIndex={}", plan.getId(), currentMaxIndex, toIndex);
+            throw new IllegalArgumentException("여행 기간 확장이 필요합니다. 먼저 preview API를 호출하여 사용자 승인을 받은 뒤 confirm=true로 호출하세요. currentMaxIndex="
+                    + currentMaxIndex + ", requested=" + toIndex);
+        }
+
+        // 1) 임시로 이동 Day의 인덱스를 -1로 설정하여 유니크 제약 회피
+        PlanDay temp = PlanDay.builder()
+                .id(moving.getId())
+                .planId(moving.getPlanId())
+                .dayIndex(-1)
+                .title(moving.getTitle())
+                .planDate(moving.getPlanDate())
+                .build();
+        planDayDao.updatePlanDay(temp);
+
+        // 2) 범위에 따라 다른 Day들을 shift
+        if (fromIndex < toIndex) {
+            // from+1 .. toIndex -> 각자 -1
+            for (PlanDay d : days) {
+                Integer idx = d.getDayIndex();
+                if (idx != null && idx > fromIndex && idx <= toIndex) {
+                    PlanDay updated = PlanDay.builder()
+                            .id(d.getId())
+                            .planId(d.getPlanId())
+                            .dayIndex(idx - 1)
+                            .title(d.getTitle())
+                            .planDate(d.getPlanDate())
+                            .build();
+                    planDayDao.updatePlanDay(updated);
+                }
+            }
+        } else {
+            // toIndex .. from-1 -> 각자 +1
+            for (PlanDay d : days) {
+                Integer idx = d.getDayIndex();
+                if (idx != null && idx >= toIndex && idx < fromIndex) {
+                    PlanDay updated = PlanDay.builder()
+                            .id(d.getId())
+                            .planId(d.getPlanId())
+                            .dayIndex(idx + 1)
+                            .title(d.getTitle())
+                            .planDate(d.getPlanDate())
+                            .build();
+                    planDayDao.updatePlanDay(updated);
+                }
+            }
+        }
+
+        // 3) 이동 Day을 목표 인덱스로 설정
+        PlanDay moved = PlanDay.builder()
+                .id(moving.getId())
+                .planId(moving.getPlanId())
+                .dayIndex(toIndex)
+                .title(moving.getTitle())
+                .planDate(moving.getPlanDate())
+                .build();
+        planDayDao.updatePlanDay(moved);
+
+        // 4) 영향을 받은 Day들의 planDate 재계산 (Plan의 startDate 기준)
+        List<PlanDay> updatedDays = planDayDao.selectPlanDaysByPlanId(plan.getId());
+        for (PlanDay d : updatedDays) {
+            if (plan.getStartDate() != null && d.getDayIndex() != null) {
+                LocalDate newDate = plan.getStartDate().plusDays(d.getDayIndex() - 1);
+                PlanDay pd = PlanDay.builder()
+                        .id(d.getId())
+                        .planId(d.getPlanId())
+                        .dayIndex(d.getDayIndex())
+                        .title(d.getTitle())
+                        .planDate(newDate)
+                        .build();
+                planDayDao.updatePlanDay(pd);
+            }
+        }
+
+        // 5) Plan 기간 확장 적용 (confirm이 true인 경우에만 실행됨)
+        if (requiresExtension && plan.getStartDate() != null) {
+            LocalDate newEndDate = plan.getStartDate().plusDays(toIndex - 1);
+            Plan updatedPlan = Plan.builder()
+                    .id(plan.getId())
+                    .userId(plan.getUserId())
+                    .budget(plan.getBudget())
+                    .startDate(plan.getStartDate())
+                    .endDate(newEndDate)
+                    .isEnded(plan.getIsEnded())
+                    .title(plan.getTitle())
+                    .build();
+            planDao.updatePlan(updatedPlan);
+            log.info("🔄 Plan 기간 확장 완료(이동): planId={}, newEndDate={}", plan.getId(), newEndDate);
+        }
+
+        return planQueryService.getPlanDetail(plan.getId());
+    }
+
+    /**
+     * 이동 미리보기: 확장 필요 여부 및 예상 endDate 계산
+     */
+    public MovePreview movePreview(Long dayId, Integer toIndex) {
+        if (toIndex == null || toIndex < 1) {
+            throw new IllegalArgumentException("toIndex는 1 이상의 정수여야 합니다.");
+        }
+
+        PlanDay moving = planDayDao.selectPlanDayById(dayId);
+        if (moving == null) {
+            throw new IllegalArgumentException("존재하지 않는 여행 일자입니다: dayId=" + dayId);
+        }
+
+        Plan plan = planDao.selectPlanById(moving.getPlanId());
+        if (plan == null) {
+            throw new IllegalArgumentException("해당 Day의 Plan을 찾을 수 없습니다: planId=" + moving.getPlanId());
+        }
+
+        List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(plan.getId());
+        int currentMaxIndex = days.stream()
+                .map(PlanDay::getDayIndex)
+                .filter(idx -> idx != null)
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+        boolean requiresExtension = toIndex > currentMaxIndex;
+        LocalDate newEndDate = null;
+        if (requiresExtension && plan.getStartDate() != null) {
+            newEndDate = plan.getStartDate().plusDays(toIndex - 1);
+        }
+
+        return new MovePreview(requiresExtension, newEndDate, currentMaxIndex, toIndex);
+    }
+
+    /**
+     * PlanDay 생성 미리보기: planId와 dayIndex로 확장 필요 여부 및 예상 endDate 계산
+     */
+    public MovePreview createDayPreview(Long planId, Integer dayIndex) {
+        if (dayIndex == null || dayIndex < 1) {
+            throw new IllegalArgumentException("dayIndex는 1 이상의 정수여야 합니다.");
+        }
+
+        Plan plan = planDao.selectPlanById(planId);
+        if (plan == null) {
+            throw new IllegalArgumentException("존재하지 않는 여행 계획입니다: planId=" + planId);
+        }
+
+        if (plan.getStartDate() == null || plan.getEndDate() == null) {
+            // startDate가 없는 경우 확장 여부를 판단할 수 없으므로 requiresExtension=true
+            LocalDate newEndDate = plan.getStartDate() != null ? plan.getStartDate().plusDays(dayIndex - 1) : null;
+            return new MovePreview(true, newEndDate, 0, dayIndex);
+        }
+
+        long planDuration = java.time.temporal.ChronoUnit.DAYS.between(plan.getStartDate(), plan.getEndDate()) + 1;
+        Integer maxIndexResult = planDayDao.selectMaxDayIndexByPlanId(planId);
+        int currentMaxIndex = (maxIndexResult != null) ? maxIndexResult : 0;
+        boolean requiresExtension = dayIndex > planDuration || dayIndex > currentMaxIndex;
+        LocalDate newEndDate = null;
+        if (requiresExtension) {
+            newEndDate = plan.getStartDate().plusDays(dayIndex - 1);
+        }
+
+        return new MovePreview(requiresExtension, newEndDate, currentMaxIndex, dayIndex);
     }
 }

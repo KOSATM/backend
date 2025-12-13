@@ -11,14 +11,18 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.example.demo.common.user.dao.UserDao;
+import com.example.demo.common.user.dto.User;
 import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dao.PlanDayDao;
 import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.planner.plan.dto.response.ActivePlanInfoResponse;
 import com.example.demo.planner.plan.dto.response.PlacePosition;
 import com.example.demo.planner.plan.dto.response.PlanDayWithPlaces;
+import com.example.demo.planner.plan.dto.response.PlanDetail;
 import com.example.demo.planner.plan.util.FuzzyUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -37,6 +41,7 @@ public class PlanQueryService {
     private final PlanDao planDao;
     private final PlanDayDao planDayDao;
     private final PlanPlaceDao planPlaceDao;
+    private final UserDao userDao;
     private final FuzzyUtils fuzzyUtils;
 
     /**
@@ -306,5 +311,93 @@ public class PlanQueryService {
                 return hour >= startHour && hour < endHour;
             })
             .collect(Collectors.toList());
+    }
+
+    /**
+     * 활성 Plan ID와 현재 dayIndex 조회
+     */
+    public ActivePlanInfoResponse getActivePlanIdAndDayIndex(Long userId) {
+        log.info("활성 Plan 정보 조회: userId={}", userId);
+        return planDao.selectPlanIdAndCurrentDayIndex(userId);
+    }
+
+    /**
+     * Plan 상세 조회 (Days + Places 포함)
+     */
+    public PlanDetail getPlanDetail(Long planId) {
+        log.info("Plan 상세 조회 시작: planId={}", planId);
+
+        // 1. Plan 조회
+        Plan plan = planDao.selectPlanById(planId);
+        if (plan == null) {
+            log.warn("Plan을 찾을 수 없음: planId={}", planId);
+            throw new IllegalArgumentException("존재하지 않는 Plan입니다: planId=" + planId);
+        }
+
+        // 2. 최적화된 방식으로 모든 Days + Places 조회 (2 queries)
+        List<PlanDayWithPlaces> daysWithPlaces = queryAllDaysOptimized(planId);
+
+        log.info("Plan 상세 조회 완료: planId={}, days={}, 총 places={}",
+            planId, daysWithPlaces.size(),
+            daysWithPlaces.stream().mapToInt(d -> d.getPlaces().size()).sum());
+
+        return new PlanDetail(plan, daysWithPlaces);
+    }
+
+    /**
+     * 사용자의 활성화된 Plan 상세 조회 (Days + Places 포함)
+     */
+    public PlanDetail getLatestPlanDetail(Long userId) {
+        log.info("사용자의 활성화된 Plan 상세 조회 시작: userId={}", userId);
+
+        // 1. 사용자 조회
+        User user = userDao.selectUserById(userId);
+        if (user == null) {
+            log.warn("존재하지 않는 사용자: userId={}", userId);
+            throw new IllegalArgumentException("존재하지 않는 사용자입니다: userId=" + userId);
+        }
+
+        // 2. Plan 조회
+        Plan plan = planDao.selectActiveTravelPlanByUserId(userId);
+        if (plan == null) {
+            log.warn("사용자의 활성화된 Plan을 찾을 수 없음: userId={}", userId);
+            throw new IllegalArgumentException("활성화된 Plan이 없습니다: userId=" + userId);
+        }
+        long planId = plan.getId();
+
+        // 3. Plan의 모든 Day 조회
+        List<PlanDay> days = planDayDao.selectPlanDaysByPlanId(planId);
+
+        // 4. 각 Day의 Places를 조회하여 PlanDayWithPlaces 생성
+        List<PlanDayWithPlaces> daysWithPlaces = days.stream()
+            .map(day -> {
+                List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+                return new PlanDayWithPlaces(day, places);
+            })
+            .collect(Collectors.toList());
+
+        log.info("Plan 상세 조회 완료: planId={}, days={}, 총 places={}",
+            planId, daysWithPlaces.size(),
+            daysWithPlaces.stream().mapToInt(d -> d.getPlaces().size()).sum());
+
+        return new PlanDetail(plan, daysWithPlaces);
+    }
+
+    /**
+     * 사용자별 Plan 상세 목록 조회 (모든 Plan + Days + Places)
+     */
+    public List<PlanDetail> getPlanDetailsByUserId(Long userId) {
+        log.info("사용자별 Plan 상세 목록 조회 시작: userId={}", userId);
+
+        // 1. 사용자의 모든 Plan 조회
+        List<Plan> plans = planDao.selectPlansByUserId(userId);
+
+        // 2. 각 Plan의 상세 정보 조회
+        List<PlanDetail> planDetails = plans.stream()
+            .map(plan -> getPlanDetail(plan.getId()))
+            .collect(Collectors.toList());
+
+        log.info("사용자별 Plan 상세 목록 조회 완료: userId={}, 총 {}개 Plan", userId, planDetails.size());
+        return planDetails;
     }
 }

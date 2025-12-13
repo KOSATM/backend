@@ -27,6 +27,7 @@ import com.example.demo.planner.plan.dto.TravelPlaceCandidate;
 import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
 import com.example.demo.planner.plan.dto.response.DayPlanResult;
 import com.example.demo.planner.plan.dto.response.PlanDetailResponse;
+import com.example.demo.planner.plan.service.PlanFacade;
 import com.example.demo.planner.plan.strategy.StandardTravelStrategy;
 import com.example.demo.planner.plan.strategy.TravelPlanStrategy;
 
@@ -48,7 +49,7 @@ public class TravelPlannerService implements AiAgent {
     private final RegionService regionService;
     private final StartDateNormalizerAgent startDateNormalizerAgent;
     private final PlanAssemblerService planAssemblerService;
-    private final PlanService planService;
+    private final PlanFacade planFacade;
     private final PlanSnapshotDao planSnapshotDao;
     private final ResponseAgent responseAgent;
 
@@ -141,11 +142,11 @@ public class TravelPlannerService implements AiAgent {
         printDayPlans(dayPlans);
 
         // planDao.
-        
+
         // PlanSnapshot snapshot = planSnapshotDao.selectLatestPlanSnapshotByUserId(userId);
         // String snapshotJson = snapshot.getSnapshotJson();
 
-        
+
         // return AiAgentResponse.of(buildResponse(dayPlans));
         return AiAgentResponse.ofData("일정이 생성되었습니다.", command.getRequiredUrl(), response);
 

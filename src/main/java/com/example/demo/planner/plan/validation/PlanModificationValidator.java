@@ -6,7 +6,8 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.example.demo.planner.plan.dto.entity.Plan;
-import com.example.demo.planner.plan.service.create.PlanService;
+import com.example.demo.planner.plan.service.PlanCrudService;
+import com.example.demo.planner.plan.service.PlanQueryService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PlanModificationValidator {
 
-    private final PlanService planService;
+    private final PlanCrudService planCrudService;
+    private final PlanQueryService planQueryService;
 
     // ==================== EXISTENCE VALIDATION ====================
 
@@ -37,7 +39,7 @@ public class PlanModificationValidator {
      * Validate that user has an active plan
      */
     public Plan validateUserHasActivePlan(Long userId) {
-        Plan plan = planService.findActiveByUserId(userId);
+        Plan plan = planCrudService.findActiveByUserId(userId);
         if (plan == null) {
             throw new PlanValidationException("No active travel plan found for user " + userId);
         }
@@ -49,7 +51,7 @@ public class PlanModificationValidator {
      */
     public void validateDayExists(Long planId, int dayIndex) {
         try {
-            planService.queryDay(planId, dayIndex);
+            planQueryService.queryDay(planId, dayIndex);
         } catch (Exception e) {
             throw new PlanValidationException("Day " + dayIndex + " does not exist in plan " + planId);
         }
@@ -69,7 +71,7 @@ public class PlanModificationValidator {
      */
     public void validatePlaceExists(Long planId, int dayIndex, int placeIndex) {
         try {
-            planService.queryPlace(planId, dayIndex, placeIndex);
+            planQueryService.queryPlace(planId, dayIndex, placeIndex);
         } catch (Exception e) {
             throw new PlanValidationException(
                 "Place " + placeIndex + " on day " + dayIndex + " does not exist"
@@ -176,7 +178,7 @@ public class PlanModificationValidator {
 
         // Check if this is the last place in the day (optional warning)
         try {
-            var dayWithPlaces = planService.queryDay(planId, dayIndex);
+            var dayWithPlaces = planQueryService.queryDay(planId, dayIndex);
             if (dayWithPlaces.getPlaces().size() == 1) {
                 log.warn("Deleting the last place from day {}", dayIndex);
             }
