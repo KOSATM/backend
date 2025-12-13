@@ -77,8 +77,8 @@
         lat = #{lat},
         lng = #{lng},
         expected_cost = #{expectedCost},
-        normalized_category = #{normalizedCategory}
-        is_Ended = #{isEnded}
+        normalized_category = #{normalizedCategory},
+        is_ended = #{isEnded}
     WHERE id = #{id}
   </update>
 

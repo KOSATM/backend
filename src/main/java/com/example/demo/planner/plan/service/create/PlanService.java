@@ -593,6 +593,7 @@ public class PlanService {
         .lat(place.getLat() != 0.0 ? place.getLat() : existing.getLat())
         .lng(place.getLng() != 0.0 ? place.getLng() : existing.getLng())
         .expectedCost(place.getExpectedCost() != null ? place.getExpectedCost() : existing.getExpectedCost())
+        .isEnded(place.getExpectedCost() != null ? place.getIsEnded() : existing.getIsEnded())
         .build();
 
     planPlaceDao.updatePlanPlace(updatedPlace);
