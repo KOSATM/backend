@@ -97,7 +97,7 @@ public class PlanPlaceService {
         if (existing == null) {
             throw new IllegalArgumentException("존재하지 않는 여행 장소입니다: placeId=" + placeId);
         }
-        planPlaceDao.deletePlanPlace(placeId);
+        planPlaceDao.deletePlanPlaceById(placeId);
         log.info("PlanPlace 삭제 완료: placeId={}", placeId);
     }
 
@@ -355,18 +355,6 @@ public class PlanPlaceService {
         // 삭제
         planPlaceDao.deletePlanPlaceById(targetPlace.getId());
         log.info("Deleted: {}", targetPlace.getPlaceName());
-    }
-
-    /**
-     * 인덱스로 장소 삭제
-     */
-    @Transactional
-    public void deletePlaceByIndex(Long planId, int dayIndex, int placeIndex) {
-        PlanDay day = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndex);
-        List<PlanPlace> list = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
-
-        PlanPlace target = list.get(placeIndex - 1);
-        planPlaceDao.deletePlanPlaceById(target.getId());
     }
 
     /**

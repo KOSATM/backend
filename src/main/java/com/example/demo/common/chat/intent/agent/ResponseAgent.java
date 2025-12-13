@@ -12,6 +12,13 @@ public class ResponseAgent {
   }
 
   public String generateMessage(String originalUserMessage, Object data) {
+    if (data == null) {
+      return "요청하신 정보에 해당하는 데이터가 없습니다.";
+    }
+    String dataStr = (data instanceof String) ? (String) data : data.toString();
+    if (dataStr.isBlank()) {
+      return "요청하신 정보에 해당하는 데이터가 없습니다.";
+    }
     String answer = chatClient.prompt()
       .system("""
         사용자에게 받은 질문/지시의 원문과
@@ -31,11 +38,10 @@ public class ResponseAgent {
         주의: 답변에 사진은 포함하지 마세요.
 
         데이터: %s
-      """.formatted(data.toString()))
+      """.formatted(dataStr))
       .user(originalUserMessage)
       .call()
       .content();
-
     return answer;
   }
 }

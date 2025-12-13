@@ -19,7 +19,6 @@ import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dao.PlanSnapshotDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
-import com.example.demo.planner.plan.service.create.PlanService;
 
 public class PlanServiceMoveTest {
 
@@ -36,7 +35,7 @@ public class PlanServiceMoveTest {
     private PlanSnapshotDao planSnapshotDao;
 
     @InjectMocks
-    private PlanService planService;
+    private PlanDayService planDayService;
 
     @BeforeEach
     public void setUp() {
@@ -59,7 +58,7 @@ public class PlanServiceMoveTest {
         ));
 
         // attempt to move to 7 (max is 5) without confirm -> should throw (requires confirmation)
-        assertThrows(IllegalArgumentException.class, () -> planService.moveDay(100L, 7, null));
+        assertThrows(IllegalArgumentException.class, () -> planDayService.moveDay(100L, 7, null, null));
     }
 
     @Test
@@ -76,6 +75,6 @@ public class PlanServiceMoveTest {
         ));
 
         // move to 5 (max+1) with confirm=true should not throw
-        assertDoesNotThrow(() -> planService.moveDay(200L, 5, true));
+        assertDoesNotThrow(() -> planDayService.moveDay(200L, 5, true, null));
     }
 }
