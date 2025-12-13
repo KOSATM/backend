@@ -60,6 +60,10 @@ public class PlanFacade {
         return planCrudService.findByUserId(userId);
     }
 
+    public Plan findActiveByUserId(Long userId) {
+        return planCrudService.findActiveByUserId(userId);
+    }
+
     @Transactional
     public void updatePlan(Long planId, Plan plan) {
         planCrudService.updatePlan(planId, plan);
@@ -148,6 +152,52 @@ public class PlanFacade {
     @Transactional
     public void deletePlace(Long placeId) {
         planPlaceService.deletePlace(placeId);
+    }
+
+    @Transactional
+    public void deletePlace(Long planId, int dayIndex, int placeIndex) {
+        planPlaceService.deletePlace(planId, dayIndex, placeIndex);
+    }
+
+    @Transactional
+    public void deletePlaceByName(Long planId, String placeName) {
+        planPlaceService.deletePlaceByName(planId, placeName);
+    }
+
+    @Transactional
+    public void deleteDay(Long planId, int dayIndex) {
+        planDayService.deleteDay(planId, dayIndex);
+    }
+
+    @Transactional
+    public void replacePlaceWithNew(Long placeId, String newPlaceName, String newAddress,
+            Double newLatitude, Double newLongitude, String newCategory, BigDecimal newCost) {
+        planPlaceService.replacePlaceWithNew(placeId, newPlaceName, newAddress, newLatitude, newLongitude,
+                newCategory, newCost);
+    }
+
+    @Transactional
+    public void updatePlaceTime(Long placeId, java.time.LocalTime newTime, Integer newDuration) {
+        planPlaceService.updatePlaceTime(placeId, newTime, newDuration);
+    }
+
+    // ==================== PlanPlace Actions ====================
+
+    @Transactional
+    public void swapPlaceOrdersInner(Long planId, int dayIndex, int indexA, int indexB) {
+        planPlaceService.swapPlaceOrdersInner(planId, dayIndex, indexA, indexB);
+    }
+
+    @Transactional
+    public void swapPlacesBetweenDays(Long planId, int dayA, int indexA, int dayB, int indexB) {
+        planPlaceService.swapPlacesBetweenDays(planId, dayA, indexA, dayB, indexB);
+    }
+
+    // ==================== PlanDay Actions ====================
+
+    @Transactional
+    public void swapDays(Long planId, int dayA, int dayB) {
+        planDayService.swapDaySchedules(planId, dayA, dayB);
     }
 
     // ==================== Special Functions ====================

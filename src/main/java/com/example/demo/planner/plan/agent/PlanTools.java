@@ -25,11 +25,11 @@ import com.example.demo.planner.plan.dto.entity.PlanPlace;
 import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
 import com.example.demo.planner.plan.dto.response.PlanSnapshotContent;
 import com.example.demo.planner.plan.service.PlanSnapshotService;
+import com.example.demo.planner.plan.service.PlanSnapshotUtility;
 import com.example.demo.planner.plan.service.action.PlanAddAction;
 import com.example.demo.planner.plan.service.action.PlanDeleteAction;
 import com.example.demo.planner.plan.service.action.PlanModifyAction;
 import com.example.demo.planner.plan.service.action.PlanSwapAction;
-import com.example.demo.planner.plan.service.create.PlanService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,17 +45,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PlanTools {
 
-    private final PlanService planService;
-
     private final PlanAddAction addAction;
     private final PlanModifyAction modifyAction;
     private final PlanSwapAction swapAction;
     private final PlanDeleteAction deleteAction;
-    
+
     private final PlanDao planDao;
     private final PlanDayDao planDayDao;
     private final PlanPlaceDao planPlaceDao;
     private final PlanSnapshotService planSnapshotService;
+    private final PlanSnapshotUtility planSnapshotUtility;
 
 
     private final ThreadLocal<Long> currentPlanId = new ThreadLocal<>();
@@ -129,7 +128,7 @@ public class PlanTools {
             List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
             planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
-            
+
             return String.format("✅ %d일차의 %d번째 장소와 %d일차의 %d번째 장소를 교환했습니다.", day1, index1, day2, index2);
         } catch (Exception e) {
             log.error("날짜 간 장소 교환 실패", e);
@@ -319,7 +318,7 @@ public class PlanTools {
             List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
             planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
-            
+
             return String.format("✅ 여행을 %d일 연장했습니다.", extraDays);
         } catch (Exception e) {
             log.error("일정 확장 실패", e);
@@ -345,14 +344,14 @@ public class PlanTools {
     public String rollBack(@ToolParam(description = "사용자 아이디") ToolContext toolContext) {
         try {
             PlanSnapshot planSnapshot = planSnapshotService.getPlanSnapshotsByUserId((Long) toolContext.getContext().get("userId")).get(1);
-            PlanSnapshotContent snapshotContent = planService.parseSnapshot(planSnapshot.getSnapshotJson());
+            PlanSnapshotContent snapshotContent = planSnapshotUtility.parseSnapshot(planSnapshot.getSnapshotJson());
 
             Long planId = getPlanId();
             Plan plan = planDao.selectPlanById(getPlanId());
 
             List<PlanPlace> existingPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
             for (PlanPlace place : existingPlaces) {
-                planPlaceDao.deletePlanPlace(place.getId());
+                planPlaceDao.deletePlanPlaceById(place.getId());
             }
             log.info("plan_places 삭제 완료");
 
@@ -408,7 +407,7 @@ public class PlanTools {
                         .firstImage2(pscItem.getFirstImage2())
                         .isEnded(pscItem.getIsEnded() == null ? false : pscItem.getIsEnded())
                         .build();
-                    
+
                     planPlaceDao.insertPlanPlace(newPlace);
                 }
             }

@@ -82,11 +82,6 @@
     WHERE id = #{id}
   </update>
 
-  <delete id="deletePlanPlace" parameterType="long">
-    DELETE FROM plan_places
-    WHERE id = #{id}
-  </delete>
-
   <delete id="deletePlacesByDayId" parameterType="long">
     DELETE FROM plan_places
     WHERE day_id = #{dayId}
