@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.planner.hotel.dao.HotelBookingFFDao">
+
+    <!-- userId로 단건 조회 -->
+    <select id="findByUserId"
+            parameterType="long"
+            resultType="com.example.demo.planner.hotel.dto.entity.HotelBookingFF$HotelBookingFFResponse">
+        SELECT
+            id,
+            user_id      AS userId,
+            hotel_name   AS hotelName,
+            room_type    AS roomType,
+            checkin_date AS checkinDate,
+            checkout_date AS checkoutDate,
+            created_at   AS createdAt
+        FROM hotel_bookings
+        WHERE user_id = #{userId}
+        LIMIT 1
+    </select>
+
+    <!-- INSERT -->
+    <insert id="insert"
+            parameterType="com.example.demo.planner.hotel.dto.entity.HotelBookingFF$HotelBookingFFResponse">
+        INSERT INTO hotel_bookings
+        (
+            user_id,
+            hotel_name,
+            room_type,
+            checkin_date,
+            checkout_date,
+            created_at
+        )
+        VALUES
+        (
+            #{userId},
+            #{hotelName},
+            #{roomType},
+            #{checkinDate},
+            #{checkoutDate},
+            #{createdAt}
+        )
+    </insert>
+
+    <!-- UPDATE -->
+    <update id="update"
+            parameterType="com.example.demo.planner.hotel.dto.entity.HotelBookingFF$HotelBookingFFResponse">
+        UPDATE hotel_bookings
+        SET
+            hotel_name    = #{hotelName},
+            room_type     = #{roomType},
+            checkin_date  = #{checkinDate},
+            checkout_date = #{checkoutDate}
+        WHERE id = #{id}
+    </update>
+
+    <!-- DELETE -->
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM hotel_bookings
+        WHERE id = #{id}
+    </delete>
+
+</mapper>
