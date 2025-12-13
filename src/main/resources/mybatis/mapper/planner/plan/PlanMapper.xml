@@ -26,7 +26,10 @@
         pp.end_at,
         pp.place_name,
         pp.address,
-        pp.expected_cost
+        pp.expected_cost,
+        pp.normalized_category,
+        pp.first_image,
+        pp.first_image2
 
     FROM plans p
     JOIN plan_days d   ON p.id = d.plan_id
@@ -65,7 +68,11 @@
         pp.end_at,
         pp.place_name,
         pp.address,
-        pp.expected_cost
+        pp.expected_cost,
+        pp.normalized_category,
+        pp.first_image,
+        pp.first_image2,
+        pp.is_Ended
 
     FROM plans p
     JOIN plan_days d   ON p.id = d.plan_id
@@ -76,6 +83,37 @@
     ORDER BY d.day_index ASC, pp.start_at ASC
 </select>
 
+<select id="getUserLastVisitedPlaces" resultType="String">
+    SELECT DISTINCT
+        pp.place_name
+
+    FROM plans p
+    JOIN plan_days d    ON p.id = d.plan_id
+    JOIN plan_places pp ON d.id = pp.day_id
+
+    WHERE p.id = (
+        SELECT id
+        FROM plans
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT 1
+    )
+</select>
+
+
+  <select id="selectPlanIdAndCurrentDayIndex" parameterType="long" resultType="com.example.demo.planner.plan.dto.response.ActivePlanInfoResponse">
+      SELECT
+        p.id AS plan_id,
+        d.day_index
+      FROM plans p
+      LEFT JOIN plan_days d
+          ON p.id = d.plan_id
+      -- AND d.plan_date = DATE '2025-12-19'   -- 테스트
+        AND d.plan_date = CURRENT_DATE
+      WHERE p.user_id = 21
+      ORDER BY p.id DESC
+      LIMIT 1
+  </select>
 
   <select id="selectPlanById" parameterType="long" resultType="Plan">
     SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title

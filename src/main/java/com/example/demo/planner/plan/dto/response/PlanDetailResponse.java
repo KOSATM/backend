@@ -26,6 +26,7 @@ public class PlanDetailResponse {
 
     @Data
     public static class Day {
+        private Long dayId;
         private Integer dayIndex;
         private String date;
         private List<Schedule> schedules;
@@ -40,6 +41,10 @@ public class PlanDetailResponse {
         private String placeName;
         private String address;
         private BigDecimal expectedCost;
+        private String normalizedCategory;
+        private String firstImage;
+        private String firstImage2;
+        private Boolean isEnded;
     }
 
     /**
@@ -69,6 +74,7 @@ public class PlanDetailResponse {
             PlanScheduleRow base = dayRows.get(0);
 
             Day day = new Day();
+            day.setDayId(base.getDayId());
             day.setDayIndex(base.getDayIndex());
             day.setDate(base.getPlanDate().toString());
 
@@ -83,6 +89,10 @@ public class PlanDetailResponse {
                 s.setPlaceName(r.getPlaceName());
                 s.setAddress(r.getAddress());
                 s.setExpectedCost(r.getExpectedCost());
+                s.setNormalizedCategory(r.getNormalizedCategory());
+                s.setFirstImage(r.getFirstImage());
+                s.setFirstImage2(r.getFirstImage2());
+                s.setIsEnded(r.getIsEnded());
                 return s;
             }).toList();
 

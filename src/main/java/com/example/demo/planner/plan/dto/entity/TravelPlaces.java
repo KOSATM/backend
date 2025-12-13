@@ -28,4 +28,5 @@ public class TravelPlaces {
     private OffsetDateTime updatedAt;
     private String detailInfo;
     private String normalizedCategory;
+    private String zoneId;
 }

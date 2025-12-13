@@ -1,6 +1,7 @@
 package com.example.demo.planner.plan.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.planner.plan.dto.response.ActivePlanInfoResponse;
 import com.example.demo.planner.plan.dto.response.PlanDetail;
 import com.example.demo.planner.plan.service.create.PlanService;
 
@@ -41,6 +43,13 @@ public class PlanController {
     }
   }
 
+  
+  // 플랜 id, 해당 날짜 dayindex 조회
+  @GetMapping("/{planId}/active/plan/info")
+  public ResponseEntity<ActivePlanInfoResponse> getActivePlanIdAndDayIndex(@PathVariable("planId") Long planId) {
+    return ResponseEntity.ok(planService.getActivePlanIdAndDayIndex(planId));
+  }
+
   // 여행 계획 생성 (빈 Plan만) - POST /plans
   @PostMapping
   public ResponseEntity<Plan> createPlan(@RequestBody Plan plan) {
@@ -57,7 +66,7 @@ public class PlanController {
   // 여행 계획 생성 (샘플 데이터 포함) - POST /plans/with-sample?days=3
   @PostMapping("/with-sample")
   public ResponseEntity<Plan> createPlanWithSample(
-      @RequestParam("userId") Long userId,
+      @RequestParam(value = "userId", required = false) Long userId,
       @RequestParam(value = "days", required = false) Integer days,
       @RequestParam(value = "budget", required = false) java.math.BigDecimal budget,
       @RequestParam(value = "startDate", required = false) java.time.LocalDate startDate) {

@@ -21,4 +21,8 @@ public class PlanPlace {
     private double lat;
     private double lng;
     private BigDecimal expectedCost;
+    private String normalizedCategory;
+    private String firstImage;
+    private String firstImage2;
+    private Boolean isEnded;
 }

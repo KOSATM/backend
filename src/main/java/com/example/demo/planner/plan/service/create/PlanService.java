@@ -19,6 +19,7 @@ import com.example.demo.planner.plan.dao.PlanSnapshotDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.planner.plan.dto.response.ActivePlanInfoResponse;
 import com.example.demo.planner.plan.dto.response.PlacePosition;
 import com.example.demo.planner.plan.dto.response.PlanDayWithPlaces;
 import com.example.demo.planner.plan.dto.response.PlanDetail;
@@ -594,6 +595,7 @@ public class PlanService {
         .lat(place.getLat() != 0.0 ? place.getLat() : existing.getLat())
         .lng(place.getLng() != 0.0 ? place.getLng() : existing.getLng())
         .expectedCost(place.getExpectedCost() != null ? place.getExpectedCost() : existing.getExpectedCost())
+        .isEnded(place.getExpectedCost() != null ? place.getIsEnded() : existing.getIsEnded())
         .build();
 
     planPlaceDao.updatePlanPlace(updatedPlace);
