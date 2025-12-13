@@ -11,7 +11,7 @@
   </select>
 
   <select id="selectPlanPlacesByPlanDayId" parameterType="long" resultType="PlanPlace">
-    SELECT id, day_id,  title, start_at, end_at, place_name, address, lat, lng, expected_cost, normalized_category, first_image, first_image2, is_Ended
+    SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost, normalized_category, first_image, first_image2, is_Ended
     FROM plan_places
     WHERE day_id = #{dayId}
     ORDER BY start_at ASC
@@ -103,7 +103,7 @@
 
   <update id="updatePlaceInfo">
     UPDATE plan_places
-    SET 
+    SET
         place_name = #{placeName},
         title = #{placeName},
         address = #{address},

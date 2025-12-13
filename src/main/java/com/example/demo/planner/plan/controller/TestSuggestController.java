@@ -18,8 +18,8 @@ import com.example.demo.planner.plan.agent.PlaceSuggestAgent;
 import com.example.demo.planner.plan.agent.PlaceSuggestAgentNoChat;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
 import com.example.demo.planner.plan.dto.entity.TravelPlaces;
+import com.example.demo.planner.plan.service.PlanFacade;
 import com.example.demo.planner.plan.service.RestPlaceService;
-import com.example.demo.planner.plan.service.create.PlanService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequiredArgsConstructor
 @Slf4j
 public class TestSuggestController {
-  private final PlanService planService;
+  private final PlanFacade planFacade;
 
   private final PlaceSuggestAgentNoChat placeSuggestAgentNoChat;
 
@@ -41,7 +41,7 @@ public class TestSuggestController {
   @GetMapping("/snapshot/search")
   public String snapshotSearch(@RequestBody String snapshot) {
     try {
-      planService.parseSnapshot(snapshot);
+      planFacade.parseSnapshot(snapshot);
       return "콘솔에 로그 있어요";
     } catch (Exception e) {
       return "에러";
@@ -76,5 +76,5 @@ public class TestSuggestController {
     return restPlaceService.searchRestPlace(lat, lng);
     // return new String();
   }
-  
+
 }

@@ -76,7 +76,107 @@ public class PlanCrudService {
     }
 
     /**
-     * Plan 생성 (샘플 데이터 포함)
+     * Plan 생성 with 샘플 데이터 (Agent 호출용 - 간단한 시그니처)
+     * - Plan + 지정된 일수만큼의 Day + 각 Day마다 2개의 샘플 Place 생성
+     */
+    @Transactional
+    public Plan createPlanWithSampleData(Long userId, Integer days, BigDecimal budget, LocalDate startDate) {
+        // 기본값 설정
+        if (days == null) {
+            days = 3;
+        }
+        if (budget == null) {
+            budget = new BigDecimal("500000");
+        }
+        if (startDate == null) {
+            startDate = LocalDate.now();
+        }
+
+        // startDate 검증: 오늘 이전 날짜는 불가
+        if (startDate.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("여행 시작일은 오늘 이후여야 합니다.");
+        }
+
+        log.info("샘플 데이터 포함 여행 계획 생성 시작: userId={}, days={}", userId, days);
+
+        // 1. Plan 생성
+        Plan plan = Plan.builder()
+                .userId(userId)
+                .budget(budget)
+                .startDate(startDate)
+                .endDate(startDate.plusDays(days - 1))
+                .isEnded(false)
+                .createdAt(OffsetDateTime.now(ZoneId.of("Asia/Seoul")))
+                .build();
+
+        planDao.insertPlan(plan);
+        Long planId = plan.getId();
+        log.info("Plan 생성 완료: planId={}", planId);
+
+        // 2. 요청된 일수만큼 Day와 Place 생성
+        for (int i = 1; i <= days; i++) {
+            LocalDate currentDate = startDate.plusDays(i - 1);
+
+            // PlanDay 생성
+            PlanDay day = PlanDay.builder()
+                    .planId(planId)
+                    .dayIndex(i)
+                    .title("Day " + i)
+                    .planDate(currentDate)
+                    .build();
+
+            planDayDao.insertPlanDay(day);
+            Long dayId = day.getId();
+            log.debug("PlanDay 생성 완료: dayId={}, dayIndex={}", dayId, i);
+
+            // 각 Day마다 샘플 Place 2개 생성
+            // 오전 장소
+            LocalTime morningTime = LocalTime.of(9, 0);
+            OffsetDateTime morningStart = OffsetDateTime.of(currentDate, morningTime, ZoneId.of("Asia/Seoul").getRules().getOffset(currentDate.atTime(morningTime)));
+            OffsetDateTime morningEnd = morningStart.plusHours(3);
+
+            PlanPlace morningPlace = PlanPlace.builder()
+                    .dayId(dayId)
+                    .title("Morning Activity")
+                    .placeName("Sample Place " + i + "-1")
+                    .address("Seoul, South Korea")
+                    .lat(37.5665)
+                    .lng(126.9780)
+                    .startAt(morningStart)
+                    .endAt(morningEnd)
+                    .expectedCost(new BigDecimal("20000"))
+                    .build();
+
+            planPlaceDao.insertPlanPlace(morningPlace);
+
+            // 오후 장소
+            LocalTime afternoonTime = LocalTime.of(14, 0);
+            OffsetDateTime afternoonStart = OffsetDateTime.of(currentDate, afternoonTime, ZoneId.of("Asia/Seoul").getRules().getOffset(currentDate.atTime(afternoonTime)));
+            OffsetDateTime afternoonEnd = afternoonStart.plusHours(4);
+
+            PlanPlace afternoonPlace = PlanPlace.builder()
+                    .dayId(dayId)
+                    .title("Afternoon Activity")
+                    .placeName("Sample Place " + i + "-2")
+                    .address("Seoul, South Korea")
+                    .lat(37.4979)
+                    .lng(127.0276)
+                    .startAt(afternoonStart)
+                    .endAt(afternoonEnd)
+                    .expectedCost(new BigDecimal("30000"))
+                    .build();
+
+            planPlaceDao.insertPlanPlace(afternoonPlace);
+
+            log.debug("PlanPlace 2개 생성 완료: dayId={}", dayId);
+        }
+
+        log.info("샘플 데이터 포함 여행 계획 생성 완료: planId={}, 총 {}일, {}개 장소", planId, days, days * 2);
+        return plan;
+    }
+
+    /**
+     * Plan 생성 with 샘플 데이터 (title 버전)
      * - Plan + 3일 일정 + 각 일정당 2개 장소 생성
      */
     @Transactional

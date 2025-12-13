@@ -20,7 +20,7 @@ import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
 import com.example.demo.planner.plan.dto.response.ActivePlanInfoResponse;
 import com.example.demo.planner.plan.dto.response.PlanDetail;
-import com.example.demo.planner.plan.service.create.PlanService;
+import com.example.demo.planner.plan.service.PlanFacade;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,23 +31,23 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class PlanController {
-  private final PlanService planService;
+  private final PlanFacade planFacade;
 
   @GetMapping("/snapshot/search")
   public String snapshotSearch(@RequestBody String snapshot) {
     try {
-      planService.parseSnapshot(snapshot);
+      planFacade.parseSnapshot(snapshot);
       return "콘솔에 로그 있어요";
     } catch (Exception e) {
       return "에러";
     }
   }
 
-  
+
   // 플랜 id, 해당 날짜 dayindex 조회
   @GetMapping("/{planId}/active/plan/info")
   public ResponseEntity<ActivePlanInfoResponse> getActivePlanIdAndDayIndex(@PathVariable("planId") Long planId) {
-    return ResponseEntity.ok(planService.getActivePlanIdAndDayIndex(planId));
+    return ResponseEntity.ok(planFacade.getActivePlanIdAndDayIndex(planId));
   }
 
   // 여행 계획 생성 (빈 Plan만) - POST /plans
@@ -57,7 +57,7 @@ public class PlanController {
     log.info("Request Body: userId={}, budget={}, startDate={}, endDate={}, title={}",
         plan.getUserId(), plan.getBudget(), plan.getStartDate(), plan.getEndDate(), plan.getTitle());
 
-    Plan created = planService.createPlan(plan);
+    Plan created = planFacade.createPlan(plan);
 
     log.info("=== Plan 생성 완료: planId={} ===", created.getId());
     return ResponseEntity.status(HttpStatus.CREATED).body(created);
@@ -70,64 +70,65 @@ public class PlanController {
       @RequestParam(value = "days", required = false) Integer days,
       @RequestParam(value = "budget", required = false) java.math.BigDecimal budget,
       @RequestParam(value = "startDate", required = false) java.time.LocalDate startDate) {
-    Plan created = planService.createPlanWithSampleData(userId, days, budget, startDate);
+    Plan created = planFacade.createPlanWithSampleData(userId, days, budget, startDate);
     return ResponseEntity.status(HttpStatus.CREATED).body(created);
   }
 
   // 여행 계획 단건 조회 - GET /plans/{planId}
   @GetMapping("/{planId}")
   public ResponseEntity<Plan> getPlan(@PathVariable("planId") Long planId) {
-    Plan plan = planService.findById(planId);
+    Plan plan = planFacade.findPlanById(planId);
     return ResponseEntity.ok(plan);
   }
 
   // 여행 계획 상세 조회 (Days + Places 포함) - GET /plans/{planId}/detail
   @GetMapping("/{planId}/detail")
   public ResponseEntity<PlanDetail> getPlanDetail(@PathVariable("planId") Long planId) {
-    PlanDetail planDetail = planService.getPlanDetail(planId);
+    PlanDetail planDetail = planFacade.getPlanDetail(planId);
     return ResponseEntity.ok(planDetail);
   }
 
   // 사용자의 활성화된 여행 계획 상세 조회 (Days + Places 포함) - GET /plans/{userId}/active/detail
   @GetMapping("/{userId}/active/detail")
   public ResponseEntity<PlanDetail> getActivePlanDetail(@PathVariable("userId") Long userId) {
-    PlanDetail planDetail = planService.getLatestPlanDetail(userId);
+    PlanDetail planDetail = planFacade.getLatestPlanDetail(userId);
     return ResponseEntity.ok(planDetail);
   }
 
   // 사용자별 여행 계획 목록 조회 - GET /plans/user/{userId}
   @GetMapping("/user/{userId}")
   public ResponseEntity<List<Plan>> getPlansByUserId(@PathVariable("userId") Long userId) {
-    List<Plan> plans = planService.findByUserId(userId);
+    List<Plan> plans = planFacade.findPlansByUserId(userId);
     return ResponseEntity.ok(plans);
   }
 
   // 사용자별 여행 계획 상세 목록 조회 (모든 Plan + Days + Places) - GET /plans/user/{userId}/details
   @GetMapping("/user/{userId}/details")
   public ResponseEntity<List<PlanDetail>> getPlanDetailsByUserId(@PathVariable("userId") Long userId) {
-    List<PlanDetail> planDetails = planService.getPlanDetailsByUserId(userId);
+    List<PlanDetail> planDetails = planFacade.getPlanDetailsByUserId(userId);
     return ResponseEntity.ok(planDetails);
   }
 
   // 여행 계획 수정 - PUT /plans/{planId}
   @PutMapping("/{planId}")
   public ResponseEntity<Plan> updatePlan(@PathVariable("planId") Long planId, @RequestBody Plan plan) {
-    planService.updatePlan(planId, plan);
-    Plan updated = planService.findById(planId);
+    planFacade.updatePlan(planId, plan);
+    Plan updated = planFacade.findPlanById(planId);
     return ResponseEntity.ok(updated);
   }
 
   // 여행 계획 삭제 - DELETE /plans/{planId}
   @DeleteMapping("/{planId}")
   public ResponseEntity<String> deletePlan(@PathVariable("planId") Long planId) {
-    planService.deletePlan(planId);
+    planFacade.deletePlan(planId);
     return ResponseEntity.ok("여행 계획이 삭제되었습니다.");
   }
 
   // 여행 완료 처리 - POST /plans/{planId}/complete
   @PostMapping("/{planId}/complete")
   public ResponseEntity<Plan> completePlan(@PathVariable("planId") Long planId) {
-    Plan completed = planService.completePlan(planId);
+    planFacade.completePlan(planId);
+    Plan completed = planFacade.findPlanById(planId);
     return ResponseEntity.ok(completed);
   }
 
@@ -138,29 +139,29 @@ public class PlanController {
   @PostMapping("/days")
   public ResponseEntity<PlanDay> createDay(@RequestBody PlanDay day,
       @RequestParam(value = "confirm", required = false) Boolean confirm) {
-    PlanDay created = planService.createDay(day, confirm);
+    PlanDay created = planFacade.createDay(day, confirm);
     return ResponseEntity.status(HttpStatus.CREATED).body(created);
   }
 
   // 여행 일자 조회 - GET /plans/days/{dayId}
   @GetMapping("/days/{dayId}")
   public ResponseEntity<PlanDay> getDay(@PathVariable("dayId") Long dayId) {
-    PlanDay day = planService.findDayById(dayId);
+    PlanDay day = planFacade.findDayById(dayId);
     return ResponseEntity.ok(day);
   }
 
   // 여행 일자 수정 - PUT /plans/days/{dayId}
   @PutMapping("/days/{dayId}")
   public ResponseEntity<PlanDay> updateDay(@PathVariable("dayId") Long dayId, @RequestBody PlanDay day) {
-    planService.updateDay(dayId, day);
-    PlanDay updated = planService.findDayById(dayId);
+    planFacade.updateDay(dayId, day);
+    PlanDay updated = planFacade.findDayById(dayId);
     return ResponseEntity.ok(updated);
   }
 
   // 여행 일자 삭제 - DELETE /plans/days/{dayId}
   @DeleteMapping("/days/{dayId}")
   public ResponseEntity<String> deleteDay(@PathVariable("dayId") Long dayId) {
-    planService.deleteDay(dayId);
+    planFacade.deleteDay(dayId);
     return ResponseEntity.ok("여행 일자가 삭제되었습니다.");
   }
 
@@ -169,7 +170,7 @@ public class PlanController {
   public ResponseEntity<PlanDetail> moveDay(@PathVariable("dayId") Long dayId,
       @RequestParam("toIndex") Integer toIndex,
       @RequestParam(value = "confirm", required = false) Boolean confirm) {
-    PlanDetail detail = planService.moveDay(dayId, toIndex, confirm);
+    PlanDetail detail = planFacade.moveDay(dayId, toIndex, confirm);
     return ResponseEntity.ok(detail);
   }
 
@@ -178,7 +179,7 @@ public class PlanController {
   public ResponseEntity<com.example.demo.planner.plan.dto.response.MovePreview> movePreview(
       @PathVariable("dayId") Long dayId,
       @RequestParam("toIndex") Integer toIndex) {
-    com.example.demo.planner.plan.dto.response.MovePreview preview = planService.movePreview(dayId, toIndex);
+    com.example.demo.planner.plan.dto.response.MovePreview preview = planFacade.movePreview(dayId, toIndex);
     return ResponseEntity.ok(preview);
   }
 
@@ -187,7 +188,7 @@ public class PlanController {
   public ResponseEntity<com.example.demo.planner.plan.dto.response.MovePreview> createDayPreview(
       @PathVariable("planId") Long planId,
       @RequestParam("dayIndex") Integer dayIndex) {
-    com.example.demo.planner.plan.dto.response.MovePreview preview = planService.createDayPreview(planId, dayIndex);
+    com.example.demo.planner.plan.dto.response.MovePreview preview = planFacade.createDayPreview(planId, dayIndex);
     return ResponseEntity.ok(preview);
   }
 
@@ -196,29 +197,29 @@ public class PlanController {
   // 여행 장소 생성 - POST /plans/places
   @PostMapping("/places")
   public ResponseEntity<PlanPlace> createPlace(@RequestBody PlanPlace place) {
-    PlanPlace created = planService.createPlace(place);
+    PlanPlace created = planFacade.createPlace(place);
     return ResponseEntity.status(HttpStatus.CREATED).body(created);
   }
 
   // 여행 장소 조회 - GET /plans/places/{placeId}
   @GetMapping("/places/{placeId}")
   public ResponseEntity<PlanPlace> getPlace(@PathVariable("placeId") Long placeId) {
-    PlanPlace place = planService.findPlaceById(placeId);
+    PlanPlace place = planFacade.findPlaceById(placeId);
     return ResponseEntity.ok(place);
   }
 
   // 여행 장소 수정 - PUT /plans/places/{placeId}
   @PutMapping("/places/{placeId}")
   public ResponseEntity<PlanPlace> updatePlace(@PathVariable("placeId") Long placeId, @RequestBody PlanPlace place) {
-    planService.updatePlace(placeId, place);
-    PlanPlace updated = planService.findPlaceById(placeId);
+    planFacade.updatePlace(placeId, place);
+    PlanPlace updated = planFacade.findPlaceById(placeId);
     return ResponseEntity.ok(updated);
   }
 
   // 여행 장소 삭제 - DELETE /plans/places/{placeId}
   @DeleteMapping("/places/{placeId}")
   public ResponseEntity<String> deletePlace(@PathVariable("placeId") Long placeId) {
-    planService.deletePlace(placeId);
+    planFacade.deletePlace(placeId);
     return ResponseEntity.ok("여행 장소가 삭제되었습니다.");
   }
 

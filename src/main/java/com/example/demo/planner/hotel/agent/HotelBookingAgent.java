@@ -17,7 +17,7 @@ import com.example.demo.planner.hotel.dto.entity.HotelRatePlanCandidate;
 import com.example.demo.planner.hotel.dto.request.HotelBookingRequest;
 import com.example.demo.planner.hotel.dto.request.TripPlanRequest;
 import com.example.demo.planner.hotel.service.HotelCandidateService;
-import com.example.demo.planner.plan.service.create.PlanService;
+import com.example.demo.planner.plan.service.PlanQueryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ public class HotelBookingAgent {
 
     private ChatClient chatClient;
     private HotelCandidateService hotelCandidateService;
-    private PlanService planService;
+    private PlanQueryService planQueryService;
     private ObjectMapper objectMapper;
     private List<HotelRatePlanCandidate> candidates;
 
@@ -36,12 +36,12 @@ public class HotelBookingAgent {
     public HotelBookingAgent(
             ChatClient.Builder chatClientBuilder,
             HotelCandidateService hotelCandidateService,
-            PlanService planService,
+            PlanQueryService planQueryService,
             ObjectMapper objectMapper
     ) {
         this.chatClient = chatClientBuilder.build();
         this.hotelCandidateService = hotelCandidateService;
-        this.planService = planService;
+        this.planQueryService = planQueryService;
         this.objectMapper = objectMapper;
     }
 
@@ -61,7 +61,7 @@ public class HotelBookingAgent {
             com.example.demo.planner.plan.dto.response.PlanDetail activePlan = null;
             String planContext = "";
             try {
-                activePlan = planService.getLatestPlanDetail(userId);
+                activePlan = planQueryService.getLatestPlanDetail(userId);
                 planContext = buildPlanContext(activePlan);
                 log.info("✅ 활성 Plan 정보 조회 완료");
             } catch (Exception e) {
@@ -100,12 +100,12 @@ public class HotelBookingAgent {
             // 2) LLM으로 호텔 선택 (Tool 사용)
             log.info("🤖 Calling LLM to select top 3 hotels...");
             log.info("📥 사용자 입력: {}", userQuery);
-            
+
             String llmResponse = chatClient.prompt()
                     .system("""
                             당신은 호텔 추천 전문가입니다.
                             사용자의 여행 일정에 맞는 호텔 3개를 반드시 JSON 형식으로만 추천하세요.
-                            
+
                             [현재 여행 계획]
                             """ + planContext + """
 
@@ -121,7 +121,7 @@ public class HotelBookingAgent {
                             - 반드시 3개의 호텔을 선택하세요.
                             - 응답은 JSON 배열 형식ONLY로 반환하세요.
                             - 다른 설명이나 텍스트는 절대 포함하지 마세요.
-                            
+
                             [JSON 응답 형식]
                             [
                               {"hotelId": 1, "roomTypeId": 2, "ratePlanId": 2},
@@ -307,7 +307,7 @@ public class HotelBookingAgent {
             for (com.example.demo.planner.plan.dto.response.PlanDayWithPlaces dayWithPlaces : planDetail.getDays()) {
                 context.append("  📍 Day ").append(dayWithPlaces.getDay().getDayIndex()).append(" (")
                        .append(dayWithPlaces.getDay().getPlanDate()).append("): \n");
-                
+
                 if (dayWithPlaces.getPlaces() != null && !dayWithPlaces.getPlaces().isEmpty()) {
                     for (com.example.demo.planner.plan.dto.entity.PlanPlace place : dayWithPlaces.getPlaces()) {
                         String placeName = place.getPlaceName() != null ? place.getPlaceName() : place.getTitle();
