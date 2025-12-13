@@ -73,11 +73,15 @@ public class IntentAnalysisAgent {
                       "duration": "...", 
                       // 여행 기간 표현 (예: 하루, 1박 2일, 주말, 3일간 등)
 
-                      "startDate": "...", 
-                      // 여행 시작 시점에 대한 표현 (날짜 또는 상대 표현 가능)
+            - 입력이 의미 없는 문자이거나 의도를 추론할 수 없는 경우, intent를 "other"로 분류하고 arguments는 빈 객체로 반환한다.
+            - 분류가 불확실하거나 모호한 경우도 "other"로 분류하면 SmartPlanAgent가 대화형으로 처리합니다.
+            - arguments는 빈 객체 {}로 반환한다.
 
-                      "theme": "...", 
-                      // 여행의 전체적인 성향 또는 목적 (예: 맛집, 카페, 관광, 쇼핑, 힐링 등)
+            # ✔ confidence 규칙
+            - 0.0 ~ 1.0 사이 값
+            - 0.8 이상: 매우 확신
+            - 0.5 ~ 0.8: 중간 확신
+            - 0.5 미만: 불확실 → "other"로 분류하면 SmartPlanAgent가 처리
 
                       "pace": "...", 
                       // 일정 밀도에 대한 사용자 표현 (예: 느긋하게, 적당히, 빡빡하게 등)
@@ -202,20 +206,30 @@ public class IntentAnalysisAgent {
         .system(systemPrompt)
         .user(userPrompt)
         .options(ChatOptions.builder().temperature(0.0).build()).call().content();
-    log.info("responseJSON: {}", responseJSON);
+    log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    log.info("🔍 [IntentAnalysis] 사용자 메시지: {}", intentRequest.getMessage());
+    log.info("📋 [IntentAnalysis] LLM 응답 JSON:");
+    log.info("{}", responseJSON);
+    log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     IntentResponse intentResponse = beanOutputConverter.convert(responseJSON);
 
-    if (intentResponse == null)
-      // fallback — etc 단일 intent 생성
+    if (intentResponse == null) {
+      log.warn("⚠️ IntentResponse is null! Fallback to 'other'");
+      // fallback — other 단일 intent 생성 (SmartPlanAgent로 라우팅됨)
       return IntentResponse.builder()
           .intents(List.of(
               IntentItem.builder()
-                  .intent("etc")
+                  .intent("other")
                   .confidence(0.0)
                   .arguments(Map.of())
                   .build()))
           .build();
+    }
+
+    log.info("✅ [IntentAnalysis] 분류 결과: intent={}, confidence={}",
+        intentResponse.getIntents().get(0).getIntent(),
+        intentResponse.getIntents().get(0).getConfidence());
 
     return intentResponse;
 
