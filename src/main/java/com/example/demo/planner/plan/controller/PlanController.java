@@ -211,9 +211,14 @@ public class PlanController {
   // 여행 장소 수정 - PUT /plans/places/{placeId}
   @PutMapping("/places/{placeId}")
   public ResponseEntity<PlanPlace> updatePlace(@PathVariable("placeId") Long placeId, @RequestBody PlanPlace place) {
-    planFacade.updatePlace(placeId, place);
-    PlanPlace updated = planFacade.findPlaceById(placeId);
-    return ResponseEntity.ok(updated);
+    try {
+      planFacade.updatePlace(placeId, place);
+      PlanPlace updated = planFacade.findPlaceById(placeId);
+      return ResponseEntity.ok(updated);
+    } catch (Exception e) {
+      return (ResponseEntity<PlanPlace>) ResponseEntity.internalServerError();
+    }
+    
   }
 
   // 여행 장소 삭제 - DELETE /plans/places/{placeId}

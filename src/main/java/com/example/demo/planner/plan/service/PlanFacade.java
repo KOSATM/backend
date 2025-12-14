@@ -145,7 +145,7 @@ public class PlanFacade {
     }
 
     @Transactional
-    public void updatePlace(Long placeId, PlanPlace place) {
+    public void updatePlace(Long placeId, PlanPlace place) throws Exception {
         planPlaceService.updatePlace(placeId, place);
     }
 
