@@ -1,5 +1,9 @@
 package com.example.demo.common.chat.controller;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,7 +17,9 @@ import com.example.demo.common.chat.intent.agent.IntentAnalysisAgent;
 import com.example.demo.common.chat.intent.dto.request.IntentRequest;
 import com.example.demo.common.chat.pipeline.DefaultChatPipeline;
 import com.example.demo.common.chat.pipeline.PipelineResult;
+import com.example.demo.common.chat.pipeline.UnifiedAgentResponse;
 import com.example.demo.planner.plan.agent.SmartPlanAgent;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -121,10 +127,14 @@ public ResponseEntity<TravelChatSendResponse> chat(@RequestBody TravelChatSendRe
 
         PipelineResult result = defaultChatPipeline.execute(intentRequest, userId);
 
-        String response = result.getMainResponse().getMessage(); // 핵심 수정 부분
+        String response = result.getMainResponse().getMessage();
+        Object agentData = result.getMainResponse().getData();
+
+        // 이미지 추출
+        List<Map<String, Object>> images = extractImages(agentData);
 
         return ResponseEntity.ok(
-                TravelChatSendResponse.success(response, null)
+                TravelChatSendResponse.success(response, images)
         );
 
     } catch (Exception e) {
@@ -132,6 +142,84 @@ public ResponseEntity<TravelChatSendResponse> chat(@RequestBody TravelChatSendRe
         return ResponseEntity.ok(TravelChatSendResponse.error(e.getMessage()));
     }
 }
+
+    /**
+     * Agent 응답 데이터에서 이미지 추출
+     */
+    private List<Map<String, Object>> extractImages(Object agentData) {
+        List<Map<String, Object>> images = new ArrayList<>();
+        
+        log.info("🔍 extractImages() 호출 - agentData 타입: {}, 값: {}", 
+            agentData == null ? "null" : agentData.getClass().getSimpleName(),
+            agentData);
+        
+        if (agentData == null) {
+            return images;
+        }
+
+        // UnifiedAgentResponse인 경우 내부 data 추출
+        if (agentData instanceof UnifiedAgentResponse) {
+            log.info("✅ UnifiedAgentResponse 감지");
+            UnifiedAgentResponse unified = (UnifiedAgentResponse) agentData;
+            Object innerData = unified.getData();
+            
+            log.info("📦 innerData 타입: {}", innerData == null ? "null" : innerData.getClass().getSimpleName());
+            
+            if (innerData instanceof List) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> dataList = (List<Map<String, Object>>) innerData;
+                log.info("📋 List 크기: {}", dataList.size());
+                
+                for (Map<String, Object> place : dataList) {
+                    String title = (String) place.get("title");
+                    String image = (String) place.get("image");
+                    String address = (String) place.get("address");
+                    
+                    log.info("   → 장소: {}, 이미지: {}", title, image);
+                    
+                    if (image != null && !image.isEmpty()) {
+                        Map<String, Object> imageData = new java.util.LinkedHashMap<>();
+                        imageData.put("title", title);
+                        imageData.put("placeName", place.get("placeName"));
+                        imageData.put("address", address);
+                        imageData.put("image", image);
+                        images.add(imageData);
+                    }
+                }
+            }
+        }
+        // 혹시 List 형태로 직접 오는 경우도 처리
+        else if (agentData instanceof List) {
+            log.info("✅ List 직접 감지");
+            try {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> dataList = (List<Map<String, Object>>) agentData;
+                log.info("📋 List 크기: {}", dataList.size());
+                
+                for (Map<String, Object> place : dataList) {
+                    String title = (String) place.get("title");
+                    String image = (String) place.get("image");
+                    String address = (String) place.get("address");
+                    
+                    if (image != null && !image.isEmpty()) {
+                        Map<String, Object> imageData = new java.util.LinkedHashMap<>();
+                        imageData.put("title", title);
+                        imageData.put("placeName", place.get("placeName"));
+                        imageData.put("address", address);
+                        imageData.put("image", image);
+                        images.add(imageData);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("❌ 이미지 추출 중 오류 (List 처리): {}", e.getMessage());
+            }
+        } else {
+            log.warn("⚠️ 예상치 못한 데이터 타입: {}", agentData.getClass().getName());
+        }
+
+        log.info("✅ 추출된 이미지 개수: {}", images.size());
+        return images;
+    }
 
 
 

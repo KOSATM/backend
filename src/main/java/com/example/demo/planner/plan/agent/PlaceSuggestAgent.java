@@ -103,10 +103,31 @@ public class PlaceSuggestAgent implements AiAgent {
     // Step 2: 역할 분리 - LLM 설명 + DB 데이터 분리
     List<Map<String, Object>> placesData = tools.getLastSearchResult();
     
+    log.info("🖼️ 추출 전 placesData: {} 개 장소", placesData.size());
+    
+    // ✅ 이미지 데이터만 추출 (frontend용)
+    List<Map<String, Object>> placesWithImages = new ArrayList<>();
+    for (Map<String, Object> place : placesData) {
+        String firstImage2 = (String) place.get("first_image2");
+        String firstImage = (String) place.get("first_image");
+        String imageUrl = (firstImage2 != null && !firstImage2.isEmpty()) ? firstImage2 : firstImage;
+        
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            Map<String, Object> imageData = new java.util.LinkedHashMap<>();
+            imageData.put("title", place.get("title"));
+            imageData.put("placeName", place.get("place_name"));
+            imageData.put("address", place.get("address"));
+            imageData.put("image", imageUrl);
+            placesWithImages.add(imageData);
+        }
+    }
+    
+    log.info("🖼️ 추출된 이미지 개수: {}", placesWithImages.size());
+    
     // Step 3: UnifiedAgentResponse로 응답 (message + data 분리)
     UnifiedAgentResponse unifiedResponse = UnifiedAgentResponse.builder()
         .message(answer)
-        .data(placesData)
+        .data(placesWithImages)  // ✅ 이미지가 포함된 데이터
         .changes(Map.of(
             "action", "place_suggested",
             "count", placesData.size(),

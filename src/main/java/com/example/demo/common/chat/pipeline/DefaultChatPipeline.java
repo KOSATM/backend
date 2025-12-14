@@ -58,7 +58,7 @@ public class DefaultChatPipeline implements ChatPipeline {
         // Agent가 이미 message를 생성했으면 그대로 사용, 아니면 ResponseAgent로 처리
         String message = (mainIntentResponse.getMessage() != null && !mainIntentResponse.getMessage().isBlank())
                 ? mainIntentResponse.getMessage()
-                : responseAgent.generateMessage(request.getMessage(), mainIntentResponse.getMessage(), mainIntentResponse.getData());
+                : responseAgent.generateMessage(mainIntentResponse.getMessage() != null ? mainIntentResponse.getMessage() : "", mainIntentResponse.getData());
         
         AiAgentResponse processedResponse = AiAgentResponse.builder()
                 .message(message)
