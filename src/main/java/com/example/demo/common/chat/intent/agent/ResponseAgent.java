@@ -52,4 +52,8 @@ public class ResponseAgent {
       .content();
     return answer;
   }
+
+  public String generateMessage(String agentMessage, Object data) {
+    return generateMessage("", agentMessage, data);
+  }
 }
