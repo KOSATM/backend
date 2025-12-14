@@ -1,9 +1,12 @@
 package com.example.demo.planner.plan.service;
 
+import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dao.PlanDayDao;
 import com.example.demo.planner.plan.dao.PlanPlaceDao;
+import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
 import com.example.demo.planner.plan.dto.response.PlacePosition;
 import com.example.demo.planner.plan.util.FuzzyUtils;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +35,8 @@ public class PlanPlaceService {
 
     private final PlanPlaceDao planPlaceDao;
     private final PlanDayDao planDayDao;
+    private final PlanDao planDao;
+    private final PlanSnapshotService planSnapshotService;
     private final PlanQueryService planQueryService;
 
     // ========== Place CRUD ==========
@@ -61,9 +66,10 @@ public class PlanPlaceService {
 
     /**
      * Place 수정 (부분 수정 지원)
+     * @throws Exception 
      */
     @Transactional
-    public void updatePlace(Long placeId, PlanPlace place) {
+    public void updatePlace(Long placeId, PlanPlace place) throws Exception {
         PlanPlace existing = planPlaceDao.selectPlanPlaceById(placeId);
         if (existing == null) {
             throw new IllegalArgumentException("존재하지 않는 여행 장소입니다: placeId=" + placeId);
@@ -86,6 +92,14 @@ public class PlanPlaceService {
 
         planPlaceDao.updatePlanPlace(updatedPlace);
         log.info("PlanPlace 수정 완료: placeId={}", placeId);
+
+        // 스냅샷 저장
+        PlanDay planDay = planDayDao.selectPlanDayById(existing.getDayId());
+        Plan plan = planDao.selectPlanById(planDay.getPlanId());
+        Long planId = plan.getId();
+        List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
+        List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
+        planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
     }
 
     /**
