@@ -25,6 +25,13 @@
     LIMIT 1
   </select>
 
+  <select id="selectPlanSnapshotByUserIdAndVersionNo" parameterType="PlanSnapshot" resultType="PlanSnapshot">
+    SELECT id, user_id, version_no, snapshot_json, created_at
+    FROM plan_snapshots
+    WHERE user_id = #{userId} AND version_no = #{versionNo}
+    ORDER BY version_no DESC
+  </select>
+
   <insert id="insertPlanSnapshot" parameterType="PlanSnapshot" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     INSERT INTO plan_snapshots (user_id, version_no, snapshot_json, created_at)
     VALUES (#{userId}, #{versionNo}, #{snapshotJson}::json, now())

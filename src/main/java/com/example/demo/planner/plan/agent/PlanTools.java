@@ -19,6 +19,7 @@ import com.example.demo.common.naver.dto.LocalItem;
 import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dao.PlanDayDao;
 import com.example.demo.planner.plan.dao.PlanPlaceDao;
+import com.example.demo.planner.plan.dao.PlanSnapshotDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
@@ -54,6 +55,7 @@ public class PlanTools {
     private final PlanDayDao planDayDao;
     private final PlanPlaceDao planPlaceDao;
     private final PlanSnapshotService planSnapshotService;
+    private final PlanSnapshotDao planSnapshotDao;
     private final PlanSnapshotUtility planSnapshotUtility;
 
 
@@ -340,10 +342,16 @@ public class PlanTools {
     }
 
     @Transactional
-    @Tool(description = "사용자가 가지고 있는 계획 스냅샷의 바로 이전 버전으로 돌아갑니다.")
-    public String rollBack(@ToolParam(description = "사용자 아이디") ToolContext toolContext) {
+    @Tool(description = "사용자가 가지고 있는 계획 스냅샷의 바로 이전 버전으로 돌아갑니다. 버전 정보가 언급된 경우에만 사용합니다.")
+    public String rollBack(@ToolParam(description = "돌아가고자 하는 버전 번호") Integer versionNo, ToolContext toolContext) {
         try {
-            PlanSnapshot planSnapshot = planSnapshotService.getPlanSnapshotsByUserId((Long) toolContext.getContext().get("userId")).get(1);
+            log.info("돌아갈 버전: {}", versionNo);
+            PlanSnapshot toRevert = PlanSnapshot.builder()
+                .userId((Long) toolContext.getContext().get("userId"))
+                .versionNo(versionNo)
+                .build();
+            // PlanSnapshot planSnapshot = planSnapshotService.getPlanSnapshotsByUserId((Long) toolContext.getContext().get("userId")).get(1);
+            PlanSnapshot planSnapshot = planSnapshotDao.selectPlanSnapshotByUserIdAndVersionNo(toRevert);
             PlanSnapshotContent snapshotContent = planSnapshotUtility.parseSnapshot(planSnapshot.getSnapshotJson());
 
             Long planId = getPlanId();
