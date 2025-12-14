@@ -3,6 +3,7 @@ package com.example.demo.planner.plan.agent;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 
 import com.example.demo.common.chat.intent.dto.IntentCommand;
 import com.example.demo.common.chat.pipeline.AiAgentResponse;
+import com.example.demo.common.chat.pipeline.UnifiedAgentResponse;
 import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.planner.plan.dao.PlanSnapshotDao;
 import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
@@ -56,6 +58,9 @@ public class PlaceSuggestAgent implements AiAgent {
     String originalUserMessage = command.getOriginalUserMessage();
     String commandArguments = command.getArguments().toString();
     
+    // Step 1: Tool 실행 및 DB 결과 수집
+    SuggestReferenceTools tools = new SuggestReferenceTools();
+    
     String answer = chatClient.prompt()
         .system("""
             당신은 여행 전문가입니다.
@@ -73,18 +78,50 @@ public class PlaceSuggestAgent implements AiAgent {
             5. 데이터베이스 조회는 `dbSearch` 도구를 사용하세요
             6. 사용자의 질문에 동선 정보가 있다면(예: 마지막 일정 장소 근처) 조회한 여행 계획을 참고하여 동선이 최적화되는 장소를 추천하세요
 
-            사용자에게는 title, address, tel, description, detail_info를 응답하되,
-            해당 값이 없다면 '미제공'이라고 응답하세요.
+            ✅ 응답 방식:
+            - dbSearch 도구에서 받은 JSON 배열을 절대 그대로 노출하지 마세요
+            - 받은 JSON 데이터를 파싱하여 자연스러운 한국어 텍스트로 정리하세요
+            - 각 장소를 다음 형식으로 소개하세요:
+              "• [장소명]
+               주소: [주소]
+               전화: [전화번호 또는 미제공]
+               설명: [설명]
+               상세정보: [상세정보]"
+            - 마크다운 형식(예: **굵게**, # 제목)은 사용하지 마세요
+            - 순수 텍스트로만 응답하세요
+            - 추천 장소 목록 앞에 친절한 인사말을 포함하세요
+            - JSON, 배열 기호 [], 중괄호 {} 등 프로그래밍 형식을 절대 노출하지 마세요
             """)
         .user("""
             originalUserMessage: %s, commandArguments: %s
             """.formatted(originalUserMessage, commandArguments))
-        .tools(new SuggestReferenceTools())
+        .tools(tools)
         .toolContext(Map.of("userId", userId))
         .call()
         .content();
     
-    AiAgentResponse response = AiAgentResponse.builder().message("장소 선정이 완료되었습니다.").data(answer).build();
+    // Step 2: 역할 분리 - LLM 설명 + DB 데이터 분리
+    List<Map<String, Object>> placesData = tools.getLastSearchResult();
+    
+    // Step 3: UnifiedAgentResponse로 응답 (message + data 분리)
+    UnifiedAgentResponse unifiedResponse = UnifiedAgentResponse.builder()
+        .message(answer)
+        .data(placesData)
+        .changes(Map.of(
+            "action", "place_suggested",
+            "count", placesData.size(),
+            "details", placesData.stream()
+                .map(p -> p.get("title"))
+                .toList()
+        ))
+        .build();
+    
+    // UnifiedAgentResponse → AiAgentResponse 변환 (호환성 유지)
+    AiAgentResponse response = AiAgentResponse.builder()
+        .message(unifiedResponse.getMessage())
+        .data(unifiedResponse)
+        .build();
+    
     log.info("response: {}", response.toString());
     long end = System.nanoTime();
     log.info("실행시간: {}ms", (end - start) / 1_000_000);
@@ -94,6 +131,12 @@ public class PlaceSuggestAgent implements AiAgent {
   class SuggestReferenceTools {
     // 현재 계획을 저장하는 필드 (validateDate에서 사용)
     private PlanSnapshotContent currentPlanSnapshot = null;
+    // 마지막 DB 검색 결과를 저장 (execute 메서드에서 접근)
+    private List<Map<String, Object>> lastSearchResult = null;
+    
+    public List<Map<String, Object>> getLastSearchResult() {
+      return lastSearchResult != null ? lastSearchResult : new ArrayList<>();
+    }
     
     @Tool(description = "추천을 하기 전 현재 여행 계획을 조회합니다")
     public Object getCurrentPlan(ToolContext toolContext) throws JsonProcessingException {
@@ -175,8 +218,8 @@ public class PlaceSuggestAgent implements AiAgent {
       }
     }
 
-    @Tool(description = "자료를 찾기 위해 DB를 조회합니다", returnDirect = true)
-    public Object dbSearch(String query) {
+    @Tool(description = "자료를 찾기 위해 DB를 조회합니다")
+    public String dbSearch(String query) {
       long start = System.nanoTime();
       log.info("검색 쿼리: {}", query);
       
@@ -220,7 +263,10 @@ public class PlaceSuggestAgent implements AiAgent {
         long end = System.nanoTime();
         log.info("DB 검색 실행시간: {}ms", (end - start) / 1_000_000);
         
-        return res;
+        // ✅ 역할 분리: DB 결과를 저장하고 JSON으로 LLM에 전달
+        this.lastSearchResult = res;
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.writeValueAsString(res);
         
       } catch (Exception e) {
         log.error("DB 검색 실패: {}", e.getMessage(), e);
