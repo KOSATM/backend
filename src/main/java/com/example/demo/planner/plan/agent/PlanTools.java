@@ -58,7 +58,6 @@ public class PlanTools {
     private final PlanSnapshotDao planSnapshotDao;
     private final PlanSnapshotUtility planSnapshotUtility;
 
-
     private final ThreadLocal<Long> currentPlanId = new ThreadLocal<>();
 
     DateTimeFormatter formatter1 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -87,9 +86,10 @@ public class PlanTools {
             Plan plan = planDao.selectPlanById(planId);
             List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
-            planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
 
-            return String.format("✅ '%s' 장소를 일정에서 삭제했습니다.", placeName);
+            return String.format("✅ '%s' 장소를 일정에서 삭제했습니다. 버전: %d", placeName, versionNo);
         } catch (IllegalArgumentException e) {
             return String.format("❌ '%s' 장소를 찾을 수 없습니다.", placeName);
         } catch (Exception e) {
@@ -101,7 +101,8 @@ public class PlanTools {
     @Tool(description = "같은 날짜 내에서 두 장소의 순서를 교환합니다 (dayIndex는 1부터 시작)")
     public String swapPlaces(int dayIndex, int index1, int index2) {
         Long planId = getPlanId();
-        log.info("🔧 [Tool] swapPlaces: planId={}, dayIndex={}, index1={}, index2={}", planId, dayIndex, index1, index2);
+        log.info("🔧 [Tool] swapPlaces: planId={}, dayIndex={}, index1={}, index2={}", planId, dayIndex, index1,
+                index2);
         try {
             swapAction.swapPlacesInSameDay(planId, dayIndex, index1, index2);
 
@@ -109,9 +110,10 @@ public class PlanTools {
             Plan plan = planDao.selectPlanById(planId);
             List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
-            planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
 
-            return String.format("✅ %d일차의 %d번째와 %d번째 장소 순서를 교환했습니다.", dayIndex, index1, index2);
+            return String.format("✅ %d일차의 %d번째와 %d번째 장소 순서를 교환했습니다. 버전: %d", dayIndex, index1, index2, versionNo);
         } catch (Exception e) {
             log.error("장소 순서 교환 실패", e);
             return String.format("❌ 장소 순서 교환 중 오류 발생: %s", e.getMessage());
@@ -121,7 +123,8 @@ public class PlanTools {
     @Tool(description = "서로 다른 날짜 간 장소를 교환합니다 (dayIndex는 1부터 시작)")
     public String swapPlacesBetweenDays(int day1, int index1, int day2, int index2) {
         Long planId = getPlanId();
-        log.info("🔧 [Tool] swapPlacesBetweenDays: planId={}, day1={}, index1={}, day2={}, index2={}", planId, day1, index1, day2, index2);
+        log.info("🔧 [Tool] swapPlacesBetweenDays: planId={}, day1={}, index1={}, day2={}, index2={}", planId, day1,
+                index1, day2, index2);
         try {
             swapAction.swapPlacesBetweenDays(planId, day1, index1, day2, index2);
 
@@ -129,9 +132,10 @@ public class PlanTools {
             Plan plan = planDao.selectPlanById(planId);
             List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
-            planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
 
-            return String.format("✅ %d일차의 %d번째 장소와 %d일차의 %d번째 장소를 교환했습니다.", day1, index1, day2, index2);
+            return String.format("✅ %d일차의 %d번째 장소와 %d일차의 %d번째 장소를 교환했습니다. 버전: %d", day1, index1, day2, index2, versionNo);
         } catch (Exception e) {
             log.error("날짜 간 장소 교환 실패", e);
             return String.format("❌ 장소 교환 중 오류 발생: %s", e.getMessage());
@@ -149,9 +153,10 @@ public class PlanTools {
             Plan plan = planDao.selectPlanById(planId);
             List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
-            planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
 
-            return String.format("✅ '%s'를 '%s'(으)로 변경했습니다.", oldPlaceName, newName);
+            return String.format("✅ '%s'를 '%s'(으)로 변경했습니다. 버전: %d", oldPlaceName, newName, versionNo);
         } catch (Exception e) {
             log.error("장소 교체 실패", e);
             return String.format("❌ 장소 교체 중 오류 발생: %s", e.getMessage());
@@ -176,7 +181,8 @@ public class PlanTools {
                 result.append(String.format("%d. **%s**\n", i + 1, cleanHtmlTags(item.getTitle())));
                 result.append(String.format("   - 카테고리: %s\n", item.getCategory()));
                 result.append(String.format("   - 주소: %s\n", item.getRoadAddress()));
-                if (i < count - 1) result.append("\n");
+                if (i < count - 1)
+                    result.append("\n");
             }
 
             result.append("\n어떤 장소로 하시겠어요? (번호로 선택해주세요)");
@@ -190,7 +196,8 @@ public class PlanTools {
     @Tool(description = "검색 결과에서 사용자가 선택한 장소로 교체합니다")
     public String replacePlaceWithSelection(String oldPlaceName, String newPlaceName, int selectedIndex) {
         Long planId = getPlanId();
-        log.info("🔧 [Tool] replacePlaceWithSelection: planId={}, old={}, new={}, index={}", planId, oldPlaceName, newPlaceName, selectedIndex);
+        log.info("🔧 [Tool] replacePlaceWithSelection: planId={}, old={}, new={}, index={}", planId, oldPlaceName,
+                newPlaceName, selectedIndex);
         try {
             String newName = modifyAction.replacePlaceWithSelection(planId, oldPlaceName, newPlaceName, selectedIndex);
 
@@ -198,9 +205,10 @@ public class PlanTools {
             Plan plan = planDao.selectPlanById(planId);
             List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
-            planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
 
-            return String.format("✅ '%s'를 '%s'(으)로 변경했습니다.", oldPlaceName, newName);
+            return String.format("✅ '%s'를 '%s'(으)로 변경했습니다. 버전: %d", oldPlaceName, newName, versionNo);
         } catch (Exception e) {
             log.error("장소 교체 실패", e);
             return String.format("❌ 장소 교체 중 오류 발생: %s", e.getMessage());
@@ -210,7 +218,8 @@ public class PlanTools {
     @Tool(description = "특정 날짜에 새로운 장소를 추가합니다. dayIndex는 1부터 시작 (1일차=1, 2일차=2). 장소명으로 자동 검색하여 추가합니다.")
     public String addPlace(int dayIndex, String placeName, String startTime) {
         Long planId = getPlanId();
-        log.info("🔧 [Tool] addPlace: planId={}, dayIndex={}, placeName={}, startTime={}", planId, dayIndex, placeName, startTime);
+        log.info("🔧 [Tool] addPlace: planId={}, dayIndex={}, placeName={}, startTime={}", planId, dayIndex, placeName,
+                startTime);
         try {
             String result = addAction.addPlace(planId, dayIndex, placeName, startTime);
 
@@ -218,9 +227,10 @@ public class PlanTools {
             Plan plan = planDao.selectPlanById(planId);
             List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
-            planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
 
-            return String.format("✅ %d일차에 '%s'을(를) 추가했습니다.", dayIndex, result);
+            return String.format("✅ %d일차에 '%s'을(를) 추가했습니다. 버전: %d", dayIndex, result, versionNo);
         } catch (Exception e) {
             log.error("장소 추가 실패", e);
             return String.format("❌ 장소 추가 중 오류 발생: %s", e.getMessage());
@@ -239,9 +249,10 @@ public class PlanTools {
             Plan plan = planDao.selectPlanById(planId);
             List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
-            planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
 
-            return String.format("✅ %d일차 %d번째에 '%s'을(를) 추가했습니다.", dayIndex, position, result);
+            return String.format("✅ %d일차 %d번째에 '%s'을(를) 추가했습니다. 버전: %d", dayIndex, position, result, versionNo);
         } catch (Exception e) {
             log.error("장소 삽입 실패", e);
             return String.format("❌ 장소 삽입 중 오류 발생: %s", e.getMessage());
@@ -259,9 +270,10 @@ public class PlanTools {
             Plan plan = planDao.selectPlanById(planId);
             List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
-            planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
 
-            return String.format("✅ '%s'의 시간을 %s(으)로 변경했습니다.", placeName, newTime);
+            return String.format("✅ '%s'의 시간을 %s(으)로 변경했습니다. %d 버전: ", placeName, newTime, versionNo);
         } catch (Exception e) {
             log.error("시간 변경 실패", e);
             return String.format("❌ 시간 변경 중 오류 발생: %s", e.getMessage());
@@ -279,9 +291,10 @@ public class PlanTools {
             Plan plan = planDao.selectPlanById(planId);
             List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
-            planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
 
-            return String.format("✅ %d일차 일정을 삭제했습니다.", dayIndex);
+            return String.format("✅ %d일차 일정을 삭제했습니다. 버전: %d", dayIndex, versionNo);
         } catch (Exception e) {
             log.error("날짜 삭제 실패", e);
             return String.format("❌ 날짜 삭제 중 오류 발생: %s", e.getMessage());
@@ -299,9 +312,10 @@ public class PlanTools {
             Plan plan = planDao.selectPlanById(planId);
             List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
-            planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
 
-            return String.format("✅ %d일차와 %d일차 일정을 교환했습니다.", day1, day2);
+            return String.format("✅ %d일차와 %d일차 일정을 교환했습니다. 버전: %d", day1, day2, versionNo);
         } catch (Exception e) {
             log.error("날짜 교환 실패", e);
             return String.format("❌ 날짜 교환 중 오류 발생: %s", e.getMessage());
@@ -319,9 +333,10 @@ public class PlanTools {
             Plan plan = planDao.selectPlanById(planId);
             List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
-            planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
 
-            return String.format("✅ 여행을 %d일 연장했습니다.", extraDays);
+            return String.format("✅ 여행을 %d일 연장했습니다. 버전: %d", extraDays, versionNo);
         } catch (Exception e) {
             log.error("일정 확장 실패", e);
             return String.format("❌ 일정 확장 중 오류 발생: %s", e.getMessage());
@@ -342,16 +357,10 @@ public class PlanTools {
     }
 
     @Transactional
-    @Tool(description = "사용자가 가지고 있는 계획 스냅샷의 바로 이전 버전으로 돌아갑니다. 버전 정보가 언급된 경우에만 사용합니다.")
-    public String rollBack(@ToolParam(description = "돌아가고자 하는 버전 번호") Integer versionNo, ToolContext toolContext) {
+    @Tool(description = "사용자가 가지고 있는 계획 스냅샷의 바로 이전 버전으로 돌아갑니다.")
+    public String rollBack(@ToolParam(description = "사용자 아이디") ToolContext toolContext) {
         try {
-            log.info("돌아갈 버전: {}", versionNo);
-            PlanSnapshot toRevert = PlanSnapshot.builder()
-                .userId((Long) toolContext.getContext().get("userId"))
-                .versionNo(versionNo)
-                .build();
-            // PlanSnapshot planSnapshot = planSnapshotService.getPlanSnapshotsByUserId((Long) toolContext.getContext().get("userId")).get(1);
-            PlanSnapshot planSnapshot = planSnapshotDao.selectPlanSnapshotByUserIdAndVersionNo(toRevert);
+            PlanSnapshot planSnapshot = planSnapshotService.getPlanSnapshotsByUserId((Long) toolContext.getContext().get("userId")).get(1);
             PlanSnapshotContent snapshotContent = planSnapshotUtility.parseSnapshot(planSnapshot.getSnapshotJson());
 
             Long planId = getPlanId();
@@ -423,9 +432,108 @@ public class PlanTools {
 
             List<PlanDay> newDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> newPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
-            planSnapshotService.savePlanSnapshot(rollbackPlan, newDays, newPlaces);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(rollbackPlan, newDays, newPlaces);
+            Integer newVersionNo = newSnapshot.getVersionNo();
             log.info("버전 환원 완료");
-            return "이전 버전으로 돌아갔습니다";
+            return String.format("이전 버전으로 돌아갔습니다. 버전 번호는 증가합니다. 버전: %d", newVersionNo);
+
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return String.format("❌ 버전 환원 중 오류 발생: %s", e.getMessage());
+        }
+    }
+
+    @Transactional
+    @Tool(description = "사용자가 지정한 계획의 버전으로 으로 돌아갑니다. 버전 정보가 언급된 경우에만 사용합니다.")
+    public String rollBackToSpecific(@ToolParam(description = "돌아가고자 하는 버전 번호") Integer versionNo, ToolContext toolContext) {
+        try {
+            log.info("돌아갈 버전: {}", versionNo);
+            PlanSnapshot toRevert = PlanSnapshot.builder()
+                    .userId((Long) toolContext.getContext().get("userId"))
+                    .versionNo(versionNo)
+                    .build();
+            // PlanSnapshot planSnapshot =
+            // planSnapshotService.getPlanSnapshotsByUserId((Long)
+            // toolContext.getContext().get("userId")).get(1);
+            PlanSnapshot planSnapshot = planSnapshotDao.selectPlanSnapshotByUserIdAndVersionNo(toRevert);
+            PlanSnapshotContent snapshotContent = planSnapshotUtility.parseSnapshot(planSnapshot.getSnapshotJson());
+
+            Long planId = getPlanId();
+            Plan plan = planDao.selectPlanById(getPlanId());
+
+            List<PlanPlace> existingPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
+            for (PlanPlace place : existingPlaces) {
+                planPlaceDao.deletePlanPlaceById(place.getId());
+            }
+            log.info("plan_places 삭제 완료");
+
+            List<PlanDay> existingDays = planDayDao.selectPlanDaysByPlanId(planId);
+            for (PlanDay day : existingDays) {
+                planDayDao.deletePlanDay(day.getId());
+            }
+            log.info("plan_days 삭제 완료");
+
+            Plan rollbackPlan = Plan.builder()
+                    .userId((Long) toolContext.getContext().get("userId"))
+                    .budget(snapshotContent.getBudget())
+                    .startDate(LocalDate.parse(snapshotContent.getStartDate(), formatter1))
+                    .endDate(LocalDate.parse(snapshotContent.getEndDate(), formatter1))
+                    .createdAt(plan.getCreatedAt())
+                    .updatedAt(OffsetDateTime.now())
+                    .build();
+            planDao.updatePlan(rollbackPlan);
+            log.info("Plan 업데이트 완료");
+
+            Map<String, Long> dateToDayId = new HashMap<>();
+            for (int i = 0; i < snapshotContent.getDays().size(); i++) {
+                PlanSnapshotContent.PlanDay pscDay = snapshotContent.getDays().get(i);
+
+                PlanDay newDay = PlanDay.builder()
+                        .planId(planId)
+                        .dayIndex(i + 1)
+                        .title(pscDay.getTitle())
+                        .planDate(LocalDate.parse(pscDay.getDate(), formatter1))
+                        .build();
+
+                planDayDao.insertPlanDay(newDay);
+                dateToDayId.put(pscDay.getDate(), newDay.getId());
+            }
+            log.info("PlanDays 재생성 완료");
+
+            for (PlanSnapshotContent.PlanDay pscDay : snapshotContent.getDays()) {
+                Long dayId = dateToDayId.get(pscDay.getDate());
+
+                for (PlanSnapshotContent.PlanDayItem pscItem : pscDay.getSchedules()) {
+                    PlanPlace newPlace = PlanPlace.builder()
+                            .dayId(dayId)
+                            .title(pscItem.getTitle())
+                            .startAt(LocalDateTime.parse(pscItem.getStartAt(), formatter2)
+                                    .atOffset(ZoneOffset.of("+09:00")))
+                            .endAt(LocalDateTime.parse(pscItem.getEndAt(), formatter2)
+                                    .atOffset(ZoneOffset.of("+09:00")))
+                            .placeName(pscItem.getPlaceName())
+                            .address(pscItem.getAddress())
+                            .lat(pscItem.getLat())
+                            .lng(pscItem.getLng())
+                            .expectedCost(pscItem.getExpectedCost())
+                            .normalizedCategory(pscItem.getNormalizedCategory())
+                            .firstImage(pscItem.getFirstImage())
+                            .firstImage2(pscItem.getFirstImage2())
+                            .isEnded(pscItem.getIsEnded() == null ? false : pscItem.getIsEnded())
+                            .build();
+
+                    planPlaceDao.insertPlanPlace(newPlace);
+                }
+            }
+            log.info("PlanPlaces 재생성 완료");
+
+            List<PlanDay> newDays = planDayDao.selectPlanDaysByPlanId(planId);
+            List<PlanPlace> newPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
+            // planSnapshotService.savePlanSnapshot(rollbackPlan, newDays, newPlaces);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(rollbackPlan, newDays, newPlaces);
+            Integer newVersionNo = newSnapshot.getVersionNo();
+            log.info("버전 환원 완료");
+            return String.format("이전 버전으로 돌아갔습니다. 버전 번호는 증가합니다. 버전: %d", newVersionNo);
 
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -435,7 +543,8 @@ public class PlanTools {
 
     // Helper method
     private String cleanHtmlTags(String text) {
-        if (text == null) return null;
+        if (text == null)
+            return null;
         return text.replaceAll("<[^>]*>", "");
     }
 }

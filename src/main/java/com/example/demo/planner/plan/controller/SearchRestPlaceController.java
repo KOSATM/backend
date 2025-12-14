@@ -8,13 +8,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.common.chat.intent.dto.IntentCommand;
-import com.example.demo.common.chat.pipeline.AiAgentResponse;
-import com.example.demo.common.chat.pipeline.DefaultChatPipeline;
-import com.example.demo.common.user.dto.User;
-import com.example.demo.planner.plan.agent.PlaceSuggestAgent;
 import com.example.demo.planner.plan.agent.PlaceSuggestAgentNoChat;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
 import com.example.demo.planner.plan.dto.entity.TravelPlaces;
@@ -23,18 +20,15 @@ import com.example.demo.planner.plan.service.RestPlaceService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.RequestParam;
 
 
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-public class TestSuggestController {
+public class SearchRestPlaceController {
   private final PlanFacade planFacade;
 
   private final PlaceSuggestAgentNoChat placeSuggestAgentNoChat;
-
-  private final DefaultChatPipeline defaultChatPipeline;
 
   private final RestPlaceService restPlaceService;
 
@@ -63,6 +57,12 @@ public class TestSuggestController {
     return map;
   }
 
+  @GetMapping("/search-rest-place")
+  public Object searchRestPlace(@RequestParam("lat") Double lat, @RequestParam("lng") Double lng) {
+    return restPlaceService.searchRestPlace(lat, lng);
+  }
+
+
   // @PostMapping("/test")
   // public String test(@RequestParam("question") String question) {
   // IntentRequest intentRequest =
@@ -71,10 +71,5 @@ public class TestSuggestController {
   // return
   // defaultChatPipeline.execute(intentRequest).getMainResponse().getMessage().toString();
   // }
-  @GetMapping("/search-rest-place")
-  public Object searchRestPlace(@RequestParam("lat") Double lat, @RequestParam("lng") Double lng) {
-    return restPlaceService.searchRestPlace(lat, lng);
-    // return new String();
-  }
-
+  
 }
