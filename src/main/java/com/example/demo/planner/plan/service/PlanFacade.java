@@ -150,7 +150,7 @@ public class PlanFacade {
     }
 
     @Transactional
-    public void deletePlace(Long placeId) {
+    public void deletePlace(Long placeId) throws Exception {
         planPlaceService.deletePlace(placeId);
     }
 

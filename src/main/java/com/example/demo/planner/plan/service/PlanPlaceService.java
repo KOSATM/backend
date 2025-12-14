@@ -104,15 +104,25 @@ public class PlanPlaceService {
 
     /**
      * Place 삭제
+     * @throws Exception 
      */
     @Transactional
-    public void deletePlace(Long placeId) {
+    public void deletePlace(Long placeId) throws Exception {
         PlanPlace existing = planPlaceDao.selectPlanPlaceById(placeId);
         if (existing == null) {
             throw new IllegalArgumentException("존재하지 않는 여행 장소입니다: placeId=" + placeId);
         }
         planPlaceDao.deletePlanPlaceById(placeId);
+
         log.info("PlanPlace 삭제 완료: placeId={}", placeId);
+
+        // 스냅샷 저장
+        PlanDay planDay = planDayDao.selectPlanDayById(existing.getDayId());
+        Plan plan = planDao.selectPlanById(planDay.getPlanId());
+        Long planId = plan.getId();
+        List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
+        List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
+        planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
     }
 
     // ========== 장소 조작 메서드 ==========
