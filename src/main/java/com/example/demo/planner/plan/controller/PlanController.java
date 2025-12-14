@@ -224,8 +224,12 @@ public class PlanController {
   // 여행 장소 삭제 - DELETE /plans/places/{placeId}
   @DeleteMapping("/places/{placeId}")
   public ResponseEntity<String> deletePlace(@PathVariable("placeId") Long placeId) {
-    planFacade.deletePlace(placeId);
-    return ResponseEntity.ok("여행 장소가 삭제되었습니다.");
+    try {
+      planFacade.deletePlace(placeId);
+      return ResponseEntity.ok("여행 장소가 삭제되었습니다.");
+    } catch (Exception e) {
+      return (ResponseEntity<String>) ResponseEntity.internalServerError();
+    }
   }
 
 }
