@@ -76,29 +76,8 @@ public class SmartPlanAgent implements AiAgent {
             // 최신 일정 다시 로드 (삭제된 경우 빈 컨텍스트 반환)
             PlanContext updatedCtx = loadContext(userId);
 
-            // Plan이 삭제된 경우 처리
-            if (!updatedCtx.hasActivePlan()) {
-                return AiAgentResponse.ofData(
-                        llm + "\n\n새로운 여행 계획을 만들고 싶으시면 말씀해주세요!",
-                        null,
-                        Map.of(
-                            "plan", null,
-                            "days", List.of(),
-                            "planJson", "{}"
-                        )
-                );
-            }
-
-            // 응답에 메시지 + JSON 데이터 포함
-            return AiAgentResponse.ofData(
-                    llm,                        // 텍스트 메시지
-                    null,                       // targetUrl
-                    Map.of(
-                        "plan", updatedCtx.getActivePlan(),
-                        "days", updatedCtx.getAllDays(),
-                        "planJson", updatedCtx.toJson()
-                    )
-            );
+            // 응답 반환
+            return AiAgentResponse.of(llm);
         } finally {
             // planId 정리
             planTools.clearPlanId();

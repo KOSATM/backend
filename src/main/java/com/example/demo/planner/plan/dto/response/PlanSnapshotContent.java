@@ -3,6 +3,8 @@ package com.example.demo.planner.plan.dto.response;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 import lombok.Data;
 
 @Data
@@ -33,6 +35,7 @@ public class PlanSnapshotContent {
     private String normalizedCategory;
     private String firstImage;
     private String firstImage2;
+    @JsonAlias("ended")
     private Boolean isEnded;
   }
 

@@ -55,8 +55,11 @@ public class DefaultChatPipeline implements ChatPipeline {
         log.info("▶ 5. 가장 우선되는 Main Intent 기능 실행");
         AiAgentResponse mainIntentResponse = agentRouter.route(main, userId);
 
-        // 응답 에이전트 사용
-        String message = responseAgent.generateMessage(request.getMessage(), mainIntentResponse.getData());
+        // Agent가 이미 message를 생성했으면 그대로 사용, 아니면 ResponseAgent로 처리
+        String message = (mainIntentResponse.getMessage() != null && !mainIntentResponse.getMessage().isBlank())
+                ? mainIntentResponse.getMessage()
+                : responseAgent.generateMessage(request.getMessage(), mainIntentResponse.getData());
+        
         AiAgentResponse processedResponse = AiAgentResponse.builder()
                 .message(message)
                 .targetUrl(mainIntentResponse.getTargetUrl())
