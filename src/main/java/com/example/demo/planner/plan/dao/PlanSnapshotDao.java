@@ -17,6 +17,9 @@ public interface PlanSnapshotDao {
     // 사용자의 최신 스냅샷 조회
     PlanSnapshot selectLatestPlanSnapshotByUserId(Long userId);
 
+    // 사용자의 특정 버전의 스냅샷 조회
+    PlanSnapshot selectPlanSnapshotByUserIdAndVersionNo(PlanSnapshot planSnapshot);
+
     // 스냅샷 저장
     int insertPlanSnapshot(PlanSnapshot PlanSnapshot);
 
