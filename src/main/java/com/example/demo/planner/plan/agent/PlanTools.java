@@ -412,8 +412,8 @@ public class PlanTools {
                     PlanPlace newPlace = PlanPlace.builder()
                         .dayId(dayId)
                         .title(pscItem.getTitle())
-                        .startAt(LocalDateTime.parse(pscItem.getStartAt(), formatter2).atOffset(ZoneOffset.of("+09:00")))
-                        .endAt(LocalDateTime.parse(pscItem.getEndAt(), formatter2).atOffset(ZoneOffset.of("+09:00")))
+                        .startAt(LocalDateTime.parse(pscItem.getStartAt(), formatter2).atOffset(ZoneOffset.of("+00:00")))
+                        .endAt(LocalDateTime.parse(pscItem.getEndAt(), formatter2).atOffset(ZoneOffset.of("+00:00")))
                         .placeName(pscItem.getPlaceName())
                         .address(pscItem.getAddress())
                         .lat(pscItem.getLat())
@@ -455,6 +455,7 @@ public class PlanTools {
             // PlanSnapshot planSnapshot =
             // planSnapshotService.getPlanSnapshotsByUserId((Long)
             // toolContext.getContext().get("userId")).get(1);
+            log.info("toRevert: {}", toRevert.toString());
             PlanSnapshot planSnapshot = planSnapshotDao.selectPlanSnapshotByUserIdAndVersionNo(toRevert);
             PlanSnapshotContent snapshotContent = planSnapshotUtility.parseSnapshot(planSnapshot.getSnapshotJson());
 
@@ -508,9 +509,9 @@ public class PlanTools {
                             .dayId(dayId)
                             .title(pscItem.getTitle())
                             .startAt(LocalDateTime.parse(pscItem.getStartAt(), formatter2)
-                                    .atOffset(ZoneOffset.of("+09:00")))
+                                    .atOffset(ZoneOffset.of("+00:00")))
                             .endAt(LocalDateTime.parse(pscItem.getEndAt(), formatter2)
-                                    .atOffset(ZoneOffset.of("+09:00")))
+                                    .atOffset(ZoneOffset.of("+00:00")))
                             .placeName(pscItem.getPlaceName())
                             .address(pscItem.getAddress())
                             .lat(pscItem.getLat())
