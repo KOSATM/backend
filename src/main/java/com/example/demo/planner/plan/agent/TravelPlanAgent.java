@@ -19,12 +19,12 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
 import com.example.demo.common.chat.intent.dto.SeoulRegion;
-import com.example.demo.planner.plan.agent.test.date.DateParser;
-import com.example.demo.planner.plan.agent.test.date.DurationParser;
 import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dto.entity.GeneratedTravelPlan;
 import com.example.demo.planner.plan.dto.entity.TravelPlaces;
 import com.example.demo.planner.plan.utils.CategoryNames;
+import com.example.demo.planner.plan.utils.date.DateParser;
+import com.example.demo.planner.plan.utils.date.DurationParser;
 
 import lombok.extern.slf4j.Slf4j;
 

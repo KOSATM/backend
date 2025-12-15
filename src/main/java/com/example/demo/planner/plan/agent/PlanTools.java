@@ -53,7 +53,6 @@ public class PlanTools {
     private final PlanModifyAction modifyAction;
     private final PlanSwapAction swapAction;
     private final PlanDeleteAction deleteAction;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final PlanDao planDao;
     private final PlanDayDao planDayDao;
@@ -560,7 +559,7 @@ public class PlanTools {
             사용자가 "N박N일 계획 짜줘", "여행 일정 만들어줘"라고 요청할 때 사용하세요.
             사용자의 요청에서 다음 정보를 추출하여 전달하세요:
             - userMessage: 유저 메시지 (필수)
-            - duration: 여행 기간 (필수)
+            - duration: 여행 기간 (선택)
             - style: 여행 스타일 (선택)
             - location: 선호 지역 (선택)
             - pace: 일정 강도 (선택)
@@ -578,10 +577,11 @@ public class PlanTools {
 
             주의:
             - 새로운 여행 계획을 생성할 때만 사용하세요.
+            - 여행 기간이 없다면 사용자에게 다시 물어보세요.
             """)
     public String createTravelPlan(
 
-            @ToolParam(description = "여행 기간(일). 필수! 예: 3") Integer duration,
+            @ToolParam(description = "여행 기간(일). 예: 3, 없으면 null", required = false) Integer duration,
 
             @ToolParam(description = "여행 스타일. 예: 'kpop', '힐링'. 없으면 null", required = false) String style,
 
@@ -589,7 +589,8 @@ public class PlanTools {
 
             @ToolParam(description = "일정 강도. '빡빡', '널널'. 없으면 null", required = false) String pace,
 
-            @ToolParam(description = "사용자가 말한 여행 시작 시점의 원문 표현 그대로. 예: '3일뒤', '다음주 월요일', '이번주말'. 날짜 계산하지 말 것, yyyy-MM-dd로 변환하지 말것", required = false) String startDateText) {
+            @ToolParam(description = "사용자가 말한 여행 시작 시점의 원문 표현 그대로. 예: '3일뒤', '다음주 월요일', '이번주말'. 날짜 계산하지 말 것, yyyy-MM-dd로 변환하지 말것", required = false) String startDateText,
+            ToolContext toolContext) {
 
         // String sessionId = currentSessionId.get();
         // 검증 (null이면 에러)
@@ -605,10 +606,12 @@ public class PlanTools {
 
         boolean success = false;
 
+        Long userId = (Long) toolContext.getContext().get("userId");
+
         try {
             // sendAgentEvent("Seoul Planner", "running", "서울 여행 일정 생성 중...");
 
-            // ⭐ validation
+            // validation
             if (duration == null || duration <= 0) {
                 return "여행 기간을 지정해주세요.";
             }
@@ -623,7 +626,7 @@ public class PlanTools {
 
             // String planSummary = PlanState.buildSummary(plan, location, style);
 
-            Long planId = travelPlanSaveService.save(21L, plan, new ObjectMapper());
+            Long planId = travelPlanSaveService.save(userId, plan, new ObjectMapper());
 
             // savePlanToState(sessionId, planId, planSummary);
 
