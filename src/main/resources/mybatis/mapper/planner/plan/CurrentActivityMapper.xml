@@ -5,12 +5,12 @@
 <mapper namespace="com.example.demo.planner.plan.dao.CurrentActivityDao">
 
   <select id="selectCurrentActivityById" resultType="CurrentActivity">
-    SELECT plan_place_id, actual_cost, memo, ended_at
+    SELECT id, plan_place_id, actual_cost, memo, ended_at
     FROM current_activities WHERE id = #{id}
   </select>
 
-    <select id="selectCurrentActivityByPlanPlaceId" resultType="CurrentActivity">
-    SELECT id, actual_cost, memo, ended_at
+  <select id="selectCurrentActivityByPlanPlaceId" resultType="CurrentActivity">
+    SELECT id, plan_place_id, actual_cost, memo, ended_at
     FROM current_activities WHERE plan_place_id = #{planPlaceId}
   </select>
 
@@ -21,8 +21,8 @@
 
   <update id="updateCurrentActivity" parameterType="CurrentActivity">
     UPDATE current_activities
-    SET plan_place_id = #{planPlaceId}, actual_cost = #{actualCost}, memo = #{memo}, ended_at = #{endedAt}
-    WHERE id = #{id}
+    SET actual_cost = #{actualCost}, memo = #{memo}, ended_at = #{endedAt}
+    WHERE plan_place_id = #{planPlaceId}
   </update>
 
   <delete id="deleteCurrentActivityById" parameterType="long">
