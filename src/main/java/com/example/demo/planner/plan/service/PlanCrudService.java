@@ -5,6 +5,7 @@ import com.example.demo.common.user.dto.User;
 import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dao.PlanDayDao;
 import com.example.demo.planner.plan.dao.PlanPlaceDao;
+import com.example.demo.planner.plan.dao.PlanSnapshotDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
@@ -35,6 +36,7 @@ public class PlanCrudService {
     private final PlanDao planDao;
     private final PlanDayDao planDayDao;
     private final PlanPlaceDao planPlaceDao;
+    private final PlanSnapshotDao planSnapshotDao;
     private final UserDao userDao;
 
     // ========== Plan CRUD ==========
@@ -328,6 +330,11 @@ public class PlanCrudService {
 
         planDao.updatePlan(updatedPlan);
         log.info("✅ Plan 완료 처리 완료: planId={}", planId);
+
+        // 스냅샷 삭제
+        Long userId = existing.getUserId();
+        planSnapshotDao.deletePlanSnapshotsByUserId(userId);
+        log.info("스냅샷 삭제 완료");
     }
 
     /**
