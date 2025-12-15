@@ -4,6 +4,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAdjusters;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,141 +21,118 @@ public class DateParser {
     };
 
     /**
-     * startDate 문자열을 LocalDate로 파싱
+     * 사용자 자연어 날짜를 LocalDate로 변환
      * 
-     * @param startDate 자연어 날짜 표현 (예: "오늘", "다음주 토요일", "2025-12-21")
-     * @return LocalDate (파싱 실패 시 오늘+7일)
+     * 정책:
+     * - 파싱 실패 시 → 오늘 + 7일
+     * - 절대 silent today 반환 ❌
      */
-    public static LocalDate parse(String startDate) {
-        if (startDate == null || startDate.trim().isEmpty()) {
-            LocalDate defaultDate = LocalDate.now().plusDays(7);
-            log.info("startDate가 없어서 기본값(7일 뒤) 반환: {}", defaultDate);
-            return defaultDate;
+    public static LocalDate parse(String input) {
+
+        // 0️⃣ null / empty → 정책 기본값
+        if (input == null || input.trim().isEmpty()) {
+            return defaultDate("입력 없음");
         }
 
-        String normalized = startDate.trim().toLowerCase()
-                .replaceAll("\\s+", ""); // 공백 제거
+        String normalized = normalize(input);
+        log.info("📅 startDate 파싱 시도: 원본='{}'", input);
 
-        log.info("startDate 파싱 시작: {}", startDate);
-
-        // 1. 상대적 날짜 표현
-        if (normalized.matches(".*오늘.*|.*today.*")) {
-            log.info("오늘로 파싱");
-            return LocalDate.now();
+        // 1️⃣ 1차: 단순 자연어 Resolver (빠른 성공 케이스)
+        LocalDate simpleResolved = tryResolveSimple(normalized);
+        if (simpleResolved != null) {
+            log.info("✅ 단순 자연어 파싱 성공 → {}", simpleResolved);
+            return simpleResolved;
         }
 
-        if (normalized.matches(".*내일.*|.*tomorrow.*")) {
-            log.info("내일로 파싱");
-            return LocalDate.now().plusDays(1);
-        }
-
-        if (normalized.matches(".*모레.*")) {
-            log.info("모레로 파싱");
-            return LocalDate.now().plusDays(2);
-        }
-
-        // 2. "N일 뒤" 패턴
-        Pattern daysLaterPattern = Pattern.compile("(\\d+)일.*뒤");
-        Matcher daysLaterMatcher = daysLaterPattern.matcher(normalized);
-        if (daysLaterMatcher.find()) {
-            int daysToAdd = Integer.parseInt(daysLaterMatcher.group(1));
-            LocalDate result = LocalDate.now().plusDays(daysToAdd);
-            log.info("{}일 뒤 → {}", daysToAdd, result);
+        // 2️⃣ "N일 뒤"
+        Matcher daysLater = Pattern.compile("(\\d+)일.*뒤").matcher(normalized);
+        if (daysLater.find()) {
+            int days = Integer.parseInt(daysLater.group(1));
+            LocalDate result = LocalDate.now().plusDays(days);
+            log.info("✅ '{}일 뒤' 파싱 → {}", days, result);
             return result;
         }
 
-        // 3. "이번주 X요일" 패턴
-        if (normalized.contains("이번주") || normalized.contains("이번주말")) {
-            DayOfWeek targetDay = extractDayOfWeek(normalized);
-            if (targetDay != null) {
-                LocalDate result = getNextDayOfWeek(LocalDate.now(), targetDay, false);
-                log.info("이번주 {} → {}", targetDay, result);
-                return result;
-            }
-        }
-
-        // 4. "다음주 X요일" 패턴
-        if (normalized.contains("다음주") || normalized.contains("다음주말")) {
-            DayOfWeek targetDay = extractDayOfWeek(normalized);
-            if (targetDay != null) {
-                LocalDate result = getNextDayOfWeek(LocalDate.now(), targetDay, true);
-                log.info("다음주 {} → {}", targetDay, result);
-                return result;
-            }
-
-            // "다음주"만 있고 요일 없으면 다음주 월요일
-            LocalDate result = getNextDayOfWeek(LocalDate.now(), DayOfWeek.MONDAY, true);
-            log.info("다음주 → {}", result);
-            return result;
-        }
-
-        // 5. 단순 요일만 있는 경우 (이번주 기준)
+        // 3️⃣ 이번주 / 다음주 + 요일
         DayOfWeek dayOfWeek = extractDayOfWeek(normalized);
         if (dayOfWeek != null) {
-            LocalDate result = getNextDayOfWeek(LocalDate.now(), dayOfWeek, false);
-            log.info("요일 {} → {}", dayOfWeek, result);
+            boolean nextWeek = normalized.contains("다음주");
+            LocalDate result = resolveWeekday(dayOfWeek, nextWeek);
+            log.info("✅ 주차+요일 파싱 → {}", result);
             return result;
         }
 
-        // 6. 정확한 날짜 형식 (yyyy-MM-dd, yyyy.MM.dd 등)
+        // 4️⃣ 정확한 날짜 포맷
         for (DateTimeFormatter formatter : FORMATTERS) {
             try {
-                LocalDate parsed = LocalDate.parse(startDate.trim(), formatter);
-                log.info("날짜 형식 파싱 성공: {}", parsed);
+                LocalDate parsed = LocalDate.parse(input.trim(), formatter);
+                log.info("✅ 날짜 포맷 파싱 성공 → {}", parsed);
                 return parsed;
-            } catch (DateTimeParseException e) {
-                // 다음 포맷 시도
+            } catch (DateTimeParseException ignore) {
             }
         }
 
-        // 7. 파싱 실패 시 기본값 (7일 뒤)
-        LocalDate defaultDate = LocalDate.now().plusDays(7);
-        log.warn("startDate '{}' 파싱 실패, 기본값(7일 뒤) 반환: {}", startDate, defaultDate);
-        return defaultDate;
+        // 5️⃣ 최종 실패 → 정책 기본값
+        return defaultDate("모든 파싱 실패");
+    }
+
+    // ==================================================
+    // 내부 Helper
+    // ==================================================
+
+    private static String normalize(String input) {
+        return input.trim()
+                .toLowerCase()
+                .replaceAll("\\s+", "");
     }
 
     /**
-     * 문자열에서 요일 추출
+     * 아주 단순한 자연어 처리 (성공 확률 높은 것만)
      */
+    private static LocalDate tryResolveSimple(String text) {
+
+        LocalDate today = LocalDate.now();
+
+        if (text.contains("오늘"))
+            return today;
+
+        if (text.contains("내일"))
+            return today.plusDays(1);
+
+        if (text.contains("모레"))
+            return today.plusDays(2);
+
+        if (text.equals("주말") || text.equals("이번주말"))
+            return today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY));
+
+        if (text.contains("다음주말"))
+            return today.with(TemporalAdjusters.next(DayOfWeek.SATURDAY));
+
+        return null; // ❗ 성공 못 하면 다음 단계로 넘김
+    }
+
     private static DayOfWeek extractDayOfWeek(String text) {
-        if (text.contains("월요일") || text.contains("월"))
-            return DayOfWeek.MONDAY;
-        if (text.contains("화요일") || text.contains("화"))
-            return DayOfWeek.TUESDAY;
-        if (text.contains("수요일") || text.contains("수"))
-            return DayOfWeek.WEDNESDAY;
-        if (text.contains("목요일") || text.contains("목"))
-            return DayOfWeek.THURSDAY;
-        if (text.contains("금요일") || text.contains("금"))
-            return DayOfWeek.FRIDAY;
-        if (text.contains("토요일") || text.contains("토") || text.contains("주말"))
-            return DayOfWeek.SATURDAY;
-        if (text.contains("일요일") || text.contains("일"))
-            return DayOfWeek.SUNDAY;
+        if (text.contains("월")) return DayOfWeek.MONDAY;
+        if (text.contains("화")) return DayOfWeek.TUESDAY;
+        if (text.contains("수")) return DayOfWeek.WEDNESDAY;
+        if (text.contains("목")) return DayOfWeek.THURSDAY;
+        if (text.contains("금")) return DayOfWeek.FRIDAY;
+        if (text.contains("토")) return DayOfWeek.SATURDAY;
+        if (text.contains("일")) return DayOfWeek.SUNDAY;
         return null;
     }
 
-    /**
-     * 특정 요일의 다음 날짜 찾기
-     * 
-     * @param from      기준 날짜
-     * @param targetDay 찾을 요일
-     * @param nextWeek  true면 다음주, false면 이번주
-     */
-    private static LocalDate getNextDayOfWeek(LocalDate from, DayOfWeek targetDay, boolean nextWeek) {
-        LocalDate result = from;
-        int daysToAdd = targetDay.getValue() - from.getDayOfWeek().getValue();
-
+    private static LocalDate resolveWeekday(DayOfWeek target, boolean nextWeek) {
+        LocalDate today = LocalDate.now();
         if (nextWeek) {
-            // 다음주: 무조건 7일 이상 더하기
-            daysToAdd += 7;
-        } else {
-            // 이번주: 오늘 이후의 해당 요일
-            if (daysToAdd <= 0) {
-                daysToAdd += 7;
-            }
+            return today.with(TemporalAdjusters.next(target));
         }
+        return today.with(TemporalAdjusters.nextOrSame(target));
+    }
 
-        return result.plusDays(daysToAdd);
+    private static LocalDate defaultDate(String reason) {
+        LocalDate fallback = LocalDate.now().plusDays(7);
+        log.warn("⚠️ 날짜 파싱 실패 ({}). 기본값 반환 → {}", reason, fallback);
+        return fallback;
     }
 }

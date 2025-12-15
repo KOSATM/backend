@@ -23,7 +23,7 @@ public enum IntentType {
         CategoryType.PLANNER,
         "/planner/edit",
         "여행 일정 생성",
-        TravelPlannerService.class
+        SmartPlanAgent.class
     ),
 
     PLAN_ACTION(

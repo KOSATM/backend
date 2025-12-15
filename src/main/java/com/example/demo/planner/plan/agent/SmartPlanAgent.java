@@ -26,9 +26,9 @@ public class SmartPlanAgent implements AiAgent {
     private final Map<Long, List<String>> historyMap = new HashMap<>();
 
     public SmartPlanAgent(ChatClient.Builder builder,
-                          PlanQueryService queryService,
-                          PlanCrudService crudService,
-                          PlanTools planTools) {
+            PlanQueryService queryService,
+            PlanCrudService crudService,
+            PlanTools planTools) {
         this.chatClient = builder.build();
         this.queryService = queryService;
         this.crudService = crudService;
@@ -64,7 +64,7 @@ public class SmartPlanAgent implements AiAgent {
             String llm = chatClient.prompt()
                     .system(systemPrompt)
                     .user(userPrompt)
-                    .tools(planTools)  // PlanTools의 모든 @Description 메서드가 자동 등록됨
+                    .tools(planTools) // PlanTools의 모든 @Description 메서드가 자동 등록됨
                     .toolContext(Map.of("userId", userId))
                     .call()
                     .content();
@@ -84,9 +84,11 @@ public class SmartPlanAgent implements AiAgent {
         }
     }
 
-    /* ─────────────────────────────────────────────
+    /*
+     * ─────────────────────────────────────────────
      * Prompt Builder
-     * ───────────────────────────────────────────── */
+     * ─────────────────────────────────────────────
+     */
     private String buildUserPrompt(String json, List<String> history, String userMsg) {
         String hist = history.size() > 20
                 ? String.join("\n", history.subList(history.size() - 20, history.size()))
@@ -130,32 +132,40 @@ public class SmartPlanAgent implements AiAgent {
 
     private String buildSystemPrompt() {
         return """
-        당신은 여행 일정 관리 AI 어시스턴트입니다.
+                당신은 서울 여행 계획을 도와주는 AI 어시스턴트입니다.
 
-        ## 중요한 규칙
+                사용자의 질문을 분석하여,
+                여행 일정과 관련된 작업이 필요한 경우
+                가장 적절한 Tool(Function)를 자동으로 선택하세요.
 
-        ### 🔢 dayIndex는 1부터 시작
-        - 1일차 = dayIndex: 1
-        - 2일차 = dayIndex: 2
-        - **0이 아닙니다!**
+                여행 일정의 생성, 수정, 삭제는
+                반드시 제공된 Tool을 통해서만 수행해야 하며,
+                임의로 일정을 추측하거나 변경해서는 안 됩니다.
 
-        ### 🍽️ 음식/식당 요청 처리
-        - "짜장면 먹고 싶어", "피자 추가해줘" 같은 음식 이름 언급 시:
-          1. searchPlace("음식명") 먼저 호출
-          2. 검색 결과에서 적절한 음식점 찾음
-          3. addPlace() 또는 addPlaceAtPosition()으로 추가
+                [여행 일정 생성]
+                - 사용자가 "여행 일정 만들어줘", "N박 N일 여행",
+                  "서울 당일치기", "3일 kpop 여행" 등
+                  **전체 여행 계획 생성을 요청하면**
+                  → `master_createSeoulTravelPlan` Tool을 사용하세요.
 
-        ### ⚠️ 전체 일정 삭제 시 반드시 확인 필수!
-        - "일정 삭제", "전체 삭제", "다 지워줘" 등 **전체 일정 삭제** 요청 시:
-          1. **절대 바로 deletePlan() 호출하지 마세요**
-          2. 먼저 "정말로 전체 일정을 삭제하시겠습니까? 삭제하면 복구할 수 없습니다." 확인 요청
-          3. 사용자가 "네", "응", "삭제해", "확인" 등으로 명확히 확인한 경우에만 deletePlan() 호출
+                [기존 일정 처리]
+                - 기존 여행 일정의 장소 추가, 삭제, 변경, 순서 변경,
+                  날짜 삭제, 기간 연장, 버전 되돌리기 등은
+                  각 작업에 맞는 개별 Tool을 사용하세요.
 
-        ### ✅ 일반 작업 (확인 불필요)
-        - 특정 장소 삭제, 장소 추가/수정/교환, 시간 변경, 날짜 삭제: 바로 실행
+                [중요 규칙]
+                - dayIndex는 반드시 1부터 시작합니다 (0 사용 금지)
+                - 여행 지역은 서울로 한정합니다
+                - 한 번의 응답에서는
+                  상태를 변경하는 Tool을 최대 한 개만 호출하세요
+                - Tool 실행 후에는
+                  변경된 내용과 버전 번호를 사용자에게 설명하세요
 
-        함수 호출 후에는 친절하게 결과를 설명하세요.
-        장소 추가/수정/교환 등 계획이 변경되거나 이전 버전으로 돌아갔을 때에는 버전 번호도 응답에 포함하세요(버전: xxx).
-        """;
+                [전체 일정 삭제 주의]
+                - "전체 삭제", "일정 삭제", "다 지워줘" 요청 시
+                  즉시 deletePlan을 호출하지 마세요
+                - 사용자의 명확한 확인이 있을 때만 deletePlan을 호출하세요
+
+                        """;
     }
 }

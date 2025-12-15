@@ -4,6 +4,25 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.demo.planner.plan.dao.PlanDao">
 
+  <resultMap id="TravelPlacesResultMap" type="com.example.demo.planner.plan.dto.entity.TravelPlaces">
+      <id column="id" property="id"/>
+      <result column="content_id" property="contentId"/>
+      <result column="title" property="title"/>
+      <result column="address" property="address"/>
+      <result column="tel" property="tel"/>
+      <result column="first_image" property="firstImage"/>
+      <result column="first_image2" property="firstImage2"/>
+      <result column="lat" property="lat"/>
+      <result column="lng" property="lng"/>
+      <result column="category_code" property="categoryCode"/>
+      <result column="description" property="description"/>
+      <result column="tags" property="tags" typeHandler="com.example.demo.common.global.typehandler.JsonListTypeHandler"/>
+      <result column="detail_info" property="detailInfo"/>
+      <result column="normalized_category" property="normalizedCategory"/>
+      <result column="zone_id" property="zoneId"/>
+  </resultMap>
+
+
   <resultMap id="TravelPlacesMap" type="com.example.demo.planner.plan.dto.entity.TravelPlaces">
       <id column="id" property="id"/>
       <result column="content_id" property="contentId"/>
@@ -121,5 +140,42 @@
     ORDER BY score DESC
     LIMIT #{limit}
 </select>
+
+<select id="vectorSearch" resultMap="TravelPlacesResultMap">
+        SELECT 
+            id,
+            content_id,
+            title,
+            address,
+            tel,
+            first_image,
+            first_image2,
+            lat,
+            lng,
+            category_code,
+            description,
+            tags,
+            created_at,
+            updated_at,
+            detail_info,
+            normalized_category,
+            zone_id
+        FROM travel_places
+        WHERE embedding IS NOT NULL
+        
+        <!-- ⭐ 복수 지역 OR 조건 -->
+        <if test="zoneIds != null and !zoneIds.isEmpty()">
+            AND zone_id IN
+            <foreach collection="zoneIds" item="zoneId" open="(" separator="," close=")">
+                #{zoneId}
+            </foreach>
+        </if>
+        
+        <!-- 벡터 유사도 검색 -->
+        ORDER BY embedding &lt;=&gt; #{embedding, typeHandler=com.example.demo.common.global.typehandler.VectorTypeHandler}::vector
+        
+        LIMIT #{limit}
+    </select>
+
   
 </mapper>

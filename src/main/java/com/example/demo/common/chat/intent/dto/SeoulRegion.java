@@ -37,16 +37,29 @@ public enum SeoulRegion {
     public final double lng;
     public final List<String> keywords;
 
+    /**
+     * ⭐ DB의 zone_id 반환
+     * keywords의 첫 번째 값을 "구" 형식으로 변환
+     */
+    public String getZoneId() {
+        String firstKeyword = keywords.get(0);
+        // "종로" → "종로구", "중구" → "중구" (이미 "구"로 끝나면 그대로)
+        return firstKeyword.endsWith("구") ? firstKeyword : firstKeyword + "구";
+    }
 
-    // 사용자가 입력한 "강서", "강서구", "홍대", "성수", "마포", "여의도" 같은 단어 매칭
+    /**
+     * 사용자 입력 매칭
+     */
     public static SeoulRegion fromUserInput(String text) {
-        if (text == null) return null;
+        if (text == null || text.trim().isEmpty()) {
+            return null;
+        }
 
-        String cleaned = text.replace("구", "").trim();
+        String cleaned = text.replace("구", "").trim().toLowerCase();
 
         for (SeoulRegion region : values()) {
             for (String kw : region.keywords) {
-                if (cleaned.contains(kw)) {
+                if (cleaned.contains(kw.toLowerCase())) {
                     return region;
                 }
             }
@@ -54,5 +67,4 @@ public enum SeoulRegion {
 
         return null; // 못 찾으면 서울 전체
     }
-
 }

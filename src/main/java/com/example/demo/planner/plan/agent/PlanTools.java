@@ -20,6 +20,7 @@ import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dao.PlanDayDao;
 import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dao.PlanSnapshotDao;
+import com.example.demo.planner.plan.dto.entity.GeneratedTravelPlan;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
@@ -27,10 +28,12 @@ import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
 import com.example.demo.planner.plan.dto.response.PlanSnapshotContent;
 import com.example.demo.planner.plan.service.PlanSnapshotService;
 import com.example.demo.planner.plan.service.PlanSnapshotUtility;
+import com.example.demo.planner.plan.service.TravelPlanSaveService;
 import com.example.demo.planner.plan.service.action.PlanAddAction;
 import com.example.demo.planner.plan.service.action.PlanDeleteAction;
 import com.example.demo.planner.plan.service.action.PlanModifyAction;
 import com.example.demo.planner.plan.service.action.PlanSwapAction;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +53,7 @@ public class PlanTools {
     private final PlanModifyAction modifyAction;
     private final PlanSwapAction swapAction;
     private final PlanDeleteAction deleteAction;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final PlanDao planDao;
     private final PlanDayDao planDayDao;
@@ -58,6 +62,8 @@ public class PlanTools {
     private final PlanSnapshotDao planSnapshotDao;
     private final PlanSnapshotUtility planSnapshotUtility;
 
+    private final TravelPlanAgent travelPlanAgent;
+    private final TravelPlanSaveService travelPlanSaveService;
     private final ThreadLocal<Long> currentPlanId = new ThreadLocal<>();
 
     DateTimeFormatter formatter1 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -135,7 +141,8 @@ public class PlanTools {
             PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
             Integer versionNo = newSnapshot.getVersionNo();
 
-            return String.format("✅ %d일차의 %d번째 장소와 %d일차의 %d번째 장소를 교환했습니다. 버전: %d", day1, index1, day2, index2, versionNo);
+            return String.format("✅ %d일차의 %d번째 장소와 %d일차의 %d번째 장소를 교환했습니다. 버전: %d", day1, index1, day2, index2,
+                    versionNo);
         } catch (Exception e) {
             log.error("날짜 간 장소 교환 실패", e);
             return String.format("❌ 장소 교환 중 오류 발생: %s", e.getMessage());
@@ -362,7 +369,8 @@ public class PlanTools {
     @Tool(description = "사용자가 가지고 있는 계획 스냅샷의 바로 이전 버전으로 돌아갑니다.")
     public String rollBack(@ToolParam(description = "사용자 아이디") ToolContext toolContext) {
         try {
-            PlanSnapshot planSnapshot = planSnapshotService.getPlanSnapshotsByUserId((Long) toolContext.getContext().get("userId")).get(1);
+            PlanSnapshot planSnapshot = planSnapshotService
+                    .getPlanSnapshotsByUserId((Long) toolContext.getContext().get("userId")).get(1);
             PlanSnapshotContent snapshotContent = planSnapshotUtility.parseSnapshot(planSnapshot.getSnapshotJson());
 
             Long planId = getPlanId();
@@ -381,26 +389,26 @@ public class PlanTools {
             log.info("plan_days 삭제 완료");
 
             Plan rollbackPlan = Plan.builder()
-                .userId((Long) toolContext.getContext().get("userId"))
-                .budget(snapshotContent.getBudget())
-                .startDate(LocalDate.parse(snapshotContent.getStartDate(), formatter1))
-                .endDate(LocalDate.parse(snapshotContent.getEndDate(), formatter1))
-                .createdAt(plan.getCreatedAt())
-                .updatedAt(OffsetDateTime.now())
-                .build();
+                    .userId((Long) toolContext.getContext().get("userId"))
+                    .budget(snapshotContent.getBudget())
+                    .startDate(LocalDate.parse(snapshotContent.getStartDate(), formatter1))
+                    .endDate(LocalDate.parse(snapshotContent.getEndDate(), formatter1))
+                    .createdAt(plan.getCreatedAt())
+                    .updatedAt(OffsetDateTime.now())
+                    .build();
             planDao.updatePlan(rollbackPlan);
             log.info("Plan 업데이트 완료");
 
             Map<String, Long> dateToDayId = new HashMap<>();
-            for (int i=0; i<snapshotContent.getDays().size(); i++) {
+            for (int i = 0; i < snapshotContent.getDays().size(); i++) {
                 PlanSnapshotContent.PlanDay pscDay = snapshotContent.getDays().get(i);
 
                 PlanDay newDay = PlanDay.builder()
-                    .planId(planId)
-                    .dayIndex(i+1)
-                    .title(pscDay.getTitle())
-                    .planDate(LocalDate.parse(pscDay.getDate(), formatter1))
-                    .build();
+                        .planId(planId)
+                        .dayIndex(i + 1)
+                        .title(pscDay.getTitle())
+                        .planDate(LocalDate.parse(pscDay.getDate(), formatter1))
+                        .build();
 
                 planDayDao.insertPlanDay(newDay);
                 dateToDayId.put(pscDay.getDate(), newDay.getId());
@@ -412,20 +420,22 @@ public class PlanTools {
 
                 for (PlanSnapshotContent.PlanDayItem pscItem : pscDay.getSchedules()) {
                     PlanPlace newPlace = PlanPlace.builder()
-                        .dayId(dayId)
-                        .title(pscItem.getTitle())
-                        .startAt(LocalDateTime.parse(pscItem.getStartAt(), formatter2).atOffset(ZoneOffset.of("+00:00")))
-                        .endAt(LocalDateTime.parse(pscItem.getEndAt(), formatter2).atOffset(ZoneOffset.of("+00:00")))
-                        .placeName(pscItem.getPlaceName())
-                        .address(pscItem.getAddress())
-                        .lat(pscItem.getLat())
-                        .lng(pscItem.getLng())
-                        .expectedCost(pscItem.getExpectedCost())
-                        .normalizedCategory(pscItem.getNormalizedCategory())
-                        .firstImage(pscItem.getFirstImage())
-                        .firstImage2(pscItem.getFirstImage2())
-                        .isEnded(pscItem.getIsEnded() == null ? false : pscItem.getIsEnded())
-                        .build();
+                            .dayId(dayId)
+                            .title(pscItem.getTitle())
+                            .startAt(LocalDateTime.parse(pscItem.getStartAt(), formatter2)
+                                    .atOffset(ZoneOffset.of("+00:00")))
+                            .endAt(LocalDateTime.parse(pscItem.getEndAt(), formatter2)
+                                    .atOffset(ZoneOffset.of("+00:00")))
+                            .placeName(pscItem.getPlaceName())
+                            .address(pscItem.getAddress())
+                            .lat(pscItem.getLat())
+                            .lng(pscItem.getLng())
+                            .expectedCost(pscItem.getExpectedCost())
+                            .normalizedCategory(pscItem.getNormalizedCategory())
+                            .firstImage(pscItem.getFirstImage())
+                            .firstImage2(pscItem.getFirstImage2())
+                            .isEnded(pscItem.getIsEnded() == null ? false : pscItem.getIsEnded())
+                            .build();
 
                     planPlaceDao.insertPlanPlace(newPlace);
                 }
@@ -447,7 +457,8 @@ public class PlanTools {
 
     @Transactional
     @Tool(description = "사용자가 지정한 계획의 버전으로 으로 돌아갑니다. 버전 정보가 언급된 경우에만 사용합니다.")
-    public String rollBackToSpecific(@ToolParam(description = "돌아가고자 하는 버전 번호") Integer versionNo, ToolContext toolContext) {
+    public String rollBackToSpecific(@ToolParam(description = "돌아가고자 하는 버전 번호") Integer versionNo,
+            ToolContext toolContext) {
         try {
             log.info("돌아갈 버전: {}", versionNo);
             PlanSnapshot toRevert = PlanSnapshot.builder()
@@ -542,6 +553,121 @@ public class PlanTools {
             log.error(e.getMessage());
             return String.format("❌ 버전 환원 중 오류 발생: %s", e.getMessage());
         }
+    }
+
+    @Tool(name = "master_createSeoulTravelPlan", description = """
+            서울 여행 일정을 자동으로 생성합니다.
+            사용자가 "N박N일 계획 짜줘", "여행 일정 만들어줘"라고 요청할 때 사용하세요.
+            사용자의 요청에서 다음 정보를 추출하여 전달하세요:
+            - userMessage: 유저 메시지 (필수)
+            - duration: 여행 기간 (필수)
+            - style: 여행 스타일 (선택)
+            - location: 선호 지역 (선택)
+            - pace: 일정 강도 (선택)
+            - startDateText: 여행 시작 시점 (선택)
+
+            예시:
+            "3일 kpop 강남 여행"
+            → duration=3, style="kpop", location="강남", pace=null
+
+            "서울 당일치기"
+            → duration=1, style=null, location=null, pace=null
+
+            "5일 힐링 여행 빡빡하게"
+            → duration=5, style="힐링", location=null, pace="빡빡"
+
+            주의:
+            - 새로운 여행 계획을 생성할 때만 사용하세요.
+            """)
+    public String createTravelPlan(
+
+            @ToolParam(description = "여행 기간(일). 필수! 예: 3") Integer duration,
+
+            @ToolParam(description = "여행 스타일. 예: 'kpop', '힐링'. 없으면 null", required = false) String style,
+
+            @ToolParam(description = "선호 지역. 예: '강남', '강남, 홍대'. 없으면 null", required = false) String location,
+
+            @ToolParam(description = "일정 강도. '빡빡', '널널'. 없으면 null", required = false) String pace,
+
+            @ToolParam(description = "사용자가 말한 여행 시작 시점의 원문 표현 그대로. 예: '3일뒤', '다음주 월요일', '이번주말'. 날짜 계산하지 말 것, yyyy-MM-dd로 변환하지 말것", required = false) String startDateText) {
+
+        // String sessionId = currentSessionId.get();
+        // 검증 (null이면 에러)
+        // if (sessionId == null) {
+        // log.error("❌ SessionId가 ThreadLocal에 없습니다. 비정상적인 호출입니다.");
+        // return "세션 오류가 발생했습니다. 다시 시도해주세요.";
+        // }
+
+        log.info("🗼 Tool 호출: createTravelPlan");
+        log.info("   파라미터: duration={}, style={}, location={}, pace={}",
+                duration, style, location, pace);
+        // log.info(" 세션 ID: {}", sessionId);
+
+        boolean success = false;
+
+        try {
+            // sendAgentEvent("Seoul Planner", "running", "서울 여행 일정 생성 중...");
+
+            // ⭐ validation
+            if (duration == null || duration <= 0) {
+                return "여행 기간을 지정해주세요.";
+            }
+
+            GeneratedTravelPlan plan = travelPlanAgent.createSeoulTravelPlanStructured(
+                    duration, style, location, pace, startDateText);
+            if (plan.days().isEmpty()) {
+                return "여행 기간을 지정해주세요. 며칠 동안 여행하실 예정인가요?";
+            }
+
+            log.info("   일정 생성 완료 - 길이: {} 자", plan.toString().length());
+
+            // String planSummary = PlanState.buildSummary(plan, location, style);
+
+            Long planId = travelPlanSaveService.save(21L, plan, new ObjectMapper());
+
+            // savePlanToState(sessionId, planId, planSummary);
+
+            success = true;
+            // sendAgentEvent("Seoul Planner", "complete", "서울 여행 일정 생성 완료");
+            return render(plan);
+
+        } catch (Exception e) {
+            log.error("❌ 서울 여행 일정 생성 실패", e);
+            return null;
+
+        } finally {
+            if (!success) {
+                // sendAgentEvent("Seoul Planner", "error", "서울 여행 일정 생성 실패");
+            }
+        }
+    }
+
+    public static String render(GeneratedTravelPlan plan) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("=== Seoul Travel Itinerary ===\n");
+        sb.append("📅 ")
+                .append(plan.startDate())
+                .append(" ~ ")
+                .append(plan.endDate())
+                .append("\n");
+        sb.append("⏱️ Pace: ").append(plan.pace()).append("\n\n");
+
+        for (var day : plan.days()) {
+            sb.append("Day ").append(day.dayIndex()).append("\n");
+
+            for (var p : day.places()) {
+                sb.append("  ")
+                        .append(p.startAt())
+                        .append("-")
+                        .append(p.endAt())
+                        .append(" ")
+                        .append(p.title())
+                        .append("\n");
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
     }
 
     // Helper method

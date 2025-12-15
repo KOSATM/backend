@@ -28,7 +28,7 @@
     VALUES (#{planId}, #{dayIndex}, #{title}, #{planDate})
   </insert>
 
-    <insert id="insertPlanDayBatch">
+  <insert id="insertPlanDayBatch">
   INSERT INTO plan_days (plan_id, day_index, plan_date)
   VALUES
   <foreach collection="list" item="days" separator=",">
