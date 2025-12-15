@@ -74,4 +74,7 @@ public interface PlanDao {
 
     /* 활성화 된 planId 및 해당 날짜의 dayIndex조회 */
     ActivePlanInfoResponse selectPlanIdAndCurrentDayIndex(Long userId);
+
+    /* 변경한 vector */
+    List<TravelPlaces> vectorSearch(@Param("embedding") float[] embedding, @Param("zoneIds") List<String> zoneIds, @Param("limit") int limit);
 }
