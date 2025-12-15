@@ -267,7 +267,8 @@ public class PlanCrudService {
 
         Plan plan = planDao.selectActiveTravelPlanByUserId(userId);
         if (plan == null) {
-            throw new IllegalArgumentException("활성화된 Plan이 없습니다: userId=" + userId);
+            // throw new IllegalArgumentException("활성화된 Plan이 없습니다: userId=" + userId);
+            return null;
         }
 
         return plan;

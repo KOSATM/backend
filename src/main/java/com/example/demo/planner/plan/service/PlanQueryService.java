@@ -359,10 +359,15 @@ public class PlanQueryService {
 
         // 2. Plan 조회
         Plan plan = planDao.selectActiveTravelPlanByUserId(userId);
-        if (plan == null) {
+        if (plan == null || plan.getIsEnded() == true) {
             log.warn("사용자의 활성화된 Plan을 찾을 수 없음: userId={}", userId);
-            throw new IllegalArgumentException("활성화된 Plan이 없습니다: userId=" + userId);
+            // throw new IllegalArgumentException("활성화된 Plan이 없습니다: userId=" + userId);
+            return null;
         }
+        // if(plan.getIsEnded() == true){
+        //     log.warn("사용자의 일정이 없습니다. userId={}", userId);
+        //     return null;
+        // }
         long planId = plan.getId();
 
         // 3. Plan의 모든 Day 조회
