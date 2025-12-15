@@ -2,13 +2,11 @@ package com.example.demo.common.chat.intent;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.example.demo.common.global.agent.AiAgent;
-import com.example.demo.planner.plan.agent.SmartPlanAgent;
 import com.example.demo.planner.plan.agent.PlaceSuggestAgent;
-import com.example.demo.planner.plan.service.create.TravelPlannerService;
+import com.example.demo.planner.plan.agent.SmartPlanAgent;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +21,7 @@ public enum IntentType {
         CategoryType.PLANNER,
         "/planner/edit",
         "여행 일정 생성",
-        TravelPlannerService.class
+        SmartPlanAgent.class
     ),
 
     PLAN_ACTION(

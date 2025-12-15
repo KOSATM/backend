@@ -1,23 +1,23 @@
 package com.example.demo.planner.plan.service;
 
+import java.math.BigDecimal;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dao.PlanDayDao;
 import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
-import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
 import com.example.demo.planner.plan.dto.response.PlacePosition;
-import com.example.demo.planner.plan.util.FuzzyUtils;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.util.List;
 
 /**
  * PlanPlace(장소) 관련 CRUD 및 조작 서비스

@@ -64,7 +64,7 @@
             #{place.isEnded}
         )
     </foreach>
-</insert>
+  </insert>
 
   <update id="updatePlanPlace" parameterType="PlanPlace">
     UPDATE plan_places
