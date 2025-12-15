@@ -129,11 +129,22 @@
   </select>
 
   <select id="selectActiveTravelPlanByUserId" parameterType="long" resultType="Plan">
-    SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title
+    <!-- SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title
     FROM plans
     WHERE user_id = #{userId} AND (is_ended = false OR is_ended IS NULL)
     ORDER BY created_at DESC
-    LIMIT 1
+    LIMIT 1 -->
+
+    SELECT id, user_id, budget, start_date, end_date,
+       created_at, updated_at, is_ended, title
+    FROM (
+        SELECT *
+        FROM plans
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT 1
+    ) p
+    WHERE p.is_ended IS DISTINCT FROM TRUE;
   </select>
 
   <select id="selectCompletedTravelPlansByUserId" parameterType="long" resultType="Plan">
