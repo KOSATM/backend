@@ -554,12 +554,12 @@ public class PlanTools {
         }
     }
 
-    @Tool(name = "master_createSeoulTravelPlan", description = """
+    @Tool(name = "createSeoulTravelPlan", description = """
             서울 여행 일정을 자동으로 생성합니다.
             사용자가 "N박N일 계획 짜줘", "여행 일정 만들어줘"라고 요청할 때 사용하세요.
             사용자의 요청에서 다음 정보를 추출하여 전달하세요:
             - userMessage: 유저 메시지 (필수)
-            - duration: 여행 기간 (선택)
+            - duration: 여행 기간 (필수)
             - style: 여행 스타일 (선택)
             - location: 선호 지역 (선택)
             - pace: 일정 강도 (선택)
@@ -581,7 +581,7 @@ public class PlanTools {
             """)
     public String createTravelPlan(
 
-            @ToolParam(description = "여행 기간(일). 예: 3, 없으면 null", required = false) Integer duration,
+            @ToolParam(description = "여행 기간(일). 반드시 사용자 발화에 명시되어야 함, 추론할 수 없다면 null", required = true) Integer duration,
 
             @ToolParam(description = "여행 스타일. 예: 'kpop', '힐링'. 없으면 null", required = false) String style,
 
