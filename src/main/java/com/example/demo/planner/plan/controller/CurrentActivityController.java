@@ -32,7 +32,7 @@ public class CurrentActivityController {
 
     // current activity Upsert
     @PostMapping
-    public ResponseEntity<String> saveCurrentActivity(@RequestBody CurrentActivity currentActivity) {
+    public ResponseEntity<String> saveOrUpdateCurrentActivity(@RequestBody CurrentActivity currentActivity) {
         log.info("받은 데이터: {}", currentActivity);
         service.saveOrUpdateCurrentActivity(currentActivity);
         return ResponseEntity.ok("Current activity saved successfully");
