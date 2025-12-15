@@ -344,11 +344,13 @@ public class PlanTools {
     }
 
     @Tool(description = "전체 일정을 완전히 삭제합니다 (Plan + 모든 날짜와 장소 삭제). 중요: 사용자가 명확히 확인한 경우에만 호출하세요!")
-    public String deletePlan() {
+    public String deletePlan(ToolContext toolContext) {
         Long planId = getPlanId();
         log.info("🔧 [Tool] deletePlan: planId={}", planId);
         try {
             deleteAction.deleteAllDaysAndPlaces(planId);
+            // 사용자의 스냅샷 모두 삭제
+            planSnapshotDao.deletePlanSnapshotsByUserId((Long) toolContext.getContext().get("userId"));
             return "✅ 전체 일정이 완전히 삭제되었습니다. 새로운 여행 계획을 만들고 싶으시면 말씀해주세요!";
         } catch (Exception e) {
             log.error("전체 일정 삭제 실패", e);
