@@ -1,5 +1,6 @@
 package com.example.demo.planner.plan.controller;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -94,8 +95,12 @@ public class PlanController {
     try {
       PlanDetail planDetail = planFacade.getLatestPlanDetail(userId);
       if (planDetail == null) {
-        return ResponseEntity.status(404)
-                .body(Map.of("success", false, "error", "활성화된 여행 일정이 없습니다"));
+        // Plan이 없는 것은 정상적인 상태이므로 200 OK와 함께 빈 객체 반환
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", null);
+        response.put("message", "활성화된 여행 일정이 없습니다");
+        return ResponseEntity.ok(response);
       }
       return ResponseEntity.ok(planDetail);
     } catch (Exception e) {
