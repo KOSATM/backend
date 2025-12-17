@@ -10,15 +10,19 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Component;
 
 import com.example.demo.common.chat.intent.dto.IntentCommand;
+import com.example.demo.common.chat.memory.service.MemoryRetrievalService;
 import com.example.demo.common.chat.prompt.PromptBuilder;
 import com.example.demo.common.chat.prompt.PromptContext;
 import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.planner.plan.dto.context.PlanContext;
 import com.example.demo.planner.plan.dto.entity.Plan;
+import com.example.demo.planner.plan.dto.entity.PendingAction;
 import com.example.demo.planner.plan.guard.WriteToolGuard;
 import com.example.demo.planner.plan.service.PlanCrudService;
 import com.example.demo.planner.plan.service.PlanQueryService;
+import com.example.demo.planner.plan.service.PendingActionService;
+import com.example.demo.planner.plan.service.action.PlanDeleteAction;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +35,9 @@ public class SmartPlanAgent implements AiAgent {
     private final PlanQueryService queryService;
     private final PlanCrudService crudService;
     private final WriteToolGuard writeToolGuard;
+    private final MemoryRetrievalService memoryRetrievalService;
+    private final PendingActionService pendingActionService;
+    private final PlanDeleteAction planDeleteAction;
 
     // 멀티에이전트: 모든 여행 관련 에이전트들
     private final TravelPlanAgent travelPlanAgent;
@@ -49,6 +56,9 @@ public class SmartPlanAgent implements AiAgent {
             PlanQueryService queryService,
             PlanCrudService crudService,
             WriteToolGuard writeToolGuard,
+            MemoryRetrievalService memoryRetrievalService,
+            PendingActionService pendingActionService,
+            PlanDeleteAction planDeleteAction,
             TravelPlanAgent travelPlanAgent,
             SearchPlaceAgent searchPlaceAgent,
             PlaceManagementAgent placeManagementAgent,
@@ -62,6 +72,9 @@ public class SmartPlanAgent implements AiAgent {
         this.queryService = queryService;
         this.crudService = crudService;
         this.writeToolGuard = writeToolGuard;
+        this.memoryRetrievalService = memoryRetrievalService;
+        this.pendingActionService = pendingActionService;
+        this.planDeleteAction = planDeleteAction;
         this.travelPlanAgent = travelPlanAgent;
         this.searchPlaceAgent = searchPlaceAgent;
         this.placeManagementAgent = placeManagementAgent;
@@ -156,55 +169,228 @@ public class SmartPlanAgent implements AiAgent {
     private AiAgentResponse handlePlanManagement(String userMsg, Long userId, PlanContext ctx) {
         Long planId = ctx.getActivePlan().getId();
 
-        // 1. ChatMemory 업데이트
-        List<String> history = historyMap.computeIfAbsent(userId, k -> new ArrayList<>());
-        history.add("User: " + userMsg);
-
-        // 2. PromptContext 생성
-        PromptContext promptContext = PromptContext.builder()
-                .userId(userId)
-                .userMessage(userMsg)
-                .planContext(ctx)
-                .build();
-
-        // 3. Prompt 생성
-        Prompt prompt = promptBuilder.build(promptContext);
-
-        // 4. LLM 호출 (모든 tool 등록)
-        var response = chatClient.prompt(prompt)
-                .tools(
-                        searchPlaceAgent,
-                        placeManagementAgent,
-                        scheduleOptimizationAgent,
-                        dayManagementAgent,
-                        placeTimeAgent,
-                        versionManagementAgent
-                )
-                .toolContext(Map.of(
-                        "userId", userId,
-                        "planId", planId
-                ))
-                .call();
-
-        // 5. 응답 처리
-        String content = response.content();
-        saveHistory(userId, content);
+        // ✅ PlanContextHolder 설정 (모든 Tool이 동일 planId 사용하도록)
+        com.example.demo.planner.plan.dto.context.PlanContextHolder.set(ctx);
         
-        // 6. Tool 호출 로깅
-        // 💡 LLM이 tool을 불렀는지는 로그로만 확인
-        // 강제 검증은 하지 않음 (LLM의 자율성 보장)
-        log.debug("[SmartPlanAgent] Response generated for user {}", userId);
+        try {
+            // ✅ STEP 1: PendingAction 있으면 LLM이 확인 여부 판단
+            PendingAction pending = pendingActionService.getLatest(userId);
+            if (pending != null && !pending.isExpired()) {
+                log.info("[SmartPlanAgent] PendingAction 감지: type={}, userId={}", pending.getType(), userId);
+                
+                // LLM에게 판단 위임: "이게 확인 응답인가요?"
+                AiAgentResponse confirmationJudgment = judgeConfirmationByLLM(userMsg, pending, ctx);
+                
+                // LLM이 확인이라고 판단했으면 실행
+                if (confirmationJudgment.getMessage().contains("YES") || 
+                    confirmationJudgment.getMessage().contains("네") ||
+                    confirmationJudgment.getMessage().contains("맞")) {
+                    
+                    log.info("[SmartPlanAgent] LLM 판단: 확인 응답 → handleConfirmation 실행");
+                    AiAgentResponse result = handleConfirmation(pending, userId);
+                    saveHistory(userId, result.getMessage());
+                    return result;
+                } else {
+                    // LLM: 이건 확인이 아님 → PendingAction 초기화 + 새 명령 처리
+                    log.info("[SmartPlanAgent] LLM 판단: 확인 아님 → PendingAction 초기화 후 새 명령 처리");
+                    pendingActionService.clearAll(userId);
+                    // 아래로 계속 진행 (새 명령 처리)
+                }
+            }
 
-        return AiAgentResponse.of(content);
+            // 1. ChatMemory 업데이트
+            List<String> history = historyMap.computeIfAbsent(userId, k -> new ArrayList<>());
+            history.add("User: " + userMsg);
+
+            // 2. ✅ MemoryBundle 생성 (대화 맥락 포함)
+            var memoryBundle = memoryRetrievalService.retrieveAll(userId, userMsg, null);
+
+            // 3. PromptContext 생성 (memoryBundle 포함)
+            PromptContext promptContext = PromptContext.builder()
+                    .userId(userId)
+                    .userMessage(userMsg)
+                    .planContext(ctx)
+                    .memoryBundle(memoryBundle)
+                    .build();
+
+            // 4. Prompt 생성
+            Prompt prompt = promptBuilder.build(promptContext);
+
+            // 5. LLM 호출 (모든 tool 등록)
+            var response = chatClient.prompt(prompt)
+                    .tools(
+                            searchPlaceAgent,
+                            placeManagementAgent,
+                            scheduleOptimizationAgent,
+                            dayManagementAgent,
+                            placeTimeAgent,
+                            versionManagementAgent
+                    )
+                    .toolContext(Map.of(
+                            "userId", userId,
+                            "planId", planId
+                    ))
+                    .call();
+
+            // 6. 응답 처리
+            String content = response.content();
+            saveHistory(userId, content);
+            
+            log.debug("[SmartPlanAgent] Response generated for user {}", userId);
+
+            return AiAgentResponse.of(content);
+        } finally {
+            // ✅ PlanContextHolder 정리 (요청 완료 후)
+            com.example.demo.planner.plan.dto.context.PlanContextHolder.clear();
+        }
+    }
+    
+    /**
+     * ✅ LLM이 사용자의 응답이 PendingAction 확인인지 판단
+     */
+    private AiAgentResponse judgeConfirmationByLLM(String userMsg, PendingAction pending, PlanContext ctx) {
+        String confirmationPrompt = String.format(
+            """
+            사용자가 '%s'라고 말했습니다.
+            
+            현재 대기 중인 작업:
+            - 타입: %s
+            - 내용: %s
+            
+            사용자의 응답이 이 작업에 대한 "확인(YES)"인지, 아니면 다른 말인지 판단하세요.
+            
+            답변 형식: YES (확인) 또는 NO (확인 아님)
+            """,
+            userMsg,
+            pending.getType(),
+            getPendingActionDescription(pending)
+        );
+        
+        log.debug("[SmartPlanAgent] LLM 확인 판단 프롬프트: {}", confirmationPrompt);
+        
+        String judgment = chatClient.prompt(confirmationPrompt)
+                .call()
+                .content();
+        
+        log.info("[SmartPlanAgent] LLM 판단 결과: {}", judgment);
+        
+        return AiAgentResponse.of(judgment);
+    }
+    
+    /**
+     * PendingAction을 사람이 읽을 수 있는 형태로 변환
+     */
+    private String getPendingActionDescription(PendingAction pending) {
+        return switch (pending.getType()) {
+            case DELETE_PLACE -> "장소 '" + pending.getPlaceName() + "' 삭제";
+            case DELETE_DAY -> pending.getDayIndex() + "일차 삭제";
+            case DELETE_PLAN -> "전체 여행 일정 삭제";
+            default -> "알 수 없는 작업";
+        };
     }
 
     /* ================= Helper Methods ================= */
 
+    // ============ 규칙 기반 감지 제거 - LLM 기반 처리로 이동 ============
+    
     /**
-     * ChatMemory에 Assistant 응답 저장
+     * ✅ 확인 응답 처리 (Java switch - LLM 아님)
+     * PendingAction의 타입에 따라 실제 삭제 실행
+     * 삭제 후 관련 일정 정보 반환
+     */
+    private AiAgentResponse handleConfirmation(PendingAction action, Long userId) {
+        try {
+            PlanContext ctx = loadContext(userId);
+            
+            return switch (action.getType()) {
+                case DELETE_PLACE -> {
+                    String placeName = action.getPlaceName();
+                    Integer dayIndex = action.getDayIndex();
+                    log.info("[SmartPlanAgent] Confirm 장소 삭제: {} ({}일차)", placeName, dayIndex);
+                    
+                    placeManagementAgent.confirmDeletePlace(placeName);
+                    pendingActionService.complete(userId);
+                    
+                    // 삭제된 place가 포함된 day의 남은 일정 조회
+                    String daySchedule = getFormattedDaySchedule(ctx, dayIndex);
+                    String response = "✅ '" + placeName + "'을(를) 삭제했습니다.\n\n📅 " + dayIndex + "일차 일정:\n" + daySchedule;
+                    yield AiAgentResponse.of(response);
+                }
+                
+                case DELETE_DAY -> {
+                    Integer dayIndex = action.getDayIndex();
+                    log.info("[SmartPlanAgent] Confirm Day 삭제: {}", dayIndex);
+                    
+                    // 삭제 전 day 정보 캡처
+                    String deletedDayInfo = getFormattedDaySchedule(ctx, dayIndex);
+                    
+                    dayManagementAgent.confirmDeleteDay(dayIndex);
+                    pendingActionService.complete(userId);
+                    
+                    String response = "✅ " + dayIndex + "일차를 삭제했습니다.\n\n❌ 삭제된 " + dayIndex + "일차 일정:\n" + deletedDayInfo;
+                    yield AiAgentResponse.of(response);
+                }
+                
+                case DELETE_PLAN -> {
+                    log.info("[SmartPlanAgent] Confirm 전체 일정 삭제: {}", userId);
+                    dayManagementAgent.confirmDeletePlan();
+                    pendingActionService.complete(userId);
+                    yield AiAgentResponse.of("✅ 전체 여행 일정을 삭제했습니다.");
+                }
+                
+                default -> AiAgentResponse.of("❌ 알 수 없는 작업입니다.");
+            };
+        } catch (Exception e) {
+            log.error("[SmartPlanAgent] Confirm 처리 중 오류: {}", e.getMessage(), e);
+            return AiAgentResponse.of("❌ 작업 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 특정 day의 일정을 포맷된 문자열로 반환
+     */
+    private String getFormattedDaySchedule(PlanContext ctx, Integer dayIndex) {
+        try {
+            if (ctx == null || ctx.getAllDays() == null) {
+                return "(일정 정보 없음)";
+            }
+            
+            var day = ctx.getAllDays().stream()
+                    .filter(d -> d.getDay() != null && d.getDay().getDayIndex() != null && d.getDay().getDayIndex().equals(dayIndex))
+                    .findFirst()
+                    .orElse(null);
+            
+            if (day == null) {
+                log.warn("[SmartPlanAgent] Day {} 를 찾을 수 없음", dayIndex);
+                return String.format("(%d일차 일정 없음)", dayIndex);
+            }
+            
+            StringBuilder sb = new StringBuilder();
+            var places = day.getPlaces();
+            if (places == null || places.isEmpty()) {
+                sb.append("(비어있음)");
+            } else {
+                for (var place : places) {
+                    sb.append("• ").append(place.getPlaceName());
+                    if (place.getStartAt() != null && place.getEndAt() != null) {
+                        sb.append(" (").append(place.getStartAt()).append(" ~ ").append(place.getEndAt()).append(")");
+                    }
+                    sb.append("\n");
+                }
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            log.warn("[SmartPlanAgent] Day 일정 조회 실패 dayIndex={}: {}", dayIndex, e.getMessage());
+            return String.format("(%d일차 일정 조회 실패)", dayIndex);
+        }
+    }
+
+    /**
+     * ChatMemory에 Assistant 응답 저장 (computeIfAbsent 방식 - 가장 안전)
      */
     private void saveHistory(Long userId, String answer) {
-        historyMap.get(userId).add("Assistant: " + answer);
+        historyMap.computeIfAbsent(userId, k -> new ArrayList<>())
+                  .add("Assistant: " + answer);
     }
 
     /**
@@ -223,6 +409,7 @@ public class SmartPlanAgent implements AiAgent {
             return (plan == null)
                     ? PlanContext.empty()
                     : PlanContext.builder()
+                            .userId(userId)
                             .activePlan(plan)
                             .allDays(queryService.queryAllDaysOptimized(plan.getId()))
                             .build();

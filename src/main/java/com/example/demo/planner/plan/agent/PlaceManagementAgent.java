@@ -72,12 +72,37 @@ public class PlaceManagementAgent {
     }
 
     /**
-     * ✅ SmartPlanAgent에서 호출되는 @Tool 메서드
-     * 장소 삭제 (Tool-Calling 방식)
+     * ✅ Guard: 장소 삭제 전 사용자 확인
+     * 실제 삭제 전 확인 메시지 반환
+     * ✨ planId는 PlanContextHolder에서만 읽음 (파라미터 제거!)
      */
-    @Tool(description = "여행 일정에서 특정 장소를 삭제합니다")
+    @Tool(description = "여행 일정에서 장소를 삭제하기 전 사용자 확인을 구합니다.")
+    public String deletePlaceGuard(String placeName) {
+        Long planId = com.example.demo.planner.plan.dto.context.PlanContextHolder.getPlanId();
+        log.info("🔐 [PlaceManagementAgent Guard] 장소 삭제 확인: planId={}, place={}", planId, placeName);
+
+        return placeManagementTools.deletePlaceGuard(planId, placeName);
+    }
+
+    /**
+     * ✅ Confirm: 장소 실제 삭제 (NOT A @Tool - called by Java only)
+     * 사용자 확인 이후 실제 삭제 수행
+     * ✨ planId는 PlanContextHolder에서만 읽음 (파라미터 제거!)
+     */
+    public String confirmDeletePlace(String placeName) {
+        Long planId = com.example.demo.planner.plan.dto.context.PlanContextHolder.getPlanId();
+        log.info("🛑 [PlaceManagementAgent Confirm] 장소 실제 삭제: planId={}, place={}", planId, placeName);
+
+        return placeManagementTools.confirmDeletePlace(planId, placeName);
+    }
+
+    /**
+     * ✅ SmartPlanAgent에서 호출되는 @Tool 메서드
+     * 장소 삭제 (Tool-Calling 방식, 단계 삭제 - 확인 없이)
+     */
+    @Tool(description = "여행 일정에서 특정 장소를 완전히 삭제합니다 (확인 없이 바로 삭제)")
     public String deletePlace(Long planId, String placeName) {
-        log.info("🗑️ [PlaceManagementAgent @Tool] 장소 삭제: planId={}, place={}", planId, placeName);
+        log.info("🗑️ [PlaceManagementAgent @Tool] 장소 삭제 (단계): planId={}, place={}", planId, placeName);
 
         String systemPrompt = """
                 당신은 여행 일정 관리 전문가입니다.
@@ -154,6 +179,31 @@ public class PlaceManagementAgent {
                 planId, oldPlaceName, newPlaceName, selectedIndex);
 
         return placeManagementTools.replacePlaceWithSelection(planId, oldPlaceName, newPlaceName, selectedIndex);
+    }
+
+    /**
+     * ✅ Guard: 위치 기반 장소 삭제 전 확인
+     * ✨ planId는 PlanContextHolder에서만 읽음 (파라미터 제거!)
+     */
+    @Tool(description = "여행 일정에서 특정 위치의 장소를 삭제하기 전 사용자 확인을 구합니다 (예: Day 3의 2번째 일정)")
+    public String deletePlaceByPositionGuard(Integer dayIndex, Integer position) {
+        Long planId = com.example.demo.planner.plan.dto.context.PlanContextHolder.getPlanId();
+        log.info("🔐 [PlaceManagementAgent Guard] 위치 기반 삭제 확인: planId={}, day={}, pos={}", 
+            planId, dayIndex, position);
+
+        return placeManagementTools.deletePlaceByPositionGuard(planId, dayIndex, position);
+    }
+
+    /**
+     * ✅ Confirm: 위치 기반 장소 실제 삭제 (NOT A @Tool - called by Java only)
+     * ✨ planId는 PlanContextHolder에서만 읽음 (파라미터 제거!)
+     */
+    public String confirmDeletePlaceByPosition(Integer dayIndex, Integer position) {
+        Long planId = com.example.demo.planner.plan.dto.context.PlanContextHolder.getPlanId();
+        log.info("🛑 [PlaceManagementAgent Confirm] 위치 기반 실제 삭제: planId={}, day={}, pos={}", 
+            planId, dayIndex, position);
+
+        return placeManagementTools.confirmDeletePlaceByPosition(planId, dayIndex, position);
     }
 
     /**

@@ -17,6 +17,7 @@ import lombok.Getter;
 @Builder
 public class PlanContext {
 
+    private Long userId;  // ✅ NEW: Tool에서 userId 조회용
     private Plan activePlan;
     private List<PlanDayWithPlaces> allDays;
 
