@@ -57,4 +57,22 @@ public class PlanViewTools {
             return "일차 조회 중 오류 발생: " + e.getMessage();
         }
     }
+
+    @Tool(description = "현재 여행 일정 전체를 조회합니다")
+    public String viewSnapShot() {
+        Long planId = support.getPlanId();
+        log.info("🔧 [Tool] viewPlan: planId={}", planId);
+
+        try {
+            Plan plan = support.loadPlan(planId);
+            List<PlanDay> days = support.loadDays(planId);
+            Map<Long, List<PlanPlace>> placesByDayId = support.loadPlacesByDayId(days);
+
+            return support.renderPlan(plan, days, placesByDayId);
+
+        } catch (Exception e) {
+            log.error("일정 조회 실패", e);
+            return "일정 조회 중 오류 발생: " + e.getMessage();
+        }
+    }
 }

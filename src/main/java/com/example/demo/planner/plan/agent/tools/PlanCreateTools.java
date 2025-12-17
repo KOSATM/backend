@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import com.example.demo.planner.plan.agent.TravelPlanAgent;
 import com.example.demo.planner.plan.agent.common.PlanToolSupport;
 import com.example.demo.planner.plan.dto.entity.GeneratedTravelPlan;
+import com.example.demo.planner.plan.service.PlanSnapshotService;
 import com.example.demo.planner.plan.service.TravelPlanSaveService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -21,6 +22,8 @@ public class PlanCreateTools {
     
     private final TravelPlanAgent travelPlanAgent;  // ← 실제 생성 로직
     private final TravelPlanSaveService travelPlanSaveService;
+    private final PlanSnapshotService planSnapshotService;
+
     private final PlanToolSupport support;
     
     
@@ -81,11 +84,14 @@ public class PlanCreateTools {
             // 3. DB 저장
             Long planId = travelPlanSaveService.save(userId, plan, new ObjectMapper());
             
-            // 4. ThreadLocal에 planId 설정 (다음 Tool 사용 대비)
-            support.setPlanId(planId);
+            // 4. 모든 스냅샷 제거
+            support.deleteAllSnapshot(userId);
+
+            // 5. 스냅샷 저장
+            Integer versionNo = support.saveSnapshot(planId);
             
-            // 5. 렌더링
-            return renderPlan(plan);
+            // 6. 렌더링
+            return renderPlan(plan,versionNo);
             
         } catch (Exception e) {
             log.error("❌ 서울 여행 일정 생성 실패", e);
@@ -96,9 +102,10 @@ public class PlanCreateTools {
     /**
      * GeneratedTravelPlan 렌더링
      */
-    private String renderPlan(GeneratedTravelPlan plan) {
+    private String renderPlan(GeneratedTravelPlan plan, Integer vesionNo) {
         StringBuilder sb = new StringBuilder();
-        
+        sb.append("version: "+vesionNo);
+        sb.append(" \n");
         sb.append("=== Seoul Travel Itinerary ===\n");
         sb.append("📅 ")
           .append(plan.startDate())
@@ -112,10 +119,10 @@ public class PlanCreateTools {
             
             for (var p : day.places()) {
                 sb.append("  ")
-                  .append(p.startAt().toLocalTime())
-                  .append("-")
-                  .append(p.endAt().toLocalTime())
-                  .append(" ")
+                //   .append(p.startAt().toLocalTime())
+                //   .append("-")
+                //   .append(p.endAt().toLocalTime())
+                //   .append(" ")
                   .append(p.title())
                   .append("\n");
             }

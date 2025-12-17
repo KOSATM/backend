@@ -14,6 +14,7 @@ import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
 import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
 import com.example.demo.planner.plan.service.PlanSnapshotService;
+import com.example.demo.planner.plan.utils.CategoryNames;
 
 import lombok.RequiredArgsConstructor;
 
@@ -51,6 +52,11 @@ public class PlanToolSupport {
         PlanSnapshot snapshot;
             snapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
             return snapshot.getVersionNo();
+    }
+    
+    
+    public void deleteAllSnapshot(Long userId) throws Exception {
+        planSnapshotService.deletePlanSnapshotsByUserId(userId);
     }
 
     // ========== 공통: Plan 조회 ==========
@@ -100,10 +106,6 @@ public class PlanToolSupport {
         sb.append("기간: ").append(plan.getStartDate())
                 .append(" ~ ").append(plan.getEndDate()).append("\n");
 
-        if (plan.getBudget() != null) {
-            sb.append("예산: ").append(plan.getBudget()).append("원\n");
-        }
-        sb.append("\n");
 
         for (PlanDay day : planDays) {
             sb.append("=== Day ").append(day.getDayIndex()).append(" ===\n");
@@ -130,7 +132,7 @@ public class PlanToolSupport {
                 sb.append(place.getTitle()).append("\n");
 
                 if (place.getAddress() != null) {
-                    sb.append("  📍 ").append(place.getAddress()).append("\n");
+                    sb.append("  🗺️ ").append(place.getAddress()).append("\n");
                 }
                 sb.append("\n");
             }
@@ -139,32 +141,47 @@ public class PlanToolSupport {
         return sb.toString();
     }
 
-    public String renderDay(PlanDay day, List<PlanPlace> places) {
+        public String renderDay(PlanDay day, List<PlanPlace> places) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("=== Day ").append(day.getDayIndex()).append(" ===\n");
-        sb.append(day.getPlanDate()).append("\n\n");
+        sb.append("📅 Day ").append(day.getDayIndex()).append("\n");
+        sb.append("🗓 날짜: ").append(day.getPlanDate()).append("\n");
+        sb.append("────────────────────\n");
 
         if (places == null || places.isEmpty()) {
-            sb.append("등록된 장소가 없습니다.\n");
+            sb.append("⚠️ 일정에 등록된 장소가 없습니다.\n");
             return sb.toString();
         }
 
         for (PlanPlace place : places) {
+            // 시간
             sb.append("• ");
-
             // if (place.getStartAt() != null) {
-            //     sb.append(place.getStartAt().toLocalTime()).append(" ");
+            //     sb.append("⏰ ")
+            //             .append(place.getStartAt().toLocalTime())
+            //             .append(" ");
             // }
 
-            sb.append(place.getTitle()).append("\n");
+            // 장소명
+            sb.append(place.getTitle());
 
-            if (place.getAddress() != null) {
-                sb.append("  📍 ").append(place.getAddress()).append("\n");
+            // 카테고리
+            if (place.getNormalizedCategory() != null) {
+                sb.append("  [")
+                        .append(CategoryNames.categoryLabel(place.getNormalizedCategory()))
+                        .append("]");
             }
             sb.append("\n");
-        }
 
+            // 주소
+            if (place.getAddress() != null) {
+                sb.append("   주소: ")
+                        .append(place.getAddress())
+                        .append("\n");
+            }
+
+            sb.append("\n");
+        }
         return sb.toString();
     }
 }

@@ -25,4 +25,16 @@ public class CategoryNames {
         public static final List<String> OPTIONAL = List.of(
                         CAFE, EVENT, SHOPPING, ETC);
         // STAY는 숙소 관리이므로 일정에서 제외
+
+        public static String categoryLabel(String category) {
+                return switch (category) {
+                        case "SPOT" -> "📍 관광";
+                        case "FOOD" -> "🍽 음식";
+                        case "CAFE" -> "☕ 카페";
+                        case "EVENT" -> "🎉 행사";
+                        case "SHOPPING" -> "🛍 쇼핑";
+                        case "STAY" -> "🏨 숙소";
+                        default -> "🔹 기타";
+                };
+        }
 }

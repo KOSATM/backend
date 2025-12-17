@@ -10,6 +10,12 @@
     WHERE id = #{id}
   </select>
 
+  <select id="selectPlanSnapshotByVersionNo" resultType="PlanSnapshot">
+    SELECT id, user_id, version_no, snapshot_json, created_at
+    FROM plan_snapshots
+    WHERE version_no = #{versionNo} AND user_id = #{userId}
+  </select>
+
   <select id="selectPlanSnapshotsByUserId" parameterType="long" resultType="PlanSnapshot">
     SELECT id, user_id, version_no, snapshot_json, created_at
     FROM plan_snapshots
@@ -19,6 +25,14 @@
 
   <select id="selectLatestPlanSnapshotByUserId" parameterType="long" resultType="PlanSnapshot">
     SELECT id, user_id, version_no, snapshot_json, created_at
+    FROM plan_snapshots
+    WHERE user_id = #{userId}
+    ORDER BY version_no DESC
+    LIMIT 1
+  </select>
+
+  <select id="selectLatestVersionNoByUserId" parameterType="long" resultType="int">
+    SELECT version_no
     FROM plan_snapshots
     WHERE user_id = #{userId}
     ORDER BY version_no DESC

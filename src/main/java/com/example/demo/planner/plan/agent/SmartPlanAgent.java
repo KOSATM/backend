@@ -61,7 +61,7 @@ public class SmartPlanAgent{
         log.info("[SmartPlanAgent] User({}): {}", userId, userMessage);
 
         PlanContext ctx = loadContext(userId);
-
+        
         if (ctx.hasActivePlan()) {
             planSupport.setPlanId(ctx.getActivePlan().getId());
         }

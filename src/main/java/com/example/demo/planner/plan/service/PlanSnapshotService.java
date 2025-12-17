@@ -38,6 +38,11 @@ public class PlanSnapshotService {
         return planSnapshotDao.selectPlanSnapshotById(id);
     }
 
+    public PlanSnapshot getPlanSnapshotByVersionNo(int versionNo, Long userId) {
+        log.info("Getting travel plan snapshot by vesion: {}, id: {}", versionNo, userId);
+        return planSnapshotDao.selectPlanSnapshotByVersionNo(versionNo, userId);
+    }
+
     // 사용자의 모든 스냅샷 조회
     public List<PlanSnapshot> getPlanSnapshotsByUserId(Long userId) {
         log.info("Getting all travel plan snapshots for user: {}", userId);
@@ -48,6 +53,12 @@ public class PlanSnapshotService {
     public PlanSnapshot getLatestPlanSnapshot(Long userId) {
         log.info("Getting latest travel plan snapshot for user: {}", userId);
         return planSnapshotDao.selectLatestPlanSnapshotByUserId(userId);
+    }
+
+    // 사용자의 최신 스냅샷 버전No조회
+    public int getLatestVersionNo(Long userId) {
+        log.info("Getting latest travel plan snapshot ID for user: {}", userId);
+        return planSnapshotDao.selectLatestVersionNoByUserId(userId);
     }
 
     // 스냅샷 저장
