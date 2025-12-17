@@ -25,17 +25,30 @@ public class SmartPlanAgent implements AiAgent {
     private final ChatClient chatClient;
     private final PlanQueryService queryService;
     private final PlanCrudService crudService;
-    private final PlanTools planTools;
+    
+    // 멀티에이전트: 모든 여행 관련 에이전트들
+    private final TravelPlanAgent travelPlanAgent;
+    private final SearchPlaceAgent searchPlaceAgent;
+    private final PlaceManagementAgent placeManagementAgent;
+    private final ScheduleOptimizationAgent scheduleOptimizationAgent;
+    
     private final Map<Long, List<String>> historyMap = new HashMap<>();
+    private final ThreadLocal<Long> currentPlanId = new ThreadLocal<>();
 
     public SmartPlanAgent(ChatClient.Builder builder,
             PlanQueryService queryService,
             PlanCrudService crudService,
-            PlanTools planTools) {
+            TravelPlanAgent travelPlanAgent,
+            SearchPlaceAgent searchPlaceAgent,
+            PlaceManagementAgent placeManagementAgent,
+            ScheduleOptimizationAgent scheduleOptimizationAgent) {
         this.chatClient = builder.build();
         this.queryService = queryService;
         this.crudService = crudService;
-        this.planTools = planTools;
+        this.travelPlanAgent = travelPlanAgent;
+        this.searchPlaceAgent = searchPlaceAgent;
+        this.placeManagementAgent = placeManagementAgent;
+        this.scheduleOptimizationAgent = scheduleOptimizationAgent;
     }
 
     @Override
@@ -45,13 +58,43 @@ public class SmartPlanAgent implements AiAgent {
         log.info("[SmartPlanAgent] User({}): {}", userId, userMsg);
 
         PlanContext ctx = loadContext(userId);
+        
+        // ✅ Plan이 없는 경우: 일정 생성 요청인지 확인
         if (!ctx.hasActivePlan()) {
-            return AiAgentResponse.of("현재 활성화된 여행 일정이 없습니다. 새로운 여행 계획을 만들어주세요!");
+            log.info("[SmartPlanAgent] 활성 Plan 없음 → TravelPlanAgent로 일정 생성 시도");
+            
+            // LLM으로 일정 생성 의도 확인 및 TravelPlanAgent 호출
+            String response = chatClient.prompt()
+                    .system("""
+                            당신은 여행 일정 관리 전문가입니다.
+                            사용자가 새로운 여행 일정 생성을 원하는지 확인하고, 필요한 정보를 수집합니다.
+                            
+                            ## 사용 가능한 도구:
+                            - createSeoulTravelPlanStructured: 서울 여행 일정 생성 (duration 필수)
+                            
+                            ## 작업 절차:
+                            1. 사용자 메시지에서 여행 기간, 스타일, 선호 지역 등 추출
+                            2. 기간 정보가 없으면 사용자에게 질문
+                            3. 기간 정보가 있으면 createSeoulTravelPlanStructured 도구 호출
+                            4. 생성 결과를 자연스러운 한국어로 설명
+                            
+                            ## 응답 형식:
+                            - 정보 부족: "여행 기간은 며칠인가요? (예: 2박 3일, 3일)"
+                            - 생성 완료: "✅ [N일] 여행 일정을 생성했습니다! [간단한 요약]"
+                            """)
+                    .user(userMsg)
+                    .tools(travelPlanAgent)
+                    .toolContext(Map.of("userId", userId))
+                    .call()
+                    .content();
+            
+            log.info("[SmartPlanAgent] 일정 생성 응답: {}", response);
+            return AiAgentResponse.of(response);
         }
 
-        // PlanTools에 planId 설정
+        // ✅ Plan이 있는 경우: 일정 관리 (장소 추가/삭제/교환 등)
         Long planId = ctx.getActivePlan().getId();
-        planTools.setPlanId(planId);
+        currentPlanId.set(planId);
 
         try {
             String planJson = ctx.toJson();
@@ -61,29 +104,31 @@ public class SmartPlanAgent implements AiAgent {
             String systemPrompt = buildSystemPrompt();
             String userPrompt = buildUserPrompt(planJson, history, userMsg);
 
-            log.info("[Tool Calling] LLM 호출 with 13 functions");
+            log.info("[SmartPlanAgent] Tool-Calling 시작 (멀티에이전트)");
 
-            // Tool Calling 방식으로 LLM 호출
+            // ✅ 모든 여행 에이전트를 Tool로 등록
             String llm = chatClient.prompt()
                     .system(systemPrompt)
                     .user(userPrompt)
-                    .tools(planTools) // PlanTools의 모든 @Description 메서드가 자동 등록됨
-                    .toolContext(Map.of("userId", userId))
+                    .tools(
+                        searchPlaceAgent,           // 장소 검색 에이전트
+                        placeManagementAgent,       // 장소 관리 에이전트
+                        scheduleOptimizationAgent   // 일정 최적화 에이전트
+                    )
+                    .toolContext(Map.of(
+                        "userId", userId,
+                        "planId", planId
+                    ))
                     .call()
                     .content();
 
-            log.info("[LLM Response]\n{}", llm);
+            log.info("[SmartPlanAgent] LLM 응답:\n{}", llm);
 
             saveHistory(userId, llm);
 
-            // 최신 일정 다시 로드 (삭제된 경우 빈 컨텍스트 반환)
-            PlanContext updatedCtx = loadContext(userId);
-
-            // 응답 반환
             return AiAgentResponse.of(llm);
         } finally {
-            // planId 정리
-            planTools.clearPlanId();
+            currentPlanId.remove();
         }
     }
 

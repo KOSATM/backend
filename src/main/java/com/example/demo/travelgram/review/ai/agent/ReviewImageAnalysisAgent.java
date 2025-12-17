@@ -1,14 +1,11 @@
 package com.example.demo.travelgram.review.ai.agent;
 
-import java.time.Duration;
 import java.util.List;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;

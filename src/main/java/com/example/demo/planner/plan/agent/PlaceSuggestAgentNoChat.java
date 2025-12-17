@@ -1,7 +1,5 @@
 package com.example.demo.planner.plan.agent;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -17,10 +15,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import com.example.demo.common.chat.intent.dto.IntentCommand;
-import com.example.demo.common.chat.pipeline.AiAgentResponse;
-import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.planner.plan.dto.entity.TravelPlaces;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,7 +37,6 @@ public class PlaceSuggestAgentNoChat {
   public List<TravelPlaces> execute(IntentCommand command, Long userId) {
     long start = System.nanoTime();
     log.info(command.toString());
-    ObjectMapper objectMapper = new ObjectMapper();
 
     BeanOutputConverter<List<TravelPlaces>> beanOutputConverter = new BeanOutputConverter<>(
         new ParameterizedTypeReference<List<TravelPlaces>>() {
@@ -97,12 +91,6 @@ public class PlaceSuggestAgentNoChat {
 
         List<Map<String, Object>> res = jdbcTemplate.queryForList(sql, lat, lng, lat);
         log.info("res: {}", res.toString());
-
-        List<TravelPlaces> travelPlacesList = new ArrayList<>();
-        // for (Map<String, Object> map : res) {
-        //   TravelPlaces travelPlaces = new TravelPlaces();
-        //   travelPlaces.
-        // }
 
         // 검색 결과 없음
         if (res.isEmpty()) {

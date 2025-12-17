@@ -4,9 +4,7 @@ import java.util.List;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
-import org.stringtemplate.v4.compiler.CodeGenerator.primary_return;
 
-import com.example.demo.common.tools.InternetSearchTool;
 import com.example.demo.common.tools.NaverInternetSearchTool;
 import com.example.demo.common.util.JsonParser;
 import com.example.demo.supporter.imageSearch.dto.response.PlaceCandidateResponse;
