@@ -17,4 +17,6 @@ public interface HotelBookingFFDao {
     int update(HotelBookingFFResponse booking);
 
     int deleteById(@Param("id") Long id);
+
+    void deleteByUserId(@Param("userId") Long userId);
 }

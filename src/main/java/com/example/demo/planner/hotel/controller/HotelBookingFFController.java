@@ -90,4 +90,26 @@ public class HotelBookingFFController {
             return ResponseEntity.ok(response);
         }
     }
+
+    /**
+     * 특정 유저의 모든 호텔 예약 삭제
+     * DELETE /api/hotel-ff/user/{userId}
+     */
+    @DeleteMapping("/delete/{userId}")
+    public ResponseEntity<Map<String, Object>> deleteHotelBookingByUserId(@PathVariable("userId") Long userId) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            hotelBookingFFService.deleteBookingByUserId(userId);
+
+            response.put("success", true);
+            response.put("message", "해당 유저의 모든 예약이 삭제되었습니다.");
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.ok(response);
+        }
+    }
 }

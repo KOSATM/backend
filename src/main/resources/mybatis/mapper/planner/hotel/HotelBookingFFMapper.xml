@@ -62,4 +62,10 @@
         WHERE id = #{id}
     </delete>
 
+    <!-- DELETE BY USER ID -->
+    <delete id="deleteByUserId" parameterType="long">
+        DELETE FROM hotel_bookings
+        WHERE user_id = #{userId}
+    </delete>
+
 </mapper>

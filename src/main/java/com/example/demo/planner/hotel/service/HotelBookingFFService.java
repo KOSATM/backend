@@ -84,4 +84,15 @@ public class HotelBookingFFService {
             throw new IllegalArgumentException("삭제할 예약이 존재하지 않습니다. id=" + id);
         }
     }
+
+    /**
+     * 특정 유저의 모든 호텔 예약 삭제
+     */
+    @Transactional
+    public void deleteBookingByUserId(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId는 필수 값입니다.");
+        }
+        hotelBookingFFDao.deleteByUserId(userId);
+    }
 }
