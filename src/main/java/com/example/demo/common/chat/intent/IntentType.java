@@ -21,7 +21,7 @@ public enum IntentType {
         CategoryType.PLANNER,
         "/planner/edit",
         "여행 일정 생성",
-        SmartPlanAgent.class
+        null
     ),
 
     PLAN_ACTION(
@@ -34,7 +34,7 @@ public enum IntentType {
         CategoryType.PLANNER,
         "/planner",
         "자연어 일정 조작 (LLM Full Reasoning)",
-        SmartPlanAgent.class
+        null
     ),
 
     PLAN_PLACE_RECOMMEND(
@@ -52,7 +52,7 @@ public enum IntentType {
         CategoryType.ETC,
         "/",
         "기타 요청",
-        SmartPlanAgent.class
+        null
     );
 
     private final String value;

@@ -3,6 +3,7 @@ package com.example.demo.planner.plan.dao;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 
@@ -62,8 +63,8 @@ public interface PlanDayDao {
     /**
      * 특정 planId와 dayIndex 조합이 존재하는지 확인합니다.
      */
-    PlanDay selectPlanDayByPlanIdAndDayIndex(@org.apache.ibatis.annotations.Param("planId") Long planId,
-                                              @org.apache.ibatis.annotations.Param("dayIndex") Integer dayIndex);
+    PlanDay selectPlanDayByPlanIdAndDayIndex(@Param("planId") Long planId,
+                                              @Param("dayIndex") Integer dayIndex);
 
     /**
      * 특정 planId의 최대 dayIndex를 조회합니다.
@@ -78,8 +79,8 @@ public interface PlanDayDao {
     /**
      * planDate를 업데이트합니다
      */
-    void updatePlanDate(@org.apache.ibatis.annotations.Param("id") Long id,
-                        @org.apache.ibatis.annotations.Param("planDate") java.time.LocalDate planDate);
+    void updatePlanDate(@Param("id") Long id,
+                        @Param("planDate") java.time.LocalDate planDate);
 
     /**
      * 특정 day 전체 삭제

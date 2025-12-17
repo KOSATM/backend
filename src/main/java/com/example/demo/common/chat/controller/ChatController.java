@@ -15,16 +15,14 @@ import com.example.demo.common.chat.dto.TravelChatSendRequest;
 import com.example.demo.common.chat.dto.TravelChatSendResponse;
 import com.example.demo.common.chat.intent.agent.IntentAnalysisAgent;
 import com.example.demo.common.chat.intent.dto.request.IntentRequest;
+import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.common.chat.pipeline.DefaultChatPipeline;
 import com.example.demo.common.chat.pipeline.PipelineResult;
 import com.example.demo.common.chat.pipeline.UnifiedAgentResponse;
 import com.example.demo.planner.plan.agent.SmartPlanAgent;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-
 
 @RestController
 @Slf4j
@@ -78,7 +76,7 @@ public class ChatController {
 
         IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").message("강남 위주로 여행지 추천해줘").build();
         // IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner")
-                // .userMessage("오늘 날씨 알려주고 일정 수정하고 싶어?").build();
+        // .userMessage("오늘 날씨 알려주고 일정 수정하고 싶어?").build();
 
         return intentAnalysisAgent.analyze(intentRequest).toString();
     }
@@ -97,62 +95,70 @@ public class ChatController {
     }
 
     // @GetMapping("/test")
-    // public ResponseEntity<PipelineResult> test(@RequestParam("msg") String msg, @RequestParam("userId") Long userId) {
-    //     IntentRequest intentRequest = IntentRequest.builder().currentUrl("/planner").userMessage(msg).build();
+    // public ResponseEntity<PipelineResult> test(@RequestParam("msg") String msg,
+    // @RequestParam("userId") Long userId) {
+    // IntentRequest intentRequest =
+    // IntentRequest.builder().currentUrl("/planner").userMessage(msg).build();
 
-    //     return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest, userId));
+    // return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest, userId));
     // }
 
+    // @PostMapping("/chat")
+    // public ResponseEntity<PipelineResult> analyzeChat(@RequestBody IntentRequest intentRequest) {
+    //     return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest, intentRequest.getUserId()));
+    // }
     @PostMapping("/chat")
-public ResponseEntity<PipelineResult> analyzeChat(@RequestBody IntentRequest intentRequest) {
-	log.info(intentRequest.toString()+";;;;;;;;");
-    return ResponseEntity.ok(defaultChatPipeline.execute(intentRequest, intentRequest.getUserId()));
-}
+    public ResponseEntity<TravelChatSendResponse> analyzeChat(@RequestBody IntentRequest intentRequest) {
 
+        AiAgentResponse response = smartPlanAgent.execute(intentRequest.getMessage(), intentRequest.getUserId());
+        log.info(response.getMessage()+">>>>>>>");
+        
+        TravelChatSendResponse result = TravelChatSendResponse.success(response.getMessage(), response.getData());
+        return ResponseEntity.ok(result);
+    }
 
     /**
      * Plan Agent 기반 채팅 엔드포인트
      * /api/chat 경로
      */
     @PostMapping("/api/chat")
-public ResponseEntity<TravelChatSendResponse> chat(@RequestBody TravelChatSendRequest request) {
-    try {
-        Long userId = request.getUserId() != null ? request.getUserId() : 1L;
+    public ResponseEntity<TravelChatSendResponse> chat(@RequestBody TravelChatSendRequest request) {
+        try {
+            Long userId = request.getUserId() != null ? request.getUserId() : 1L;
 
-        IntentRequest intentRequest = IntentRequest.builder()
-                .message(request.getMessage())
-                .currentUrl("/planner")
-                .userId(userId)
-                .build();
+            IntentRequest intentRequest = IntentRequest.builder()
+                    .message(request.getMessage())
+                    .currentUrl("/planner")
+                    .userId(userId)
+                    .build();
 
-        PipelineResult result = defaultChatPipeline.execute(intentRequest, userId);
+            PipelineResult result = defaultChatPipeline.execute(intentRequest, userId);
 
-        String response = result.getMainResponse().getMessage();
-        Object agentData = result.getMainResponse().getData();
+            String response = result.getMainResponse().getMessage();
+            Object agentData = result.getMainResponse().getData();
 
-        // 이미지 추출
-        List<Map<String, Object>> images = extractImages(agentData);
+            // 이미지 추출
+            List<Map<String, Object>> images = extractImages(agentData);
 
-        return ResponseEntity.ok(
-                TravelChatSendResponse.success(response, images)
-        );
+            return ResponseEntity.ok(
+                    TravelChatSendResponse.success(response, images));
 
-    } catch (Exception e) {
-        log.error("Error processing chat request", e);
-        return ResponseEntity.ok(TravelChatSendResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error processing chat request", e);
+            return ResponseEntity.ok(TravelChatSendResponse.error(e.getMessage()));
+        }
     }
-}
 
     /**
      * Agent 응답 데이터에서 이미지 추출
      */
     private List<Map<String, Object>> extractImages(Object agentData) {
         List<Map<String, Object>> images = new ArrayList<>();
-        
-        log.info("🔍 extractImages() 호출 - agentData 타입: {}, 값: {}", 
-            agentData == null ? "null" : agentData.getClass().getSimpleName(),
-            agentData);
-        
+
+        log.info("🔍 extractImages() 호출 - agentData 타입: {}, 값: {}",
+                agentData == null ? "null" : agentData.getClass().getSimpleName(),
+                agentData);
+
         if (agentData == null) {
             return images;
         }
@@ -162,21 +168,21 @@ public ResponseEntity<TravelChatSendResponse> chat(@RequestBody TravelChatSendRe
             log.info("✅ UnifiedAgentResponse 감지");
             UnifiedAgentResponse unified = (UnifiedAgentResponse) agentData;
             Object innerData = unified.getData();
-            
+
             log.info("📦 innerData 타입: {}", innerData == null ? "null" : innerData.getClass().getSimpleName());
-            
+
             if (innerData instanceof List) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> dataList = (List<Map<String, Object>>) innerData;
                 log.info("📋 List 크기: {}", dataList.size());
-                
+
                 for (Map<String, Object> place : dataList) {
                     String title = (String) place.get("title");
                     String image = (String) place.get("image");
                     String address = (String) place.get("address");
-                    
+
                     log.info("   → 장소: {}, 이미지: {}", title, image);
-                    
+
                     if (image != null && !image.isEmpty()) {
                         Map<String, Object> imageData = new java.util.LinkedHashMap<>();
                         imageData.put("title", title);
@@ -195,12 +201,12 @@ public ResponseEntity<TravelChatSendResponse> chat(@RequestBody TravelChatSendRe
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> dataList = (List<Map<String, Object>>) agentData;
                 log.info("📋 List 크기: {}", dataList.size());
-                
+
                 for (Map<String, Object> place : dataList) {
                     String title = (String) place.get("title");
                     String image = (String) place.get("image");
                     String address = (String) place.get("address");
-                    
+
                     if (image != null && !image.isEmpty()) {
                         Map<String, Object> imageData = new java.util.LinkedHashMap<>();
                         imageData.put("title", title);
@@ -220,8 +226,5 @@ public ResponseEntity<TravelChatSendResponse> chat(@RequestBody TravelChatSendRe
         log.info("✅ 추출된 이미지 개수: {}", images.size());
         return images;
     }
-
-
-
 
 }

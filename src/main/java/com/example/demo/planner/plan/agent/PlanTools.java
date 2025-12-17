@@ -80,6 +80,63 @@ public class PlanTools {
         return currentPlanId.get();
     }
 
+    @Tool(description = "현재 여행 일정 전체를 조회합니다")
+    public String viewPlan() {
+        Long planId = getPlanId();
+        log.info("🔧 [Tool] viewPlan: planId={}", planId);
+
+        try {
+            // 🟦 1) plan 조회
+            Plan plan = planDao.selectPlanById(planId);
+
+            if (plan == null) {
+                return "일정을 찾을 수 없습니다.";
+            }
+
+            // 🟦 2) days 조회
+            List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
+
+            // 🟦 3) places 조회
+            Map<Long, List<PlanPlace>> placesByDayId = new HashMap<>();
+            for (PlanDay day : planDays) {
+                List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+                placesByDayId.put(day.getId(), places);
+            }
+
+            // 🟦 4) 렌더링
+            return renderPlan(plan, planDays, placesByDayId);
+
+        } catch (Exception e) {
+            log.error("일정 조회 실패", e);
+            return "일정 조회 중 오류 발생: " + e.getMessage();
+        }
+    }
+
+    @Tool(description = "특정 일차의 일정만 조회합니다. dayIndex는 1부터 시작 (1일차=1)")
+    public String viewDay(
+            @ToolParam(description = "조회할 일차 번호 (1부터 시작)") int dayIndex) {
+        Long planId = getPlanId();
+        log.info("🔧 [Tool] viewDay: planId={}, dayIndex={}", planId, dayIndex);
+
+        try {
+            // Day 조회
+            PlanDay day = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndex);
+
+            if (day == null) {
+                return dayIndex + "일차가 없습니다.";
+            }
+
+            // Places 조회
+            List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+
+            return renderDay(day, places);
+
+        } catch (Exception e) {
+            log.error("일차 조회 실패", e);
+            return "일차 조회 중 오류 발생: " + e.getMessage();
+        }
+    }
+
     @Tool(description = "특정 장소를 일정에서 삭제합니다")
     public String deletePlace(String placeName) {
         Long planId = getPlanId();
@@ -678,5 +735,86 @@ public class PlanTools {
         if (text == null)
             return null;
         return text.replaceAll("<[^>]*>", "");
+    }
+
+    private String renderPlan(
+            Plan plan,
+            List<PlanDay> planDays,
+            Map<Long, List<PlanPlace>> placesByDayId) {
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("📅 ").append(plan.getTitle() != null ? plan.getTitle() : "여행 일정").append("\n");
+        sb.append("기간: ").append(plan.getStartDate())
+                .append(" ~ ").append(plan.getEndDate()).append("\n");
+
+        if (plan.getBudget() != null) {
+            sb.append("예산: ").append(plan.getBudget()).append("원\n");
+        }
+        sb.append("\n");
+
+        for (PlanDay day : planDays) {
+            sb.append("=== Day ").append(day.getDayIndex()).append(" ===\n");
+
+            if (day.getTitle() != null) {
+                sb.append(day.getTitle()).append("\n");
+            }
+            sb.append(day.getPlanDate()).append("\n\n");
+
+            List<PlanPlace> places = placesByDayId.get(day.getId());
+
+            if (places == null || places.isEmpty()) {
+                sb.append("등록된 장소가 없습니다.\n\n");
+                continue;
+            }
+
+            for (PlanPlace place : places) {
+                sb.append("• ");
+
+                // if (place.getStartAt() != null) {
+                //     sb.append(place.getStartAt().toLocalTime()).append(" ");
+                // }
+
+                sb.append(place.getTitle()).append("\n");
+
+                if (place.getAddress() != null) {
+                    sb.append("  📍 ").append(place.getAddress()).append("\n");
+                }
+
+                sb.append("\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private String renderDay(PlanDay day, List<PlanPlace> places) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("=== Day ").append(day.getDayIndex()).append(" ===\n");
+        sb.append(day.getPlanDate()).append("\n\n");
+
+        if (places == null || places.isEmpty()) {
+            sb.append("등록된 장소가 없습니다.\n");
+            return sb.toString();
+        }
+
+        for (PlanPlace place : places) {
+            sb.append("• ");
+
+            if (place.getStartAt() != null) {
+                sb.append(place.getStartAt().toLocalTime()).append(" ");
+            }
+
+            sb.append(place.getTitle()).append("\n");
+
+            if (place.getAddress() != null) {
+                sb.append("  📍 ").append(place.getAddress()).append("\n");
+            }
+
+            sb.append("\n");
+        }
+
+        return sb.toString();
     }
 }
