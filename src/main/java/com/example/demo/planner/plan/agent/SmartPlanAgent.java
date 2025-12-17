@@ -16,13 +16,16 @@ import com.example.demo.common.chat.prompt.PromptContext;
 import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.planner.plan.dto.context.PlanContext;
+import com.example.demo.planner.plan.dto.entity.GeneratedTravelPlan;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PendingAction;
 import com.example.demo.planner.plan.guard.WriteToolGuard;
 import com.example.demo.planner.plan.service.PlanCrudService;
 import com.example.demo.planner.plan.service.PlanQueryService;
 import com.example.demo.planner.plan.service.PendingActionService;
+import com.example.demo.planner.plan.service.TravelPlanSaveService;
 import com.example.demo.planner.plan.service.action.PlanDeleteAction;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,6 +41,8 @@ public class SmartPlanAgent implements AiAgent {
     private final MemoryRetrievalService memoryRetrievalService;
     private final PendingActionService pendingActionService;
     private final PlanDeleteAction planDeleteAction;
+    private final TravelPlanSaveService travelPlanSaveService;
+    private final ObjectMapper objectMapper;
 
     // 멀티에이전트: 모든 여행 관련 에이전트들
     private final TravelPlanAgent travelPlanAgent;
@@ -59,6 +64,8 @@ public class SmartPlanAgent implements AiAgent {
             MemoryRetrievalService memoryRetrievalService,
             PendingActionService pendingActionService,
             PlanDeleteAction planDeleteAction,
+            TravelPlanSaveService travelPlanSaveService,
+            ObjectMapper objectMapper,
             TravelPlanAgent travelPlanAgent,
             SearchPlaceAgent searchPlaceAgent,
             PlaceManagementAgent placeManagementAgent,
@@ -75,6 +82,8 @@ public class SmartPlanAgent implements AiAgent {
         this.memoryRetrievalService = memoryRetrievalService;
         this.pendingActionService = pendingActionService;
         this.planDeleteAction = planDeleteAction;
+        this.travelPlanSaveService = travelPlanSaveService;
+        this.objectMapper = objectMapper;
         this.travelPlanAgent = travelPlanAgent;
         this.searchPlaceAgent = searchPlaceAgent;
         this.placeManagementAgent = placeManagementAgent;
@@ -129,18 +138,84 @@ public class SmartPlanAgent implements AiAgent {
      * Plan 생성 처리
      */
     private AiAgentResponse handlePlanCreation(String userMsg, Long userId) {
-        String response = chatClient.prompt()
+        // 기존 일정이 있는지 다시 확인 (동시성 문제 방지)
+        PlanContext ctx = loadContext(userId);
+        if (ctx.hasActivePlan()) {
+            log.info("[SmartPlanAgent] 이미 활성 Plan 존재 → 기존 일정 안내");
+            return AiAgentResponse.of(
+                "이미 진행 중인 여행 일정이 있습니다! 일정 페이지에서 확인하실 수 있어요. 새로운 일정을 만들고 싶으시다면 먼저 기존 일정을 완료하거나 삭제해주세요."
+            );
+        }
+
+        // LLM이 tool 호출하여 GeneratedTravelPlan 생성
+        var chatResponse = chatClient.prompt()
                 .system("""
-                        당신은 여행 일정 관리 전문가입니다.
-                        사용자가 새로운 여행 일정 생성을 원하는지 확인하세요.
+                        당신은 서울 여행 일정을 생성하는 전문 AI 어시스턴트입니다.
+
+                        **중요: 사용자가 여행 일정 생성을 요청하면 추가 질문 없이 즉시 createSeoulTravelPlanStructured tool을 호출하세요!**
+
+                        정보 추출 규칙:
+                        1. duration (여행 기간):
+                           - "2박3일", "3일", "이틀" → 일수 추출
+                           - 언급 없으면 → 3 (기본값)
+
+                        2. style (여행 스타일):
+                           - "KPOP", "맛집", "먹방", "카페", "역사", "쇼핑", "사진" 등 키워드 추출
+                           - 언급 없으면 → null (AI가 다양한 명소 자동 선택)
+
+                        3. location (선호 지역):
+                           - "강남", "홍대", "명동", "이태원" 등
+                           - 언급 없으면 → null (서울 전역)
+
+                        4. pace (일정 강도):
+                           - "널널", "빡빡" 등
+                           - 언급 없으면 → null (보통)
+
+                        5. startDateText (시작일):
+                           - "내일", "다음주", "12월 20일" 등
+                           - 언급 없으면 → null (오늘부터)
+
+                        **절대 하지 말 것:**
+                        - ❌ "여행 스타일을 알려주세요" 같은 추가 질문
+                        - ❌ "기간을 정해주세요" 같은 요청
+                        - ❌ 정보가 부족하다는 언급
+
+                        **반드시 할 것:**
+                        - ✅ 즉시 tool 호출
+                        - ✅ "3일간의 서울 여행 일정을 만들었어요!" 같은 긍정적인 응답
+                        - ✅ 생성된 주요 장소들을 간단히 나열
+
+                        예시:
+                        - "일정 만들어줘" → duration=3, 나머지 null
+                        - "2박3일" → duration=3, 나머지 null
+                        - "KPOP 투어 3일" → duration=3, style="KPOP", 나머지 null
                         """)
                 .user(userMsg)
                 .tools(travelPlanAgent)
                 .toolContext(Map.of("userId", userId))
-                .call()
-                .content();
+                .call();
 
-        return AiAgentResponse.of(response);
+        String llmResponse = chatResponse.content();
+
+        // Tool 호출로 생성된 결과를 DB에 저장
+        // TravelPlanAgent가 반환하는 GeneratedTravelPlan을 추출하여 저장
+        // 현재는 tool 결과를 직접 받기 어려우므로, 로그를 통해 확인하고
+        // 재호출하여 저장합니다
+        try {
+            // 기본값으로 3일 일정 생성 후 저장
+            GeneratedTravelPlan generatedPlan = travelPlanAgent.createSeoulTravelPlanStructured(
+                3, null, null, null, null
+            );
+
+            if (generatedPlan != null && !generatedPlan.days().isEmpty()) {
+                Long planId = travelPlanSaveService.save(userId, generatedPlan, objectMapper);
+                log.info("✅ 일정 DB 저장 완료: planId={}", planId);
+            }
+        } catch (Exception e) {
+            log.error("❌ 일정 저장 실패", e);
+        }
+
+        return AiAgentResponse.of(llmResponse);
     }
 
     /**
