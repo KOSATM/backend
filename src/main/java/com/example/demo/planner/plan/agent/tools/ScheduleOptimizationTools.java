@@ -89,6 +89,22 @@ public class ScheduleOptimizationTools {
         }
     }
 
+    @Tool(description = "두 날짜의 일정 전체를 교환합니다")
+    public String swapDays(Long planId, Integer day1, Integer day2) {
+        log.info("🔧 [Tool] swapDays: planId={}, day1={}, day2={}", planId, day1, day2);
+        try {
+            swapAction.swapDays(planId, day1, day2);
+
+            // 스냅샷 저장
+            saveSnapshot(planId);
+
+            return String.format("✅ %d일차와 %d일차 일정을 교환했습니다.", day1, day2);
+        } catch (Exception e) {
+            log.error("❌ 날짜 교환 실패", e);
+            return String.format("❌ 날짜 교환 실패: %s", e.getMessage());
+        }
+    }
+
     private void saveSnapshot(Long planId) {
         try {
             Plan plan = planDao.selectPlanById(planId);

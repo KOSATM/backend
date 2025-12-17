@@ -139,4 +139,37 @@ public class PlaceManagementAgent {
         log.info("🔄 [PlaceManagementAgent @Tool] 교체 완료");
         return result;
     }
+
+    /**
+     * ✅ SmartPlanAgent에서 호출되는 @Tool 메서드
+     * 검색 결과 중 선택한 장소로 교체
+     */
+    @Tool(description = "검색 결과에서 사용자가 선택한 장소로 기존 장소를 교체합니다")
+    public String replacePlaceWithSelection(
+            Long planId,
+            String oldPlaceName,
+            String newPlaceName,
+            Integer selectedIndex) {
+        log.info("🔄 [PlaceManagementAgent @Tool] 선택 교체: planId={}, old={}, new={}, index={}",
+                planId, oldPlaceName, newPlaceName, selectedIndex);
+
+        return placeManagementTools.replacePlaceWithSelection(planId, oldPlaceName, newPlaceName, selectedIndex);
+    }
+
+    /**
+     * ✅ SmartPlanAgent에서 호출되는 @Tool 메서드
+     * 특정 위치에 장소 삽입
+     */
+    @Tool(description = "여행 일정의 특정 위치에 장소를 삽입하고 이후 일정을 자동 조정합니다 (dayIndex는 1부터 시작)")
+    public String addPlaceAtPosition(
+            Long planId,
+            Integer dayIndex,
+            Integer position,
+            String placeName,
+            Integer duration) {
+        log.info("➕ [PlaceManagementAgent @Tool] 위치 삽입: planId={}, day={}, pos={}, place={}, duration={}",
+                planId, dayIndex, position, placeName, duration);
+
+        return placeManagementTools.addPlaceAtPosition(planId, dayIndex, position, placeName, duration);
+    }
 }
