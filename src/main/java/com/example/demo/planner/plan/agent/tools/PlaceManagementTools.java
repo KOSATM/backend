@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 장소 관리 도구 모음
  * - PlaceManagementAgent가 사용
- * 
+ *
  * <p><strong>WriteToolGuard 통합:</strong>
  * 모든 쓰기 tool은 실제 DB 작업 직전에 Guard를 통과해야 한다.
  * Guard가 막으면 → 확인 질문 반환 → 다음 턴에서 재실행
@@ -85,19 +85,19 @@ public class PlaceManagementTools {
         // 🚨 Guard 체크 (실행 관문)
         // TODO: chatMemory에서 isConfirmed 조회하여 Guard에 전달
         // 현재는 개념 증명을 위해 주석 처리
-        // 
+        //
         // GuardContext context = GuardContext.builder()
         //     .planId(planId)
         //     .isConfirmed(false) // TODO: chatMemory에서 확인 여부 조회
         //     .build();
-        // 
+        //
         // GuardResult result = writeToolGuard.check("deletePlaceFromPlan", context);
-        // 
+        //
         // if (!result.allowed()) {
         //     return result.question(); // 확인 질문 반환
         // }
-        
-        
+
+
 
     @Tool(description = "일정에서 장소를 삭제합니다")
     public String deletePlaceFromPlan(Long planId, String placeName) {
@@ -129,7 +129,7 @@ public class PlaceManagementTools {
         if (!saveSnapshot(planId)) {
             return String.format("{\"success\": false, \"message\": \"스냅샷 저장에 실패했습니다. 잠시 후 다시 시도해주세요.\"}");
         }
-        
+
         // ✅ PendingAction 생성 (PlanContextHolder에서 userId 조회)
         Long userId = PlanContextHolder.getUserId();
         PendingAction action = PendingAction.forDeletePlace(userId, planId, placeName);
@@ -187,17 +187,17 @@ public class PlaceManagementTools {
             }
 
             PlanPlace targetPlace = places.get(position - 1);
-            
+
             // ✅ 삭제 전 스냅샷 저장 (실패하면 바로 반환)
             if (!saveSnapshot(planId)) {
                 return "스냅샷 저장에 실패했습니다. 잠시 후 다시 시도해주세요.";
             }
-            
+
             // ✅ PendingAction 생성 (PlanContextHolder에서 userId 조회)
             Long userId = PlanContextHolder.getUserId();
             PendingAction action = PendingAction.forDeletePlace(userId, planId, targetPlace.getTitle(), dayIndex, position);
             pendingActionService.save(action);
-            log.info("✅ [PendingAction] 생성됨: userId={}, type=DELETE_PLACE, placeName={}, dayIndex={}, position={}", 
+            log.info("✅ [PendingAction] 생성됨: userId={}, type=DELETE_PLACE, placeName={}, dayIndex={}, position={}",
                 userId, targetPlace.getTitle(), dayIndex, position);
 
             return String.format(
@@ -295,13 +295,13 @@ public class PlaceManagementTools {
                 log.warn("⚠️ planId 불일치: request={}, context={}", planId, contextPlanId);
                 planId = contextPlanId;
             }
-            
+
             Plan plan = planDao.selectPlanById(planId);
             if (plan == null) {
                 log.error("❌ Plan을 찾을 수 없음: planId={}", planId);
                 return false;
             }
-            
+
             List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
             List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
             planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
@@ -310,6 +310,56 @@ public class PlaceManagementTools {
         } catch (Exception e) {
             log.error("❌ 스냅샷 저장 실패", e);
             return false;
+        }
+    }
+
+    /**
+     * Guard: 장소 시간 수정 전 확인
+     * ✅ 스냅샷 저장 + PendingAction 생성
+     */
+    public String updatePlaceTimeGuard(Long planId, String placeName, Integer dayIndex, String newStartTime) {
+        log.info("🔐 [PlaceManagementTools Guard] 장소 시간 수정 확인: planId={}, place={}, day={}, newTime={}",
+                planId, placeName, dayIndex, newStartTime);
+
+        // ✅ 수정 전 스냅샷 저장 (실패하면 바로 반환)
+        if (!saveSnapshot(planId)) {
+            return String.format("{\"success\": false, \"message\": \"스냅샷 저장에 실패했습니다. 잠시 후 다시 시도해주세요.\"}");
+        }
+
+        // ✅ PendingAction 생성
+        Long userId = PlanContextHolder.getUserId();
+        PendingAction action = PendingAction.forUpdatePlace(userId, planId, placeName, dayIndex, newStartTime);
+        pendingActionService.save(action);
+        log.info("✅ [PendingAction] 생성됨: userId={}, type=UPDATE_PLACE, placeName={}, newTime={}", userId, placeName, newStartTime);
+
+        return String.format(
+            "'%s'의 시간을 %s로 변경해드릴까요? ⚠️ 이후 일정 시간이 자동으로 조정됩니다.",
+            placeName, newStartTime);
+    }
+
+    /**
+     * Confirm: 장소 시간 실제 수정
+     */
+    public String confirmUpdatePlaceTime(Long planId, String placeName, String newStartTime) {
+        log.info("🛑 [PlaceManagementTools] 실제 시간 수정: planId={}, place={}, newTime={}", planId, placeName, newStartTime);
+
+        try {
+            modifyAction.updatePlaceTime(planId, placeName, newStartTime);
+
+            // 스냅샷 저장 (수정 후)
+            Plan plan = planDao.selectPlanById(planId);
+            List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
+            List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
+            PlanSnapshot afterSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+
+            return String.format(
+                "{\"success\": true, \"message\": \"'%s'의 시간이 %s로 변경되었습니다. 버전: %d\", \"updatedPlace\": \"%s\", \"newStartTime\": \"%s\", \"versionNo\": %d}",
+                placeName, newStartTime, afterSnapshot.getVersionNo(), placeName, newStartTime, afterSnapshot.getVersionNo());
+        } catch (IllegalArgumentException e) {
+            return String.format("{\"success\": false, \"message\": \"'%s'을(를) 찾을 수 없습니다.\"}", placeName);
+        } catch (Exception e) {
+            log.error("❌ 장소 시간 수정 실패", e);
+            return String.format("{\"success\": false, \"message\": \"시간 수정 중 오류 발생: %s\"}", e.getMessage());
         }
     }
 }
