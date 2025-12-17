@@ -48,16 +48,16 @@ public class SearchPlaceTools {
         try {
             float[] vector = getQuestionVector(searchQuery);
             String strVector = Arrays.toString(vector).replace(" ", "");
-            
+
             String sql = """
-                    SELECT id, content_id, title, address, tel, 
-                           first_image, first_image2, lat, lng, 
+                    SELECT id, content_id, title, address, tel,
+                           first_image, first_image2, lat, lng,
                            category_code, description, tags, detail_info, normalized_category
                     FROM travel_places
                     ORDER BY embedding <=> ?::vector
                     LIMIT 10
                     """;
-            
+
             List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, strVector);
             log.info("✅ DB 벡터 검색 완료: {} 개", results.size());
             return results;

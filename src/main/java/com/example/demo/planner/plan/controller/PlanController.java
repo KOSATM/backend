@@ -218,7 +218,7 @@ public class PlanController {
     } catch (Exception e) {
       return (ResponseEntity<PlanPlace>) ResponseEntity.internalServerError();
     }
-    
+
   }
 
   // 여행 장소 삭제 - DELETE /plans/places/{placeId}

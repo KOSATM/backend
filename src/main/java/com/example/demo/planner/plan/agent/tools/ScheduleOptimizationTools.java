@@ -36,7 +36,7 @@ public class ScheduleOptimizationTools {
 
     @Tool(description = "같은 날짜 내에서 두 장소의 순서를 교환합니다 (dayIndex는 1부터 시작)")
     public String swapPlacesInSameDay(Long planId, Integer dayIndex, Integer index1, Integer index2) {
-        log.info("🔧 [Tool] swapPlacesInSameDay: planId={}, day={}, idx1={}, idx2={}", 
+        log.info("🔧 [Tool] swapPlacesInSameDay: planId={}, day={}, idx1={}, idx2={}",
                 planId, dayIndex, index1, index2);
         try {
             swapAction.swapPlacesInSameDay(planId, dayIndex, index1, index2);
@@ -53,7 +53,7 @@ public class ScheduleOptimizationTools {
 
     @Tool(description = "서로 다른 날짜 간 장소를 교환합니다 (dayIndex는 1부터 시작)")
     public String swapPlacesBetweenDifferentDays(Long planId, Integer day1, Integer index1, Integer day2, Integer index2) {
-        log.info("🔧 [Tool] swapPlacesBetweenDifferentDays: planId={}, day1={}, idx1={}, day2={}, idx2={}", 
+        log.info("🔧 [Tool] swapPlacesBetweenDifferentDays: planId={}, day1={}, idx1={}, day2={}, idx2={}",
                 planId, day1, index1, day2, index2);
         try {
             swapAction.swapPlacesBetweenDays(planId, day1, index1, day2, index2);
@@ -61,7 +61,7 @@ public class ScheduleOptimizationTools {
             // 스냅샷 저장
             saveSnapshot(planId);
 
-            return String.format("✅ %d일차의 %d번째 장소와 %d일차의 %d번째 장소를 교환했습니다.", 
+            return String.format("✅ %d일차의 %d번째 장소와 %d일차의 %d번째 장소를 교환했습니다.",
                     day1, index1, day2, index2);
         } catch (Exception e) {
             log.error("❌ 날짜 간 장소 교환 실패", e);

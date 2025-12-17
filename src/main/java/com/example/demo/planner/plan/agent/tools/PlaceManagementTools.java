@@ -38,7 +38,7 @@ public class PlaceManagementTools {
 
     @Tool(description = "네이버에서 장소를 검색하고 첫 번째 결과를 일정에 자동으로 추가합니다")
     public String searchAndAddPlace(Long planId, String placeName, Integer dayIndex, String startTime) {
-        log.info("🔧 [Tool] searchAndAddPlace: planId={}, place={}, day={}, time={}", 
+        log.info("🔧 [Tool] searchAndAddPlace: planId={}, place={}, day={}, time={}",
                 planId, placeName, dayIndex, startTime);
         try {
             // PlanAddAction.addPlace는 이미 네이버 검색 + 첫 번째 결과 추가를 수행함
@@ -56,7 +56,7 @@ public class PlaceManagementTools {
 
     @Tool(description = "이미 선택된 장소를 일정에 추가합니다 (검색 없이 바로 추가)")
     public String confirmAddPlace(Long planId, String placeName, Integer dayIndex, String startTime) {
-        log.info("🔧 [Tool] confirmAddPlace: planId={}, place={}, day={}, time={}", 
+        log.info("🔧 [Tool] confirmAddPlace: planId={}, place={}, day={}, time={}",
                 planId, placeName, dayIndex, startTime);
         try {
             // 검색 없이 바로 추가 (이미 사용자가 선택한 장소)

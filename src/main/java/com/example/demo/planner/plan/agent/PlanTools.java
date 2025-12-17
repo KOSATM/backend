@@ -89,9 +89,9 @@ public class PlanTools {
     @Tool(description = "장소를 검색하여 여행 일정에 추가합니다 (네이버 검색 후 첫 번째 결과 자동 추가)")
     public String addPlace(int dayIndex, String placeName, String startTime) {
         Long planId = getPlanId();
-        log.info("🔧 [Tool] addPlace -> PlaceManagementAgent 위임: planId={}, day={}, place={}, time={}", 
+        log.info("🔧 [Tool] addPlace -> PlaceManagementAgent 위임: planId={}, day={}, place={}, time={}",
                 planId, dayIndex, placeName, startTime);
-        
+
         // PlaceManagementAgent로 작업 위임 (하위 Tool-Calling 수행)
         return placeManagementAgent.addPlace(planId, placeName, dayIndex, startTime);
     }
@@ -100,7 +100,7 @@ public class PlanTools {
     public String deletePlace(String placeName) {
         Long planId = getPlanId();
         log.info("🔧 [Tool] deletePlace -> PlaceManagementAgent 위임: planId={}, placeName={}", planId, placeName);
-        
+
         // PlaceManagementAgent로 작업 위임 (하위 Tool-Calling 수행)
         return placeManagementAgent.deletePlace(planId, placeName);
     }
@@ -108,9 +108,9 @@ public class PlanTools {
     @Tool(description = "같은 날짜 내에서 두 장소의 순서를 교환합니다 (dayIndex는 1부터 시작)")
     public String swapPlaces(int dayIndex, int index1, int index2) {
         Long planId = getPlanId();
-        log.info("🔧 [Tool] swapPlaces -> ScheduleOptimizationAgent 위임: planId={}, dayIndex={}, index1={}, index2={}", 
+        log.info("🔧 [Tool] swapPlaces -> ScheduleOptimizationAgent 위임: planId={}, dayIndex={}, index1={}, index2={}",
                 planId, dayIndex, index1, index2);
-        
+
         // ScheduleOptimizationAgent로 작업 위임 (하위 Tool-Calling 수행)
         return scheduleOptimizationAgent.swapPlaces(planId, dayIndex, index1, index2);
     }
@@ -118,9 +118,9 @@ public class PlanTools {
     @Tool(description = "서로 다른 날짜 간 장소를 교환합니다 (dayIndex는 1부터 시작)")
     public String swapPlacesBetweenDays(int day1, int index1, int day2, int index2) {
         Long planId = getPlanId();
-        log.info("🔧 [Tool] swapPlacesBetweenDays -> ScheduleOptimizationAgent 위임: planId={}, day1={}, index1={}, day2={}, index2={}", 
+        log.info("🔧 [Tool] swapPlacesBetweenDays -> ScheduleOptimizationAgent 위임: planId={}, day1={}, index1={}, day2={}, index2={}",
                 planId, day1, index1, day2, index2);
-        
+
         // ScheduleOptimizationAgent로 작업 위임 (하위 Tool-Calling 수행)
         return scheduleOptimizationAgent.swapPlacesBetweenDays(planId, day1, index1, day2, index2);
     }
@@ -128,9 +128,9 @@ public class PlanTools {
     @Tool(description = "기존 장소를 다른 장소로 교체합니다 (첫 번째 검색 결과 자동 선택)")
     public String replacePlace(String oldPlaceName, String newPlaceName) {
         Long planId = getPlanId();
-        log.info("🔧 [Tool] replacePlace -> PlaceManagementAgent 위임: planId={}, old={}, new={}", 
+        log.info("🔧 [Tool] replacePlace -> PlaceManagementAgent 위임: planId={}, old={}, new={}",
                 planId, oldPlaceName, newPlaceName);
-        
+
         // PlaceManagementAgent로 작업 위임 (하위 Tool-Calling 수행)
         return placeManagementAgent.replacePlace(planId, oldPlaceName, newPlaceName);
     }
@@ -138,7 +138,7 @@ public class PlanTools {
     @Tool(description = "네이버에서 장소를 검색하여 여러 후보를 보여줍니다")
     public String searchPlace(String searchQuery) {
         log.info("🔧 [Tool] searchPlace -> SearchPlaceAgent 위임: query={}", searchQuery);
-        
+
         // SearchPlaceAgent로 작업 위임 (하위 Tool-Calling 수행)
         return searchPlaceAgent.searchPlaces(searchQuery);
     }
@@ -254,7 +254,7 @@ public class PlanTools {
     public String extendPlan(int extraDays) {
         Long planId = getPlanId();
         log.info("🔧 [Tool] extendPlan -> ScheduleOptimizationAgent 위임: planId={}, extraDays={}", planId, extraDays);
-        
+
         // ScheduleOptimizationAgent로 작업 위임 (하위 Tool-Calling 수행)
         return scheduleOptimizationAgent.extendPlan(planId, extraDays);
     }
