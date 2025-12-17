@@ -1,7 +1,7 @@
 package com.example.demo.planner.plan.controller;
 
 import java.util.List;
-
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -90,9 +90,19 @@ public class PlanController {
 
   // 사용자의 활성화된 여행 계획 상세 조회 (Days + Places 포함) - GET /plans/{userId}/active/detail
   @GetMapping("/{userId}/active/detail")
-  public ResponseEntity<PlanDetail> getActivePlanDetail(@PathVariable("userId") Long userId) {
-    PlanDetail planDetail = planFacade.getLatestPlanDetail(userId);
-    return ResponseEntity.ok(planDetail);
+  public ResponseEntity<?> getActivePlanDetail(@PathVariable("userId") Long userId) {
+    try {
+      PlanDetail planDetail = planFacade.getLatestPlanDetail(userId);
+      if (planDetail == null) {
+        return ResponseEntity.status(404)
+                .body(Map.of("success", false, "error", "활성화된 여행 일정이 없습니다"));
+      }
+      return ResponseEntity.ok(planDetail);
+    } catch (Exception e) {
+      log.error("[PlanController] getActivePlanDetail 오류: userId={}, error={}", userId, e.getMessage(), e);
+      return ResponseEntity.status(500)
+              .body(Map.of("success", false, "error", e.getMessage()));
+    }
   }
 
   // 사용자별 여행 계획 목록 조회 - GET /plans/user/{userId}

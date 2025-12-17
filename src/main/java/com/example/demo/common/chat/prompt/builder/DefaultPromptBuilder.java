@@ -46,10 +46,12 @@ public class DefaultPromptBuilder implements PromptBuilder {
             content = ctx.getUserMessage();
         }
 
-        // 2. PlanContext 요약 (Level 1: Light Snapshot)
+        // 2. PlanContext 상세 정보 (장소 이름 포함)
+        // ✅ 변경: toSummary() → toJson()
+        // LLM이 장소 이름을 알아야 "청수우동 삭제해줘" 같은 요청을 이해할 수 있음
         String planSummary = "";
         if (ctx.getPlanContext() != null && ctx.getPlanContext().hasActivePlan()) {
-            planSummary = "\n\n[현재 여행 일정 요약]\n" + ctx.getPlanContext().toSummary();
+            planSummary = "\n\n[현재 여행 일정 상세]\n" + ctx.getPlanContext().toJson();
         }
 
         // 3. Spring AI Prompt로 래핑

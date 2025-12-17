@@ -198,6 +198,13 @@
     WHERE id = #{id}
   </delete>
 
+  <!-- 활성 Plan (isEnded=false) 개수 조회 -->
+  <select id="countActivePlans" resultType="long">
+    SELECT COUNT(*) 
+    FROM plans
+    WHERE is_ended = false
+  </select>
+
   <select id="selectEndedPlansWithNoTitle" resultType="Plan">
         SELECT id, user_id, budget, start_date, end_date, created_at, updated_at, is_ended, title
         FROM plans
