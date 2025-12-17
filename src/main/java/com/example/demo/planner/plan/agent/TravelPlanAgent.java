@@ -96,19 +96,6 @@ public class TravelPlanAgent {
         log.info("🔧 일정 생성 요청: duration={}, style={}, location={}, pace={}",
                 duration, style, location, pace);
 
-        // ⚠️ 활성 Plan 존재 여부 확인
-        long activePlanCount = planDao.countActivePlans();
-        if (activePlanCount > 0) {
-            log.warn("⚠️ 활성 Plan이 존재합니다. 기존 Plan을 먼저 삭제해주세요.");
-            // 빈 계획 반환 (사용자에게 오류 메시지 전달용)
-            return new GeneratedTravelPlan(
-                    0,
-                    "오류",
-                    List.of(),
-                    LocalDate.now(),
-                    LocalDate.now());
-        }
-
         int safeDuration = Math.min(
                 duration != null && duration > 0 ? duration : DurationParser.parse(null),
                 7);
