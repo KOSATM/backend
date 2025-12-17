@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 장소 관리 도구 모음
  * - PlaceManagementAgent가 사용
- * 
+ *
  * <p><strong>WriteToolGuard 통합:</strong>
  * 모든 쓰기 tool은 실제 DB 작업 직전에 Guard를 통과해야 한다.
  * Guard가 막으면 → 확인 질문 반환 → 다음 턴에서 재실행
@@ -80,19 +80,19 @@ public class PlaceManagementTools {
         // 🚨 Guard 체크 (실행 관문)
         // TODO: chatMemory에서 isConfirmed 조회하여 Guard에 전달
         // 현재는 개념 증명을 위해 주석 처리
-        // 
+        //
         // GuardContext context = GuardContext.builder()
         //     .planId(planId)
         //     .isConfirmed(false) // TODO: chatMemory에서 확인 여부 조회
         //     .build();
-        // 
+        //
         // GuardResult result = writeToolGuard.check("deletePlaceFromPlan", context);
-        // 
+        //
         // if (!result.allowed()) {
         //     return result.question(); // 확인 질문 반환
         // }
-        
-        
+
+
 
     @Tool(description = "일정에서 장소를 삭제합니다")
     public String deletePlaceFromPlan(Long planId, String placeName) {

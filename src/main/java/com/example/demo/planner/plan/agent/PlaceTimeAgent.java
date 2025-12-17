@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 장소 시간 관리 전문 에이전트
  * - 장소의 방문 시간 변경
- * - SmartPlanAgent → PlaceTimeAgent → PlaceTimeTools
+ * - SmartPlanAgent (LLM call) → PlaceTimeAgent (순수 Java) → PlaceTimeTools
  */
 @Component
 @Slf4j
@@ -24,13 +24,12 @@ public class PlaceTimeAgent {
 
     /**
      * ✅ SmartPlanAgent에서 호출되는 @Tool 메서드
-     * 장소의 방문 시간 변경
+     * 장소의 방문 시간 변경 (직접 실행, LLM 호출 없음)
      */
     @Tool(description = "여행 일정에서 특정 장소의 방문 시간을 변경합니다")
     public String updatePlaceTime(Long planId, String placeName, String newTime) {
         log.info("⏰ [PlaceTimeAgent @Tool] 시간 변경: planId={}, place={}, time={}",
                 planId, placeName, newTime);
-
         return placeTimeTools.updatePlaceTime(planId, placeName, newTime);
     }
 }

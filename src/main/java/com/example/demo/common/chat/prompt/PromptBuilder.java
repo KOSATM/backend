@@ -9,7 +9,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 public interface PromptBuilder {
     /**
      * PromptContext를 기반으로 Prompt를 생성
-     * 
+     *
      * @param context 프롬프트 생성에 필요한 모든 재료
      * @return Spring AI Prompt 객체
      */

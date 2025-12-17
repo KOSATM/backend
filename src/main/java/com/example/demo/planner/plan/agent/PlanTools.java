@@ -526,6 +526,14 @@ public class PlanTools {
                 return "여행 기간을 지정해주세요.";
             }
 
+            // TODO: TravelPlanAgent now uses ChatClient pattern - refactor this
+            // String result = travelPlanAgent.createSeoulTravelPlanStructured(
+            //         duration, style, location, pace, startDateText, userId);
+            // return result;
+            
+            return "⚠️ createSeoulTravelPlan은 이제 SmartPlanAgent를 통해 호출되어야 합니다.";
+
+            /* LEGACY CODE - 리팩토링 필요
             GeneratedTravelPlan plan = travelPlanAgent.createSeoulTravelPlanStructured(
                     duration, style, location, pace, startDateText);
             if (plan.days().isEmpty()) {
@@ -539,6 +547,7 @@ public class PlanTools {
             success = true;
             // sendAgentEvent("Seoul Planner", "complete", "서울 여행 일정 생성 완료");
             return render(plan);
+            */
 
         } catch (Exception e) {
             log.error("❌ 서울 여행 일정 생성 실패", e);

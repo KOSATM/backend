@@ -102,8 +102,15 @@ public class ChatController {
             );
         } catch (Exception e) {
             log.error("Error processing chat request", e);
+            
+            // 사용자 친화적인 에러 메시지 생성
+            String userMessage = "죄송합니다. 요청을 처리하는 중 문제가 발생했습니다.";
+            if (e.getMessage() != null && !e.getMessage().contains("Unresolved compilation")) {
+                userMessage += " (" + e.getMessage() + ")";
+            }
+            
             return ResponseEntity.ok(
-                TravelChatSendResponse.error(e.getMessage())
+                TravelChatSendResponse.error(userMessage)
             );
         }
     }

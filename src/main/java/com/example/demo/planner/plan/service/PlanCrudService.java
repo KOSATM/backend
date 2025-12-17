@@ -370,4 +370,58 @@ public class PlanCrudService {
         log.info("✅ Plan 삭제 완료: planId={}, {}개 Day, {}개 Place 삭제됨",
                 planId, days.size(), totalPlaces);
     }
+
+    // ========== TravelPlanAgent 지원 메서드 ==========
+
+    /**
+     * PlanDay 생성 (TravelPlanAgent용)
+     */
+    @Transactional
+    public PlanDay createPlanDay(Long planId, Integer dayIndex, LocalDate planDate) {
+        PlanDay day = PlanDay.builder()
+                .planId(planId)
+                .dayIndex(dayIndex)
+                .planDate(planDate)
+                .build();
+        planDayDao.insertPlanDay(day);
+        log.debug("PlanDay 생성: dayId={}, planId={}, dayIndex={}", day.getId(), planId, dayIndex);
+        return day;
+    }
+
+    /**
+     * PlanPlace 생성 (TravelPlanAgent용)
+     */
+    @Transactional
+    public PlanPlace createPlanPlace(
+            Long dayId,
+            String title,
+            String placeName,
+            String address,
+            Double lat,
+            Double lng,
+            OffsetDateTime startAt,
+            OffsetDateTime endAt,
+            String category,
+            String firstImage,
+            String firstImage2) {
+
+        PlanPlace place = PlanPlace.builder()
+                .dayId(dayId)
+                .title(title)
+                .placeName(placeName)
+                .address(address)
+                .lat(lat)
+                .lng(lng)
+                .startAt(startAt)
+                .endAt(endAt)
+                .normalizedCategory(category)
+                .firstImage(firstImage)
+                .firstImage2(firstImage2)
+                .expectedCost(new BigDecimal("10000"))
+                .build();
+
+        planPlaceDao.insertPlanPlace(place);
+        log.debug("PlanPlace 생성: placeId={}, dayId={}, placeName={}", place.getId(), dayId, placeName);
+        return place;
+    }
 }
