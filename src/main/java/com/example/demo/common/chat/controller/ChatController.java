@@ -19,7 +19,6 @@ import com.example.demo.common.chat.pipeline.DefaultChatPipeline;
 import com.example.demo.common.chat.pipeline.PipelineResult;
 import com.example.demo.common.chat.pipeline.UnifiedAgentResponse;
 import com.example.demo.planner.plan.agent.SmartPlanAgent;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

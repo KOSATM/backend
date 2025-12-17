@@ -1,7 +1,6 @@
 package com.example.demo.common.chat.dto;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 import lombok.Builder;
 import lombok.Data;
