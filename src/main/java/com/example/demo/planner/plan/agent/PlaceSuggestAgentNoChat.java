@@ -1,7 +1,6 @@
 package com.example.demo.planner.plan.agent;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -17,8 +16,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import com.example.demo.common.chat.intent.dto.IntentCommand;
-import com.example.demo.common.chat.pipeline.AiAgentResponse;
-import com.example.demo.common.global.agent.AiAgent;
 import com.example.demo.planner.plan.dto.entity.TravelPlaces;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
