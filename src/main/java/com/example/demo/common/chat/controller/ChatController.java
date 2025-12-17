@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.amazonaws.Response;
+import com.example.demo.common.chat.dto.ImagePlanAction;
 import com.example.demo.common.chat.dto.TravelChatSendRequest;
 import com.example.demo.common.chat.dto.TravelChatSendResponse;
 import com.example.demo.common.chat.intent.agent.IntentAnalysisAgent;
@@ -72,7 +74,7 @@ public class ChatController {
             return ResponseEntity.status(500).body("오류: " + e.getMessage() + "\n스택트레이스를 서버 로그에서 확인하세요.");
         }
     }
-
+    
     @GetMapping("/api/chat/intent/analyze")
     public String getMethodName() {
 
