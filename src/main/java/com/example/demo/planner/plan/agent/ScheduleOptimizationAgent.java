@@ -123,4 +123,14 @@ public class ScheduleOptimizationAgent {
         log.info("📅 [ScheduleOptimizationAgent @Tool] 확장 완료");
         return result;
     }
-}
+    /**
+     * ✅ SmartPlanAgent에서 호출되는 @Tool 메서드
+     * 두 날짜의 일정 전체 교환
+     */
+    @Tool(description = "두 날짜의 일정 전체를 교환합니다 (dayIndex는 1부터 시작)")
+    public String swapDays(Long planId, Integer day1, Integer day2) {
+        log.info("🔀 [ScheduleOptimizationAgent @Tool] 날짜 교환: planId={}, day1={}, day2={}",
+                planId, day1, day2);
+
+        return scheduleOptimizationTools.swapDays(planId, day1, day2);
+    }}

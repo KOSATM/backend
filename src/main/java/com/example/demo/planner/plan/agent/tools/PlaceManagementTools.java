@@ -106,6 +106,40 @@ public class PlaceManagementTools {
         }
     }
 
+    @Tool(description = "검색 결과에서 선택한 장소로 교체합니다")
+    public String replacePlaceWithSelection(Long planId, String oldPlaceName, String newPlaceName, Integer selectedIndex) {
+        log.info("🔧 [Tool] replacePlaceWithSelection: planId={}, old={}, new={}, index={}",
+                planId, oldPlaceName, newPlaceName, selectedIndex);
+        try {
+            String actualName = modifyAction.replacePlaceWithSelection(planId, oldPlaceName, newPlaceName, selectedIndex);
+
+            // 스냅샷 저장
+            saveSnapshot(planId);
+
+            return String.format("✅ '%s'를 '%s'로 변경했습니다.", oldPlaceName, actualName);
+        } catch (Exception e) {
+            log.error("❌ 장소 교체 실패", e);
+            return String.format("❌ 장소 교체 실패: %s", e.getMessage());
+        }
+    }
+
+    @Tool(description = "특정 위치에 장소를 삽입하고 이후 일정을 자동 조정합니다")
+    public String addPlaceAtPosition(Long planId, Integer dayIndex, Integer position, String placeName, Integer duration) {
+        log.info("🔧 [Tool] addPlaceAtPosition: planId={}, day={}, pos={}, place={}, duration={}",
+                planId, dayIndex, position, placeName, duration);
+        try {
+            String actualName = addAction.addPlaceAtPosition(planId, dayIndex, position, placeName, duration);
+
+            // 스냅샷 저장
+            saveSnapshot(planId);
+
+            return String.format("✅ %d일차 %d번째에 '%s'을(를) 추가했습니다.", dayIndex, position, actualName);
+        } catch (Exception e) {
+            log.error("❌ 장소 삽입 실패", e);
+            return String.format("❌ 장소 삽입 실패: %s", e.getMessage());
+        }
+    }
+
     private void saveSnapshot(Long planId) {
         try {
             Plan plan = planDao.selectPlanById(planId);
