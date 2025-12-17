@@ -188,7 +188,7 @@ public class PlaceManagementAgent {
     @Tool(description = "여행 일정에서 특정 위치의 장소를 삭제하기 전 사용자 확인을 구합니다 (예: Day 3의 2번째 일정)")
     public String deletePlaceByPositionGuard(Integer dayIndex, Integer position) {
         Long planId = com.example.demo.planner.plan.dto.context.PlanContextHolder.getPlanId();
-        log.info("🔐 [PlaceManagementAgent Guard] 위치 기반 삭제 확인: planId={}, day={}, pos={}", 
+        log.info("🔐 [PlaceManagementAgent Guard] 위치 기반 삭제 확인: planId={}, day={}, pos={}",
             planId, dayIndex, position);
 
         return placeManagementTools.deletePlaceByPositionGuard(planId, dayIndex, position);
@@ -200,7 +200,7 @@ public class PlaceManagementAgent {
      */
     public String confirmDeletePlaceByPosition(Integer dayIndex, Integer position) {
         Long planId = com.example.demo.planner.plan.dto.context.PlanContextHolder.getPlanId();
-        log.info("🛑 [PlaceManagementAgent Confirm] 위치 기반 실제 삭제: planId={}, day={}, pos={}", 
+        log.info("🛑 [PlaceManagementAgent Confirm] 위치 기반 실제 삭제: planId={}, day={}, pos={}",
             planId, dayIndex, position);
 
         return placeManagementTools.confirmDeletePlaceByPosition(planId, dayIndex, position);
@@ -221,5 +221,18 @@ public class PlaceManagementAgent {
                 planId, dayIndex, position, placeName, duration);
 
         return placeManagementTools.addPlaceAtPosition(planId, dayIndex, position, placeName, duration);
+    }
+
+    /**
+     * ✅ Confirm: 장소 시간 실제 수정 (NOT A @Tool - called by Java only)
+     * 사용자 확인 이후 실제 수정 수행
+     * ✨ planId는 PlanContextHolder에서만 읽음
+     */
+    public String confirmUpdatePlaceTime(String placeName, String newStartTime) {
+        Long planId = com.example.demo.planner.plan.dto.context.PlanContextHolder.getPlanId();
+        log.info("🛑 [PlaceManagementAgent Confirm] 장소 시간 실제 수정: planId={}, place={}, newTime={}",
+            planId, placeName, newStartTime);
+
+        return placeManagementTools.confirmUpdatePlaceTime(planId, placeName, newStartTime);
     }
 }
