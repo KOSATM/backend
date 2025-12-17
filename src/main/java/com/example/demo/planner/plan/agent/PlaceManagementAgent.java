@@ -35,20 +35,20 @@ public class PlaceManagementAgent {
      */
     @Tool(description = "여행 일정에 새로운 장소를 추가합니다 (자동으로 네이버에서 검색하여 추가)")
     public String addPlace(Long planId, String placeName, Integer dayIndex, String startTime) {
-        log.info("➕ [PlaceManagementAgent @Tool] 장소 추가: planId={}, place={}, day={}, time={}", 
+        log.info("➕ [PlaceManagementAgent @Tool] 장소 추가: planId={}, place={}, day={}, time={}",
                 planId, placeName, dayIndex, startTime);
 
         String systemPrompt = """
                 당신은 여행 일정 관리 전문가입니다.
                 장소 추가 작업을 수행합니다.
-                
+
                 ## 사용 가능한 도구:
                 1. searchAndAddPlace: 네이버에서 검색 후 첫 번째 결과 자동 추가
-                
+
                 ## 작업 절차:
                 1. searchAndAddPlace 도구로 장소 검색 및 추가
                 2. 결과를 사용자 친화적인 한국어로 설명
-                
+
                 ## 응답 형식:
                 - "✅ [장소명]을(를) [N일차] 일정에 추가했습니다."
                 - 실패 시: "❌ [사유]"
@@ -82,10 +82,10 @@ public class PlaceManagementAgent {
         String systemPrompt = """
                 당신은 여행 일정 관리 전문가입니다.
                 장소 삭제 작업을 수행합니다.
-                
+
                 ## 사용 가능한 도구:
                 1. deletePlaceFromPlan: 일정에서 장소 제거
-                
+
                 ## 응답 형식:
                 - "✅ [장소명]을(를) 일정에서 삭제했습니다."
                 - 실패 시: "❌ [장소명]을(를) 찾을 수 없습니다."
@@ -109,16 +109,16 @@ public class PlaceManagementAgent {
      */
     @Tool(description = "여행 일정의 기존 장소를 새로운 장소로 교체합니다")
     public String replacePlace(Long planId, String oldPlaceName, String newPlaceName) {
-        log.info("🔄 [PlaceManagementAgent @Tool] 장소 교체: planId={}, old={}, new={}", 
+        log.info("🔄 [PlaceManagementAgent @Tool] 장소 교체: planId={}, old={}, new={}",
                 planId, oldPlaceName, newPlaceName);
 
         String systemPrompt = """
                 당신은 여행 일정 관리 전문가입니다.
                 장소 교체 작업을 수행합니다.
-                
+
                 ## 사용 가능한 도구:
                 1. replacePlaceInPlan: 기존 장소를 새 장소로 교체
-                
+
                 ## 응답 형식:
                 - "✅ [기존장소]를 [새장소]로 변경했습니다."
                 - 실패 시: "❌ [사유]"

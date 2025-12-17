@@ -198,7 +198,7 @@ public class ReviewService {
     @Transactional
     public void selectStyle(Long reviewPostId, Long reviewStyleId) {
         log.info("리뷰 스타일 선택 업데이트 - reviewPostId: {}, reviewStyleId: {}", reviewPostId, reviewStyleId);
-        
+
         // DAO 호출하여 업데이트 수행
         reviewPostDao.updateReviewPostStyleIdById(reviewPostId, reviewStyleId);
     }

@@ -25,13 +25,13 @@ public class SmartPlanAgent implements AiAgent {
     private final ChatClient chatClient;
     private final PlanQueryService queryService;
     private final PlanCrudService crudService;
-    
+
     // 멀티에이전트: 모든 여행 관련 에이전트들
     private final TravelPlanAgent travelPlanAgent;
     private final SearchPlaceAgent searchPlaceAgent;
     private final PlaceManagementAgent placeManagementAgent;
     private final ScheduleOptimizationAgent scheduleOptimizationAgent;
-    
+
     private final Map<Long, List<String>> historyMap = new HashMap<>();
     private final ThreadLocal<Long> currentPlanId = new ThreadLocal<>();
 
@@ -58,26 +58,26 @@ public class SmartPlanAgent implements AiAgent {
         log.info("[SmartPlanAgent] User({}): {}", userId, userMsg);
 
         PlanContext ctx = loadContext(userId);
-        
+
         // ✅ Plan이 없는 경우: 일정 생성 요청인지 확인
         if (!ctx.hasActivePlan()) {
             log.info("[SmartPlanAgent] 활성 Plan 없음 → TravelPlanAgent로 일정 생성 시도");
-            
+
             // LLM으로 일정 생성 의도 확인 및 TravelPlanAgent 호출
             String response = chatClient.prompt()
                     .system("""
                             당신은 여행 일정 관리 전문가입니다.
                             사용자가 새로운 여행 일정 생성을 원하는지 확인하고, 필요한 정보를 수집합니다.
-                            
+
                             ## 사용 가능한 도구:
                             - createSeoulTravelPlanStructured: 서울 여행 일정 생성 (duration 필수)
-                            
+
                             ## 작업 절차:
                             1. 사용자 메시지에서 여행 기간, 스타일, 선호 지역 등 추출
                             2. 기간 정보가 없으면 사용자에게 질문
                             3. 기간 정보가 있으면 createSeoulTravelPlanStructured 도구 호출
                             4. 생성 결과를 자연스러운 한국어로 설명
-                            
+
                             ## 응답 형식:
                             - 정보 부족: "여행 기간은 며칠인가요? (예: 2박 3일, 3일)"
                             - 생성 완료: "✅ [N일] 여행 일정을 생성했습니다! [간단한 요약]"
@@ -87,7 +87,7 @@ public class SmartPlanAgent implements AiAgent {
                     .toolContext(Map.of("userId", userId))
                     .call()
                     .content();
-            
+
             log.info("[SmartPlanAgent] 일정 생성 응답: {}", response);
             return AiAgentResponse.of(response);
         }

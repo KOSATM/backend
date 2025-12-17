@@ -147,11 +147,11 @@ public ResponseEntity<TravelChatSendResponse> chat(@RequestBody TravelChatSendRe
      */
     private List<Map<String, Object>> extractImages(Object agentData) {
         List<Map<String, Object>> images = new ArrayList<>();
-        
-        log.info("🔍 extractImages() 호출 - agentData 타입: {}, 값: {}", 
+
+        log.info("🔍 extractImages() 호출 - agentData 타입: {}, 값: {}",
             agentData == null ? "null" : agentData.getClass().getSimpleName(),
             agentData);
-        
+
         if (agentData == null) {
             return images;
         }
@@ -161,21 +161,21 @@ public ResponseEntity<TravelChatSendResponse> chat(@RequestBody TravelChatSendRe
             log.info("✅ UnifiedAgentResponse 감지");
             UnifiedAgentResponse unified = (UnifiedAgentResponse) agentData;
             Object innerData = unified.getData();
-            
+
             log.info("📦 innerData 타입: {}", innerData == null ? "null" : innerData.getClass().getSimpleName());
-            
+
             if (innerData instanceof List) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> dataList = (List<Map<String, Object>>) innerData;
                 log.info("📋 List 크기: {}", dataList.size());
-                
+
                 for (Map<String, Object> place : dataList) {
                     String title = (String) place.get("title");
                     String image = (String) place.get("image");
                     String address = (String) place.get("address");
-                    
+
                     log.info("   → 장소: {}, 이미지: {}", title, image);
-                    
+
                     if (image != null && !image.isEmpty()) {
                         Map<String, Object> imageData = new java.util.LinkedHashMap<>();
                         imageData.put("title", title);
@@ -194,12 +194,12 @@ public ResponseEntity<TravelChatSendResponse> chat(@RequestBody TravelChatSendRe
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> dataList = (List<Map<String, Object>>) agentData;
                 log.info("📋 List 크기: {}", dataList.size());
-                
+
                 for (Map<String, Object> place : dataList) {
                     String title = (String) place.get("title");
                     String image = (String) place.get("image");
                     String address = (String) place.get("address");
-                    
+
                     if (image != null && !image.isEmpty()) {
                         Map<String, Object> imageData = new java.util.LinkedHashMap<>();
                         imageData.put("title", title);

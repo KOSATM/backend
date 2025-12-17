@@ -35,16 +35,16 @@ public class ScheduleOptimizationAgent {
      */
     @Tool(description = "같은 날짜 내에서 두 장소의 순서를 교환합니다")
     public String swapPlaces(Long planId, Integer dayIndex, Integer index1, Integer index2) {
-        log.info("🔀 [ScheduleOptimizationAgent @Tool] 장소 순서 교환: planId={}, day={}, idx1={}, idx2={}", 
+        log.info("🔀 [ScheduleOptimizationAgent @Tool] 장소 순서 교환: planId={}, day={}, idx1={}, idx2={}",
                 planId, dayIndex, index1, index2);
 
         String systemPrompt = """
                 당신은 여행 일정 최적화 전문가입니다.
                 같은 날짜 내에서 두 장소의 순서를 교환합니다.
-                
+
                 ## 사용 가능한 도구:
                 1. swapPlacesInSameDay: 같은 날 내 장소 순서 교환
-                
+
                 ## 응답 형식:
                 - "✅ [N일차]의 [X번째]와 [Y번째] 장소 순서를 교환했습니다."
                 """;
@@ -67,16 +67,16 @@ public class ScheduleOptimizationAgent {
      */
     @Tool(description = "서로 다른 날짜 간 장소를 교환합니다")
     public String swapPlacesBetweenDays(Long planId, Integer day1, Integer index1, Integer day2, Integer index2) {
-        log.info("🔀 [ScheduleOptimizationAgent @Tool] 날짜 간 교환: planId={}, day1={}, idx1={}, day2={}, idx2={}", 
+        log.info("🔀 [ScheduleOptimizationAgent @Tool] 날짜 간 교환: planId={}, day1={}, idx1={}, day2={}, idx2={}",
                 planId, day1, index1, day2, index2);
 
         String systemPrompt = """
                 당신은 여행 일정 최적화 전문가입니다.
                 서로 다른 날짜 간 장소를 교환합니다.
-                
+
                 ## 사용 가능한 도구:
                 1. swapPlacesBetweenDifferentDays: 다른 날짜 간 장소 교환
-                
+
                 ## 응답 형식:
                 - "✅ [N일차]의 [X번째] 장소와 [M일차]의 [Y번째] 장소를 교환했습니다."
                 """;
@@ -104,10 +104,10 @@ public class ScheduleOptimizationAgent {
         String systemPrompt = """
                 당신은 여행 일정 최적화 전문가입니다.
                 여행 기간을 연장합니다.
-                
+
                 ## 사용 가능한 도구:
                 1. extendTravelPlan: 여행 일수 추가
-                
+
                 ## 응답 형식:
                 - "✅ 여행 기간을 [N일] 연장했습니다. 현재 [M일] 여행입니다."
                 """;
