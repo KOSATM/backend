@@ -22,7 +22,13 @@ public class PlanViewTools {
 
     private final PlanToolSupport support;
 
-    @Tool(description = "현재 여행 일정 전체를 조회합니다")
+    @Tool(description = """
+        현재 여행 일정 전체를 조회합니다.
+        
+        사용 예:
+        - 전체 일정 알려줘
+        - 내 여행일정에 대해서 알려줘
+    """)
     public String viewPlan() {
         Long planId = support.getPlanId();
         log.info("🔧 [Tool] viewPlan: planId={}", planId);
@@ -32,7 +38,7 @@ public class PlanViewTools {
             List<PlanDay> days = support.loadDays(planId);
             Map<Long, List<PlanPlace>> placesByDayId = support.loadPlacesByDayId(days);
 
-            return support.renderPlan(plan, days, placesByDayId);
+            return support.renderPlan(plan, days, placesByDayId)+" 일정에 대해 간략한 설명을 포함하여 친절하게 응답해주세요.";
 
         } catch (Exception e) {
             log.error("일정 조회 실패", e);

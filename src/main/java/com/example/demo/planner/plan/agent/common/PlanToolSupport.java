@@ -55,6 +55,7 @@ public class PlanToolSupport {
     }
     
     
+    // 스냅샷 전체 삭제
     public void deleteAllSnapshot(Long userId) throws Exception {
         planSnapshotService.deletePlanSnapshotsByUserId(userId);
     }
@@ -73,7 +74,7 @@ public class PlanToolSupport {
         return planDayDao.selectPlanDaysByPlanId(planId);
     }
 
-    // ✅ 추가: 특정 일차 조회
+    // 특정 일차 조회
     public PlanDay loadDayByIndex(Long planId, Integer dayIndex) {
         PlanDay day = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndex);
         if (day == null) {
@@ -92,7 +93,7 @@ public class PlanToolSupport {
         return map;
     }
 
-    // ✅ 추가: 특정 dayId로 Places 조회 (오버로드)
+    // 특정 dayId로 Places 조회 (오버로드)
     public List<PlanPlace> loadPlacesByDayId(Long dayId) {
         return planPlaceDao.selectPlanPlacesByPlanDayId(dayId);
     }
@@ -125,9 +126,9 @@ public class PlanToolSupport {
             for (PlanPlace place : places) {
                 sb.append("• ");
 
-                if (place.getStartAt() != null) {
-                    sb.append(place.getStartAt().toLocalTime()).append(" ");
-                }
+                // if (place.getStartAt() != null) {
+                //     sb.append(place.getStartAt().toLocalTime()).append(" ");
+                // }
 
                 sb.append(place.getTitle()).append("\n");
 

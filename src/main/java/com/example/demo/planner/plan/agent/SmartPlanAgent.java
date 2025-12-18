@@ -162,17 +162,19 @@ public class SmartPlanAgent{
                 - swapDays: 날짜 전체 교환
                 - addPlaceAtPosition: 특정 위치에 삽입
                 - extendPlan: 여행 기간 연장
-                - searchPlace: 네이버 검색
                 - replacePlaceWithSelection: 검색 결과로 교체
                 - rollBack: 이전 버전으로 복구
                 - rollBackToSpecific: 특정 버전으로 복구
                 - deletePlan: 전체 일정 삭제
+                - googleSearch: 인터넷을 통한 장소 설명
 
                 [중요 규칙]
                 - dayIndex는 반드시 1부터 시작합니다 (0 사용 금지)
                 - 여행 지역은 서울로 한정합니다
                 - 한 번의 응답에서는 상태를 변경하는 Tool을 최대 한 개만 호출하세요
                 - Tool 실행 후에는 변경된 내용과 버전 번호를 사용자에게 설명하세요
+                - googleSearch로 검색하기 전 해당 장소가 맞는지 사용자에게 한번 더 물어봐주세요.
+                - 수정, 삭제, 버전을 되돌리는 작업은 반드시 사용자에게 한번 더 물어봐주세요.
 
                 [전체 일정 삭제 주의]
                 - "전체 삭제", "일정 삭제", "다 지워줘" 요청 시
@@ -184,6 +186,7 @@ public class SmartPlanAgent{
                 - 간단한 수정 → Basic Tools
                 - 복잡한 작업 → Advanced Tools
                 - 새로운 여행 계획 → createSeoulTravelPlan
+                - 이외에는 일반적인 대화로 응답해주세요.
                         """;
     }
 }

@@ -12,10 +12,11 @@ import java.util.Map;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
-import com.example.demo.common.naver.dto.LocalItem;
 import com.example.demo.planner.plan.agent.common.PlanToolSupport;
 import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dao.PlanDayDao;
@@ -32,6 +33,8 @@ import com.example.demo.planner.plan.service.action.PlanAddAction;
 import com.example.demo.planner.plan.service.action.PlanDeleteAction;
 import com.example.demo.planner.plan.service.action.PlanModifyAction;
 import com.example.demo.planner.plan.service.action.PlanSwapAction;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +55,14 @@ public class PlanAdvancedTools {
     private final PlanDao planDao;
     private final PlanDayDao planDayDao;
     private final PlanPlaceDao planPlaceDao;
+    private ObjectMapper objectMapper = new ObjectMapper();
+
+    @Value("${google.search.endpoint}")
+    private String endpoint;
+    @Value("${google.search.apiKey}")
+    private String apiKey;
+    @Value("${google.search.engineId}")
+    private String engineId;
 
     DateTimeFormatter formatter1 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -68,16 +79,18 @@ public class PlanAdvancedTools {
             swapAction.swapPlacesInSameDay(planId, dayIndex, index1, index2);
             Integer version = support.saveSnapshot(planId);
 
-            return String.format("✅ %d일차의 %d번째와 %d번째 장소 순서를 교환했습니다. 버전: %d",
+            return String.format("%d일차의 %d번째와 %d번째 장소 순서를 교환했습니다. 버전: %d",
                     dayIndex, index1, index2, version);
         } catch (Exception e) {
             log.error("장소 순서 교환 실패", e);
-            return String.format("❌ 장소 순서 교환 중 오류 발생: %s", e.getMessage());
+            return String.format("장소 순서 교환 중 오류 발생: %s", e.getMessage());
         }
     }
 
     @Transactional
-    @Tool(description = "서로 다른 날짜 간 장소를 교환합니다 (dayIndex는 1부터 시작)")
+    @Tool(description = """
+                서로 다른 날짜 간 장소를 교환합니다 (dayIndex는 1부터 시작)
+            """)
     public String swapPlacesBetweenDays(int day1, int index1, int day2, int index2) {
         Long planId = support.getPlanId();
         log.info("🔧 [Tool] swapPlacesBetweenDays: planId={}, day1={}, index1={}, day2={}, index2={}",
@@ -96,7 +109,10 @@ public class PlanAdvancedTools {
     }
 
     @Transactional
-    @Tool(description = "두 날짜의 일정 전체를 교환합니다 (dayIndex는 1부터 시작)")
+    @Tool(description = """
+            두 날짜의 일정 전체를 교환합니다 (dayIndex는 1부터 시작)
+            - 교환하기 전 반드시 사용자에게 한번 더 물어봐주세요.
+                        """)
     public String swapDays(int day1, int day2) {
         Long planId = support.getPlanId();
         log.info("🔧 [Tool] swapDays: planId={}, day1={}, day2={}", planId, day1, day2);
@@ -124,11 +140,72 @@ public class PlanAdvancedTools {
             String result = addAction.addPlaceAtPosition(planId, dayIndex, position, placeName, duration);
             Integer version = support.saveSnapshot(planId);
 
-            return String.format("✅ %d일차 %d번째에 '%s'을(를) 추가했습니다. 버전: %d",
+            return String.format("%d일차 %d번째에 '%s'을(를) 추가했습니다. 버전: %d",
                     dayIndex, position, result, version);
         } catch (Exception e) {
             log.error("장소 삽입 실패", e);
             return String.format("❌ 장소 삽입 중 오류 발생: %s", e.getMessage());
+        }
+    }
+
+    @Tool(description = """
+             인터넷 검색으로 사용자가 언급한 특정 장소에 대해 사실 기반 설명을 제공합니다.
+
+                IMPORTANT:
+                - 이 Tool은 장소를 추천하지 않습니다.
+                - 후보를 비교하거나 선택하지 않습니다.
+                - 이미 언급된 장소가 어떤 곳인지 설명할 때만 사용하세요.
+
+                사용 예:
+                - "경복궁이 뭐야?"
+                - "이 일정에 있는 북촌 한옥마을은 어떤 곳이야?"
+                - "이 카페 어떤 곳인지 설명해줘"
+
+                주의:
+                - 명확한 여행지 이름이 없다면 반드시 사용자에게 다시 물어보세요.
+                - 사용자가 "어떤 곳인지 설명"을 명확히 요청한 경우에만 사용하세요.
+                - 장소 이름이 불완전하거나 여러 후보가 떠오르면 절대 호출하지 말고 다시 물어보세요.
+                - 일정 수정, 추천, 비교가 필요한 경우 이 Tool을 사용하지 마세요.
+            """)
+    public String googleSearch(@ToolParam(description = "장소명") String searchQuery) {
+        log.info(apiKey);
+        log.info(engineId);
+        log.info(searchQuery);
+        log.info("인터넷 검색 도구 호출됨");
+        try {
+            WebClient webClient = WebClient.builder().baseUrl(endpoint).defaultHeader("Accept", "application/json")
+                    .build();
+            String responseBody = webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .queryParam("key", apiKey)
+                            .queryParam("cx", engineId)
+                            .queryParam("q", searchQuery)
+                            .build())
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            log.info("응답본문: {}", responseBody);
+
+            JsonNode root = objectMapper.readTree(responseBody);
+            JsonNode items = root.path("items");
+
+            if (!items.isArray() || items.isEmpty()) {
+                return "검색 결과가 없습니다.";
+            }
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < Math.min(3, items.size()); i++) {
+                JsonNode item = items.get(i);
+                String title = item.path("title").asText();
+                String link = item.path("link").asText();
+                String snippet = item.path("snippet").asText();
+                sb.append(String.format("[%d] %s\n%s\n%s\n\n", i + 1, title, link, snippet));
+            }
+            log.info(sb.toString().trim() + ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+            return sb.toString().trim();
+
+        } catch (Exception e) {
+            return "인터넷 검색 중 오류 발생: " + e.getMessage();
         }
     }
 
@@ -142,7 +219,7 @@ public class PlanAdvancedTools {
             addAction.extendPlan(planId, extraDays);
             Integer version = support.saveSnapshot(planId);
 
-            return String.format("✅ 여행을 %d일 연장했습니다. 버전: %d", extraDays, version);
+            return String.format("여행을 %d일 연장했습니다. 버전: %d", extraDays, version);
         } catch (Exception e) {
             log.error("일정 확장 실패", e);
             return String.format("❌ 일정 확장 중 오류 발생: %s", e.getMessage());
@@ -150,38 +227,63 @@ public class PlanAdvancedTools {
     }
 
     // ========== 검색 관련 (2개) ==========
-    @Transactional
-    @Tool(description = "네이버에서 장소를 검색하여 여러 후보를 보여줍니다")
-    public String searchPlace(String searchQuery) {
-        log.info("🔧 [Tool] searchPlace: query={}", searchQuery);
+    // @Transactional
+    // @Tool(description = """
+    // 인터넷 검색으로 사용자가 언급한 특정 장소에 대해 사실 기반 설명을 제공합니다.
 
-        try {
-            var searchResults = addAction.searchNaverLocal(searchQuery);
-            if (searchResults.isEmpty()) {
-                return String.format("❌ '%s' 검색 결과가 없습니다.", searchQuery);
-            }
+    // IMPORTANT:
+    // - 이 Tool은 장소를 추천하지 않습니다.
+    // - 후보를 비교하거나 선택하지 않습니다.
+    // - 이미 언급된 장소가 어떤 곳인지 설명할 때만 사용하세요.
 
-            int count = Math.min(searchResults.size(), 5);
-            StringBuilder result = new StringBuilder();
-            result.append(String.format("🔍 '%s' 검색 결과 %d개:\n\n", searchQuery, count));
+    // 제공 정보:
+    // - 장소 이름
+    // - 주소
+    // - 카테고리(관광지, 음식점, 카페 등)
+    // - 장소의 성격을 이해하는 데 필요한 기본 정보
 
-            for (int i = 0; i < count; i++) {
-                LocalItem item = searchResults.get(i);
-                result.append(String.format("%d. **%s**\n", i + 1, cleanHtmlTags(item.getTitle())));
-                result.append(String.format("   - 카테고리: %s\n", item.getCategory()));
-                result.append(String.format("   - 주소: %s\n", item.getRoadAddress()));
-                if (i < count - 1)
-                    result.append("\n");
-            }
+    // 사용 예:
+    // - "경복궁이 뭐야?"
+    // - "이 일정에 있는 북촌 한옥마을은 어떤 곳이야?"
+    // - "이 카페 어떤 곳인지 설명해줘"
 
-            result.append("\n어떤 장소로 하시겠어요? (번호로 선택해주세요)");
-            return result.toString();
+    // 주의:
+    // - 명확한 여행지 이름이 없다면 반드시 사용자에게 다시 물어보세요.""")
+    // public String searchPlace(@ToolParam(description = "장소명") String searchQuery)
+    // {
+    // log.info("🔧 [Tool] searchPlace: query={}", searchQuery);
 
-        } catch (Exception e) {
-            log.error("장소 검색 실패", e);
-            return String.format("❌ 장소 검색 중 오류: %s", e.getMessage());
-        }
-    }
+    // try {
+    // List<LocalItem> searchResults = addAction.searchNaverLocal(searchQuery);
+    // if (searchResults.isEmpty()) {
+    // return String.format("❌ '%s' 검색 결과가 없습니다.", searchQuery);
+    // }
+
+    // int count = Math.min(searchResults.size(), 5);
+    // StringBuilder result = new StringBuilder();
+    // result.append(String.format("🔍 '%s' 검색 결과 %d개:\n\n", searchQuery, count));
+
+    // for (int i = 0; i < count; i++) {
+    // LocalItem item = searchResults.get(i);
+    // result.append(String.format("%d. **%s**\n", i + 1,
+    // cleanHtmlTags(item.getTitle())));
+    // result.append(String.format(" - 카테고리: %s\n", item.getCategory()));
+    // result.append(String.format(" - 주소: %s\n", item.getRoadAddress()));
+    // result.append(String.format(" - 설명: %s\n", item.getDescription()));
+    // log.info(item.getDescription()+"");
+    // if (i < count - 1)
+    // result.append("\n");
+    // }
+
+    // // result.append("\n어떤 장소로 하시겠어요? (번호로 선택해주세요)");
+    // // result.append("\n 해당 장소");
+    // return result.toString();
+
+    // } catch (Exception e) {
+    // log.error("장소 검색 실패", e);
+    // return String.format("❌ 장소 검색 중 오류: %s", e.getMessage());
+    // }
+    // }
 
     // @Transactional
     // @Tool(description = "검색 결과에서 사용자가 선택한 장소로 교체합니다")
@@ -208,7 +310,17 @@ public class PlanAdvancedTools {
     // ========== 버전 관리 (2개) ==========
 
     @Transactional
-    @Tool(description = "사용자가 가지고 있는 계획 스냅샷의 바로 이전 버전으로 돌아갑니다")
+    @Tool(description = """
+            사용자가 가지고 있는 계획 스냅샷의 바로 이전 버전으로 돌아갑니다.
+
+            사용 예:
+                - 이전 버전으로 되돌려줘
+                - 일정을 이전으로 돌려줘
+
+            주의:
+            - 사용자 요청 이전 버전으로 버전을 되돌려달라고 했을 때만 사용하세요.
+            - 되돌리기 전 사용자에게 한번 더 물어봐주세요.
+            """)
     public String rollBack(ToolContext toolContext) {
         try {
             Long userId = (Long) toolContext.getContext().get("userId");
@@ -230,8 +342,10 @@ public class PlanAdvancedTools {
             }
 
             List<PlanDay> existingDays = planDayDao.selectPlanDaysByPlanId(planId);
+            // log.info("daySize: {}", existingDays.size());
             for (PlanDay day : existingDays) {
                 planDayDao.deletePlanDay(day.getId());
+                // log.info("dayid: {}", day.getId());
             }
 
             // Plan 업데이트
@@ -306,9 +420,14 @@ public class PlanAdvancedTools {
         return "현재 일정은 " + currentVersionNo + "버전입니다.";
     }
 
-
     @Transactional
-    @Tool(description = "사용자가 지정한 계획의 버전으로 돌아갑니다. 버전 정보가 언급된 경우에만 사용합니다")
+    @Tool(description = """
+            사용자가 지정한 계획의 버전으로 돌아갑니다. 버전 정보가 언급된 경우에만 사용합니다.
+
+            주의:
+                - 사용자 요청 특정 버전으로 버전을 되돌려달라고 했을 때만 사용하세요.
+                - 되돌리기 전 사용자에게 한번 더 물어봐주세요.
+            """)
     public String rollBackToSpecific(
             @ToolParam(description = "돌아가고자 하는 버전 번호") Integer versionNo,
             ToolContext toolContext) {
