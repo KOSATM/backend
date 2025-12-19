@@ -70,8 +70,9 @@ public class PlanAdvancedTools {
     // ========== 순서 교환 (3개) ==========
     @Transactional
     @Tool(description = "같은 날짜 내에서 두 장소의 순서를 교환합니다 (dayIndex는 1부터 시작)")
-    public String swapPlaces(int dayIndex, int index1, int index2) {
-        Long planId = support.getPlanId();
+    public String swapPlaces(int dayIndex, int index1, int index2, ToolContext toolContext) {
+        String conversationId = getConversationId(toolContext);
+        Long planId = support.getPlanId(conversationId);
         log.info("🔧 [Tool] swapPlaces: planId={}, dayIndex={}, index1={}, index2={}",
                 planId, dayIndex, index1, index2);
 
@@ -91,8 +92,9 @@ public class PlanAdvancedTools {
     @Tool(description = """
                 서로 다른 날짜 간 장소를 교환합니다 (dayIndex는 1부터 시작)
             """)
-    public String swapPlacesBetweenDays(int day1, int index1, int day2, int index2) {
-        Long planId = support.getPlanId();
+    public String swapPlacesBetweenDays(int day1, int index1, int day2, int index2, ToolContext toolContext) {
+        String conversationId = getConversationId(toolContext);
+        Long planId = support.getPlanId(conversationId);
         log.info("🔧 [Tool] swapPlacesBetweenDays: planId={}, day1={}, index1={}, day2={}, index2={}",
                 planId, day1, index1, day2, index2);
 
@@ -113,8 +115,10 @@ public class PlanAdvancedTools {
             두 날짜의 일정 전체를 교환합니다 (dayIndex는 1부터 시작)
             - 교환하기 전 반드시 사용자에게 한번 더 물어봐주세요.
                         """)
-    public String swapDays(int day1, int day2) {
-        Long planId = support.getPlanId();
+    public String swapDays(int day1, int day2, ToolContext toolContext) {
+        String conversationId = getConversationId(toolContext);
+        Long planId = support.getPlanId(conversationId);
+
         log.info("🔧 [Tool] swapDays: planId={}, day1={}, day2={}", planId, day1, day2);
 
         try {
@@ -129,22 +133,109 @@ public class PlanAdvancedTools {
     }
 
     // ========== 고급 추가 (2개) ==========
+    // @Transactional
+    // @Tool(description = "특정 위치에 장소를 삽입하고 이후 일정을 자동으로 조정합니다. dayIndex는 1부터 시작")
+    // public String addPlaceAtPosition(int dayIndex, int position, String
+    // placeName, Integer duration) {
+    // Long planId = support.getPlanId();
+    // log.info("🔧 [Tool] addPlaceAtPosition: planId={}, dayIndex={}, position={},
+    // placeName={}, duration={}",
+    // planId, dayIndex, position, placeName, duration);
+
+    // try {
+    // String result = addAction.addPlaceAtPosition(planId, dayIndex, position,
+    // placeName, duration);
+    // Integer version = support.saveSnapshot(planId);
+
+    // return String.format("%d일차 %d번째에 '%s'을(를) 추가했습니다. 버전: %d",
+    // dayIndex, position, result, version);
+    // } catch (Exception e) {
+    // log.error("장소 삽입 실패", e);
+    // return String.format("❌ 장소 삽입 중 오류 발생: %s", e.getMessage());
+    // }
+    // }
+
     @Transactional
-    @Tool(description = "특정 위치에 장소를 삽입하고 이후 일정을 자동으로 조정합니다. dayIndex는 1부터 시작")
-    public String addPlaceAtPosition(int dayIndex, int position, String placeName, Integer duration) {
-        Long planId = support.getPlanId();
-        log.info("🔧 [Tool] addPlaceAtPosition: planId={}, dayIndex={}, position={}, placeName={}, duration={}",
-                planId, dayIndex, position, placeName, duration);
+    @Tool(description = """
+            추천된 장소 목록에서 사용자가 선택한 번호의 장소를
+            지정한 위치에 추가합니다.
+
+            사용 예:
+            - "5번을 3일차 1번째에 추가해줘"
+            - "추천 2번을 2일차 맨 앞에 넣어줘"
+
+            중요 규칙:
+            - 추천이 반드시 선행되어야 합니다.
+            - 날짜(dayIndex)와 위치(position)가 명확하지 않으면 절대 추측하지 말고 반드시 사용자에게 다시 물어보세요.
+            - 숫자는 추천 목록 번호(index)에만 사용하세요.
+            """)
+    public String addRecommendedPlace(
+            @ToolParam(description = "몇 일차인지 (1부터). 없으면 null", required = false) Integer dayIndex,
+
+            @ToolParam(description = "몇 번째 위치인지 (1부터). 없으면 null", required = false) Integer position,
+
+            @ToolParam(description = "추천 목록에서 선택한 번호 (1부터 시작)", required = true) Integer index,
+
+            // @ToolParam(description = "머무는 시간(분). 없으면 기본값 사용", required = false) Integer duration,
+
+            ToolContext toolContext) {
+
+        log.info("🧩 addRecommendedPlace 호출: dayIndex={}, position={}, index={}, duration={}",
+                dayIndex, position, index);
+
+        String conversationId = getConversationId(toolContext);
+        Long planId = support.getPlanId(conversationId);
+
+        // 1. 추천 목록 확인
+        List<Map<String, Object>> recs = support.getLastRecommendations(conversationId);
+        if (recs == null || recs.isEmpty()) {
+            return "먼저 여행지 추천을 받아주세요.";
+        }
+
+        // 2. index 검증
+        if (index == null || index < 1 || index > recs.size()) {
+            return String.format("추천 목록은 1번부터 %d번까지 있습니다.", recs.size());
+        }
+
+        // 3. 날짜 / 위치 없으면 무조건 되묻기
+        if (dayIndex == null || position == null) {
+            return """
+                    어느 날짜에, 몇 번째로 추가할까요?
+
+                    예시:
+                    - "5번을 3일차 1번째에 추가해줘"
+                    - "추천 2번을 2일차 맨 뒤에 넣어줘"
+                    """;
+        }
+
+        // 4. duration 기본값 처리 (안전)
+        // if (duration == null || duration <= 0) {
+        //     duration = 90;
+        // }
+
+        Map<String, Object> selected = recs.get(index - 1);
+        Long placeId = ((Long) selected.get("id")).longValue();
 
         try {
-            String result = addAction.addPlaceAtPosition(planId, dayIndex, position, placeName, duration);
+            String newPlaceTitle = addAction.addPlaceFromRecommendation(
+                    planId,
+                    dayIndex,
+                    position,
+                    placeId);
+
             Integer version = support.saveSnapshot(planId);
 
-            return String.format("%d일차 %d번째에 '%s'을(를) 추가했습니다. 버전: %d",
-                    dayIndex, position, result, version);
+            
+            return String.format(
+                    "%d일차 %d번째에 '%s'을(를) 추가했습니다. (버전 %d)",
+                    dayIndex,
+                    position,
+                    newPlaceTitle,
+                    version);
+
         } catch (Exception e) {
-            log.error("장소 삽입 실패", e);
-            return String.format("❌ 장소 삽입 중 오류 발생: %s", e.getMessage());
+            log.error("❌ 추천 장소 추가 실패", e);
+            return "추천 장소를 추가하는 중 오류가 발생했습니다: " + e.getMessage();
         }
     }
 
@@ -166,11 +257,9 @@ public class PlanAdvancedTools {
                 - 사용자가 "어떤 곳인지 설명"을 명확히 요청한 경우에만 사용하세요.
                 - 장소 이름이 불완전하거나 여러 후보가 떠오르면 절대 호출하지 말고 다시 물어보세요.
                 - 일정 수정, 추천, 비교가 필요한 경우 이 Tool을 사용하지 마세요.
+                - 인터넷 검색이란 단어가 있으면 절대 응답하지 마십시오.
             """)
     public String googleSearch(@ToolParam(description = "장소명") String searchQuery) {
-        log.info(apiKey);
-        log.info(engineId);
-        log.info(searchQuery);
         log.info("인터넷 검색 도구 호출됨");
         try {
             WebClient webClient = WebClient.builder().baseUrl(endpoint).defaultHeader("Accept", "application/json")
@@ -211,8 +300,9 @@ public class PlanAdvancedTools {
 
     @Transactional
     @Tool(description = "여행 기간을 늘립니다 (날짜 추가)")
-    public String extendPlan(int extraDays) {
-        Long planId = support.getPlanId();
+    public String extendPlan(int extraDays, ToolContext toolContext) {
+        String conversationId = getConversationId(toolContext);
+        Long planId = support.getPlanId(conversationId);
         log.info("🔧 [Tool] extendPlan: planId={}, extraDays={}", planId, extraDays);
 
         try {
@@ -332,7 +422,8 @@ public class PlanAdvancedTools {
                     .getPlanSnapshotByVersionNo(versionNo - 1, userId);
             PlanSnapshotContent snapshotContent = planSnapshotUtility.parseSnapshot(planSnapshot.getSnapshotJson());
 
-            Long planId = support.getPlanId();
+            String conversationId = getConversationId(toolContext);
+            Long planId = support.getPlanId(conversationId);
             Plan plan = planDao.selectPlanById(planId);
 
             // 기존 데이터 삭제
@@ -451,8 +542,9 @@ public class PlanAdvancedTools {
             PlanSnapshotContent snapshotContent = planSnapshotUtility.parseSnapshot(planSnapshot.getSnapshotJson());
 
             // ... rollBack()와 동일한 로직 ...
-
-            Integer newVersionNo = support.saveSnapshot(support.getPlanId());
+            String conversationId = getConversationId(toolContext);
+            Long planId = support.getPlanId(conversationId);
+            Integer newVersionNo = support.saveSnapshot(planId);
 
             return String.format("버전 %d로 돌아갔습니다. 새 버전: %d", versionNo, newVersionNo);
 
@@ -466,7 +558,15 @@ public class PlanAdvancedTools {
     @Transactional
     @Tool(description = "전체 일정을 완전히 삭제합니다. 중요: 사용자가 명확히 확인한 경우에만 호출하세요!")
     public String deletePlan(ToolContext toolContext) {
-        Long planId = support.getPlanId();
+        String conversationId = getConversationId(toolContext);
+        Long planId;
+        try {
+            planId = support.getPlanId(conversationId);
+        } catch (Exception e) {
+            log.warn("삭제 요청했으나 삭제할 일정이 없음 (conversationId={})", conversationId);
+            return "삭제할 여행 일정이 없습니다.";
+        }
+
         log.info("🔧 [Tool] deletePlan: planId={}", planId);
 
         try {
@@ -475,6 +575,8 @@ public class PlanAdvancedTools {
             Long userId = (Long) toolContext.getContext().get("userId");
             planSnapshotDao.deletePlanSnapshotsByUserId(userId);
 
+            support.clear(conversationId);
+            log.info("🧹 전체 일정 삭제로 conversation 상태 초기화");
             return "전체 일정이 완전히 삭제되었습니다. 새로운 여행 계획을 만들고 싶으시면 말씀해주세요!";
 
         } catch (Exception e) {
@@ -483,11 +585,21 @@ public class PlanAdvancedTools {
         }
     }
 
-    // ========== Helper ==========
+    // ===============================
+    // Helper
+    // ===============================
 
     private String cleanHtmlTags(String text) {
         if (text == null)
             return null;
         return text.replaceAll("<[^>]*>", "");
+    }
+
+    private String getConversationId(ToolContext toolContext) {
+        Object v = toolContext.getContext().get("conversationId");
+        if (v == null) {
+            throw new IllegalStateException("conversationId가 ToolContext에 없습니다.");
+        }
+        return String.valueOf(v);
     }
 }

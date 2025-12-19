@@ -19,14 +19,13 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class PlanCreateTools {
-    
-    private final TravelPlanAgent travelPlanAgent;  // ← 실제 생성 로직
+
+    private final TravelPlanAgent travelPlanAgent; // ← 실제 생성 로직
     private final TravelPlanSaveService travelPlanSaveService;
     private final PlanSnapshotService planSnapshotService;
 
     private final PlanToolSupport support;
-    
-    
+
     @Tool(name = "createSeoulTravelPlan", description = """
             서울 여행 일정을 자동으로 생성합니다.
             사용자가 "N박N일 계획 짜줘", "여행 일정 만들어줘"라고 요청할 때 사용하세요.
@@ -58,77 +57,85 @@ public class PlanCreateTools {
             @ToolParam(description = "일정 강도. '빡빡', '널널'. 없으면 null", required = false) String pace,
             @ToolParam(description = "사용자가 말한 여행 시작 시점의 원문 표현 그대로. 예: '3일뒤', '다음주 월요일'", required = false) String startDateText,
             ToolContext toolContext) {
-        
-        log.info("🗼 Tool 호출: createTravelPlan");
-        log.info("   파라미터: duration={}, style={}, location={}, pace={}", 
-                 duration, style, location, pace);
-        
+
+        log.info("🗼 [Tool] 서울 여행 일정 생성 시작");
+        log.info("   파라미터: duration={}, style={}, location={}, pace={}",
+                duration, style, location, pace);
+
         try {
             // 1. Validation
             if (duration == null || duration <= 0) {
                 return "여행 기간을 지정해주세요. 며칠 동안 여행하실 예정인가요?";
             }
-            
+
             Long userId = (Long) toolContext.getContext().get("userId");
-            
-            // 2. Agent 호출 (실제 생성 로직)
+            String conversationId = String.valueOf(
+                    toolContext.getContext().get("conversationId"));
+
+            // 2. 새 일정 생성 = conversation 상태 리셋
+            support.clear(conversationId);
+            log.info("🧹 [초기화] 새 일정 생성으로 conversation 상태 초기화");
+
+            // 3. Agent 호출
             GeneratedTravelPlan plan = travelPlanAgent.createSeoulTravelPlanStructured(
                     duration, style, location, pace, startDateText);
-            
+
             if (plan.days().isEmpty()) {
                 return "일정 생성에 실패했습니다. 다시 시도해주세요.";
             }
-            
-            log.info("   일정 생성 완료 - {} 일정", plan.days().size());
-            
-            // 3. DB 저장
-            Long planId = travelPlanSaveService.save(userId, plan, new ObjectMapper());
-            
-            // 4. 모든 스냅샷 제거
-            support.deleteAllSnapshot(userId);
 
-            // 5. 스냅샷 저장
+            log.info("일정 생성 완료 - {}일", plan.days().size());
+
+            // 4. DB 저장
+            Long planId = travelPlanSaveService.save(userId, plan, new ObjectMapper());
+
+            // 5. conversationId ↔ planId 연결 (가장 중요)
+            support.setPlanId(conversationId, planId);
+            log.info("conversationId={} → planId={} 연결 완료", conversationId, planId);
+
+            // 6. 스냅샷 정리 & 저장
+            support.deleteAllSnapshot(userId);
             Integer versionNo = support.saveSnapshot(planId);
-            
-            // 6. 렌더링
-            return renderPlan(plan,versionNo);
-            
+
+            // 7. 렌더링
+            return renderPlan(plan, versionNo);
+
         } catch (Exception e) {
-            log.error("❌ 서울 여행 일정 생성 실패", e);
+            log.error("서울 여행 일정 생성 실패", e);
             return "일정 생성 중 오류가 발생했습니다: " + e.getMessage();
         }
     }
-    
+
     /**
      * GeneratedTravelPlan 렌더링
      */
     private String renderPlan(GeneratedTravelPlan plan, Integer vesionNo) {
         StringBuilder sb = new StringBuilder();
-        sb.append("version: "+vesionNo);
+        sb.append("version: " + vesionNo);
         sb.append(" \n");
         sb.append("=== Seoul Travel Itinerary ===\n");
         sb.append("📅 ")
-          .append(plan.startDate())
-          .append(" ~ ")
-          .append(plan.endDate())
-          .append("\n");
+                .append(plan.startDate())
+                .append(" ~ ")
+                .append(plan.endDate())
+                .append("\n");
         sb.append("⏱️ Pace: ").append(plan.pace()).append("\n\n");
-        
+
         for (var day : plan.days()) {
             sb.append("Day ").append(day.dayIndex()).append("\n");
-            
+
             for (var p : day.places()) {
                 sb.append("  ")
-                //   .append(p.startAt().toLocalTime())
-                //   .append("-")
-                //   .append(p.endAt().toLocalTime())
-                //   .append(" ")
-                  .append(p.title())
-                  .append("\n");
+                        // .append(p.startAt().toLocalTime())
+                        // .append("-")
+                        // .append(p.endAt().toLocalTime())
+                        // .append(" ")
+                        .append(p.title())
+                        .append("\n");
             }
             sb.append("\n");
         }
-        
+
         return sb.toString();
     }
 }

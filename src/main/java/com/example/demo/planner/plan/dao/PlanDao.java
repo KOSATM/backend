@@ -77,4 +77,7 @@ public interface PlanDao {
 
     /* 변경한 vector */
     List<TravelPlaces> vectorSearch(@Param("embedding") float[] embedding, @Param("zoneIds") List<String> zoneIds, @Param("limit") int limit);
+
+    /* 여행지 정보 조회 */
+    TravelPlaces findByPlaceId(Long placeId);
 }

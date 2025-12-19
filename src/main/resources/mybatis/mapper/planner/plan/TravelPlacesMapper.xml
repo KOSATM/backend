@@ -71,7 +71,7 @@
 </resultMap>
 
   <!-- id로 조회 -->
-  <select id="findById" resultMap="TravelPlacesMap">
+  <select id="findByPlaceId" resultMap="TravelPlacesMap">
         SELECT *
         FROM travel_places
         WHERE id = #{id}

@@ -65,6 +65,7 @@
         )
     </foreach>
   </insert>
+  
 
   <update id="updatePlanPlace" parameterType="PlanPlace">
     UPDATE plan_places
@@ -82,7 +83,7 @@
     WHERE id = #{id}
   </update>
 
-  <delete id="deletePlacesByDayId" parameterType="long">
+  <delete id="deletePlanPlaceByDayId" parameterType="long">
     DELETE FROM plan_places
     WHERE day_id = #{dayId}
   </delete>
