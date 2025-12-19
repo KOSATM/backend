@@ -7,6 +7,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,17 +47,82 @@ public class PlanAddAction {
     /**
      * 특정 날짜에 장소 추가 (이름 기반)
      */
-    public String addPlace(Long planId, int dayIndex, String placeName, String startTime) {
+    public String addPlace(Long planId, Integer dayIndex, String placeName, Integer position) {
 
-        List<LocalItem> searchResults = searchNaverLocal(placeName);
-        if (searchResults.isEmpty()) {
-            throw new IllegalArgumentException("검색 결과가 없습니다: " + placeName);
+        // 1. Day 조회 (타입 안전)
+        List<PlanDayWithPlaces> days = queryService.queryAllDaysOptimized(planId);
+
+        PlanDayWithPlaces targetDay = days.stream()
+                .filter(d -> d.getDay().getDayIndex() == dayIndex)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(dayIndex + "일차를 찾을 수 없습니다."));
+
+        List<PlanPlace> existingPlaces = targetDay.getPlaces();
+        Long dayId = targetDay.getDay().getId();
+
+        // 2. position 보정 (맨 뒤 허용)
+        // int insertIndex = Math.max(0, Math.min(position - 1, existingPlaces.size()));
+
+        // 3. 장소 조회
+        TravelPlaces place = planDao.findExactByTitle(placeName);
+
+        // 3-1. exact 실패 → normalized like
+        if (place == null) {
+            List<TravelPlaces> candidates = planDao.findByTitleLikeNormalized(placeName);
+
+            if (candidates.size() == 1) {
+                place = candidates.get(0); // 1개면 자동 확정
+            } else if (candidates.size() > 1) {
+                return renderPlaceCandidates(candidates);
+            }
         }
 
-        LocalItem place = searchResults.get(0);
+        // 3-2. 그래도 없으면 일반 like
+        if (place == null) {
+            List<TravelPlaces> candidates = planDao.findByTitleLike(placeName);
 
-        // queryAllDaysOptimized(planId) 의 반환 타입이 프로젝트마다 다를 수 있어서,
-        // 여기서는 기존 코드처럼 stream/filter로 찾는 패턴은 유지합니다.
+            if (candidates.size() == 1) {
+                place = candidates.get(0);
+            } else if (candidates.size() > 1) {
+                return renderPlaceCandidates(candidates);
+            }
+        }
+
+        // 3-3. 최종 실패
+        if (place == null) {
+            return "❌ '" + placeName + "'에 해당하는 장소를 찾지 못했습니다.";
+        }
+
+
+        PlanPlace newPlace = PlanPlace.builder()
+                .dayId(targetDay.getDay().getId())
+                .title(place.getTitle())
+                .placeName(place.getTitle())
+                .address(place.getAddress())
+                .lat(place.getLat())
+                .lng(place.getLng())
+                .startAt(OffsetDateTime.now(ZoneId.of("Asia/Seoul")))
+                .endAt(OffsetDateTime.now(ZoneId.of("Asia/Seoul")).plusMinutes(1))
+                .expectedCost(BigDecimal.ZERO)
+                .normalizedCategory(place.getNormalizedCategory())
+                .firstImage(place.getFirstImage())
+                .firstImage2(place.getFirstImage2())
+                .build();
+        existingPlaces.add(position - 1, newPlace);
+
+        // 해당 일자 여행지 삭제
+        planPlaceDao.deletePlanPlaceByDayId(dayId);
+        planPlaceDao.insertPlanPlaceBatch(existingPlaces);
+
+        return place.getTitle();
+    }
+
+    /**
+     * 추천 결과(Map)를 해당 day에 삽입
+     */
+    @Transactional
+    public String addPlaceFromRecommendation(Long planId, int dayIndex, int position, Long placeId) {
+
         List<?> days = queryService.queryAllDaysOptimized(planId);
 
         Object targetDayObj = days.stream()
@@ -67,27 +133,43 @@ public class PlanAddAction {
 
         PlanDayWithPlaces targetDay = (PlanDayWithPlaces) targetDayObj;
 
-        LocalDate planDate = targetDay.getDay().getPlanDate();
+        // 해당 일자의 여행지
         List<PlanPlace> existingPlaces = targetDay.getPlaces();
 
-        OffsetDateTime startAt = resolveStartTime(planDate, existingPlaces, startTime);
-        OffsetDateTime endAt = startAt.plusHours(2);
+        Long dayId = targetDay.getDay().getId();
+
+        // OffsetDateTime insertStartTime = calculateInsertTime(planDate,
+        // existingPlaces, position);
+        // OffsetDateTime insertEndTime = insertStartTime.plusMinutes(durationMin);
+
+        TravelPlaces place = planDao.findByPlaceId(placeId);
+
+        if (place == null) {
+            throw new IllegalArgumentException("추천 장소를 찾을 수 없습니다.");
+        }
 
         PlanPlace newPlace = PlanPlace.builder()
                 .dayId(targetDay.getDay().getId())
-                .title(cleanHtmlTags(place.getTitle()))
-                .placeName(cleanHtmlTags(place.getTitle()))
-                .address(place.getRoadAddress())
-                .lat(convertNaverY(place.getMapy()))
-                .lng(convertNaverX(place.getMapx()))
-                .startAt(startAt)
-                .endAt(endAt)
+                .title(place.getTitle())
+                .placeName(place.getTitle())
+                .address(place.getAddress())
+                .lat(place.getLat())
+                .lng(place.getLng())
+                .startAt(OffsetDateTime.now(ZoneId.of("Asia/Seoul")))
+                .endAt(OffsetDateTime.now(ZoneId.of("Asia/Seoul")).plusMinutes(1))
                 .expectedCost(BigDecimal.ZERO)
+                .normalizedCategory(place.getNormalizedCategory())
+                .firstImage(place.getFirstImage())
+                .firstImage2(place.getFirstImage2())
                 .build();
 
-        placeService.createPlace(newPlace);
+        existingPlaces.add(position - 1, newPlace);
 
-        return String.format("%s (%s~)", cleanHtmlTags(place.getTitle()), startAt.toLocalTime());
+        // 해당 일자 여행지 삭제
+        planPlaceDao.deletePlanPlaceByDayId(dayId);
+        planPlaceDao.insertPlanPlaceBatch(existingPlaces);
+
+        return place.getTitle();
     }
 
     /**
@@ -138,83 +220,6 @@ public class PlanAddAction {
         shiftLaterPlaces(existingPlaces, position, durationMin);
 
         return String.format("%s (소요시간: %d분)", cleanHtmlTags(place.getTitle()), durationMin);
-    }
-
-    /**
-     * 추천 결과(Map)를 해당 day에 삽입
-     */
-    @Transactional
-    public String addPlaceFromRecommendation(
-            Long planId,
-            int dayIndex,
-            int position,
-            Long placeId
-            ) {
-
-
-        log.info("1");
-        List<?> days = queryService.queryAllDaysOptimized(planId);
-
-        Object targetDayObj = days.stream()
-                .filter(d -> ((PlanDayWithPlaces) d)
-                        .getDay().getDayIndex() == dayIndex)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(dayIndex + "일차를 찾을 수 없습니다."));
-
-        PlanDayWithPlaces targetDay = (PlanDayWithPlaces) targetDayObj;
-
-        // LocalDate planDate = targetDay.getDay().getPlanDate();
-
-        //해당 일자의 여행지
-        List<PlanPlace> existingPlaces = targetDay.getPlaces();
-        log.info("2");
-        // System.err.println(existingPlaces.toString());
-        // System.err.println(targetDay.getDay().getId());
-        
-        //해당 일자 여행지 삭제
-        Long dayId = targetDay.getDay().getId();
-        planPlaceDao.deletePlanPlaceByDayId(dayId);
-        log.info("3");
-        
-        // int durationMin = duration != null ? duration : 120;
-
-
-        // OffsetDateTime insertStartTime = calculateInsertTime(planDate, existingPlaces, position);
-        // OffsetDateTime insertEndTime = insertStartTime.plusMinutes(durationMin);
-
-        TravelPlaces place = planDao.findByPlaceId(placeId);
-
-        if (place == null) {
-            throw new IllegalArgumentException("추천 장소를 찾을 수 없습니다.");
-        }
-
-
-        PlanPlace newPlace = PlanPlace.builder()
-                .dayId(targetDay.getDay().getId())
-                .title(place.getTitle())
-                .placeName(place.getTitle())
-                .address(place.getAddress())
-                .lat(place.getLat())
-                .lng(place.getLng())
-                .startAt(OffsetDateTime.now(ZoneId.of("Asia/Seoul")))
-                .endAt(OffsetDateTime.now(ZoneId.of("Asia/Seoul")).plusMinutes(1))
-                .expectedCost(BigDecimal.ZERO)
-                .normalizedCategory(place.getNormalizedCategory())
-                .firstImage(place.getFirstImage())
-                .firstImage2(place.getFirstImage2())
-                .build();
-
-        // placeService.createPlace(newPlace);
-    
-        existingPlaces.add(position-1, newPlace);
-        planPlaceDao.insertPlanPlaceBatch(existingPlaces);
-        log.info("4");
-
-        // if(true)
-        //     throw new RuntimeException();
-        // shiftLaterPlaces(existingPlaces, position, durationMin);
-
-        return place.getTitle();
     }
 
     /**
@@ -366,8 +371,21 @@ public class PlanAddAction {
                 name.contains("N서울") || name.contains("롯데월드") || name.contains("에버랜드");
     }
 
-    private String safeString(Object v) {
-        return v == null ? null : String.valueOf(v);
+    private String renderPlaceCandidates(List<TravelPlaces> candidates) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("여러 장소가 검색되었습니다. 어떤 장소를 추가할까요?\n\n");
+
+        for (int i = 0; i < Math.min(5, candidates.size()); i++) {
+            TravelPlaces p = candidates.get(i);
+            sb.append(String.format(
+                    "%d. %s (%s)\n",
+                    i + 1,
+                    p.getTitle(),
+                    p.getAddress()));
+        }
+
+        sb.append("\n번호로 선택해주세요. 예: \"2번 추가해줘\"");
+        return sb.toString();
     }
 
 }

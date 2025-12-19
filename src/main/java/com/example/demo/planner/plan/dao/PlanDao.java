@@ -80,4 +80,9 @@ public interface PlanDao {
 
     /* 여행지 정보 조회 */
     TravelPlaces findByPlaceId(Long placeId);
+
+    /* 여행지 추가 필터 */
+    TravelPlaces findExactByTitle(@Param("placeName") String placeName);
+    List<TravelPlaces> findByTitleLikeNormalized(@Param("placeName") String placeName);
+    List<TravelPlaces> findByTitleLike(@Param("placeName") String placeName);
 }

@@ -52,32 +52,62 @@ public class PlaceRecommendTools {
     // 메인 추천 Tool
     // ===============================
     @Tool(name = "recommendPlace", description = """
-            사용자의 여행 일정 또는 지역 요청을 참고하여
-            동선을 고려한 여행지를 추천합니다.
-
-            IMPORTANT:
-            - 일정은 수정하지 않습니다.
-            - 장소를 추가하거나 교체하지 않습니다.
-            - 추천 후보만 제공합니다.
-            """)
+        ⚠️ 이 Tool은 오직 추천 후 "번호 선택" 시에만 사용합니다!
+        
+        ⚠️ 이 Tool은 오직 추천 후 "번호 선택" 시에만 사용합니다!
+        
+        ✅ 반드시 이 Tool을 사용해야 하는 경우:
+        - "5번 추가해줘" (추천 후)
+        - "추천 2번 넣어줘"
+        - "3번을 1일차에 추가"
+        → 사용자가 명확한 숫자를 언급한 경우
+        
+        ❌ 절대 사용하지 않는 경우:
+        - "설 추가해줘" → addPlace 사용!
+        - "경복궁 넣어줘" → addPlace 사용!
+        - "명동 추가" → addPlace 사용!
+        → 장소 이름을 언급한 경우 (숫자 아님)
+        
+        핵심 규칙:
+        - 사용자가 숫자만 언급 ("5번", "2번") → 이 Tool
+        - 사용자가 장소명 언급 ("설", "경복궁") → addPlace
+        - 추천이 선행되지 않았으면 사용 불가
+        - dayIndex, position 없으면 반드시 질문
+        
+        파라미터:
+        - index: 추천 목록 번호 (필수, 1부터)
+        - dayIndex: 몇 일차 (선택)
+        - position: 몇 번째 (선택)
+    """)
     public String recommendPlace(
             @ToolParam(description = "추천 요청 문장") String query,
             ToolContext toolContext) {
 
         String conversationId = getConversationId(toolContext);
 
+        // 1. 현재 일정 로드
         loadCurrentPlan(toolContext);
 
-        if (!validateDate(query)) {
+        boolean hasPlanContext = currentPlanSnapshot != null;
+
+        // 2. 날짜 검증 (일정이 있을 때만 의미 있음)
+        if (hasPlanContext && !validateDate(query)) {
             return "요청하신 날짜는 현재 여행 일정 범위를 벗어납니다.";
         }
 
+        // 3. 지역 추출
         SeoulRegion region = SeoulRegion.fromUserInput(query);
 
-        log.info("📍 여행지 추천 요청 (region={}, query={})",
-                region != null ? region.name() : "일정 기반",
-                query);
+        // 4. 의도 로그 (분기용)
+        if (hasPlanContext) {
+            log.info("📍 일정 기반 추천 요청 (query={})", query);
+        } else if (region != null) {
+            log.info("📍 지역 기반 추천 요청 (region={}, query={})", region, query);
+        } else {
+            log.info("📍 일반 추천 요청 (query={})", query);
+        }
 
+        // 5. 실제 추천
         return dbSearch(query, region, conversationId);
     }
 
@@ -124,9 +154,6 @@ public class PlaceRecommendTools {
 
             @ToolParam(description = "추천 목록에서 선택한 번호 (1부터 시작)", required = true) Integer index,
 
-            // @ToolParam(description = "머무는 시간(분). 없으면 기본값 사용", required = false) Integer
-            // duration,
-
             ToolContext toolContext) {
 
         log.info("🧩 addRecommendedPlace 호출: dayIndex={}, position={}, index={}, duration={}",
@@ -167,14 +194,14 @@ public class PlaceRecommendTools {
                     position,
                     placeId);
 
-            Integer version = support.saveSnapshot(planId);
+            Integer versionNo = support.saveSnapshot(planId);
 
             return String.format(
                     "%d일차 %d번째에 '%s'을(를) 추가했습니다. (버전 %d)",
                     dayIndex,
                     position,
                     newPlaceTitle,
-                    version);
+                    versionNo);
 
         } catch (Exception e) {
             log.error("❌ 추천 장소 추가 실패", e);
@@ -185,11 +212,7 @@ public class PlaceRecommendTools {
     // ===============================
     // DB 검색 (핵심 로직)
     // ===============================
-    private String dbSearch(
-            String query,
-            SeoulRegion region,
-            String conversationId) {
-
+    private String dbSearch(String query, SeoulRegion region, String conversationId) {
         try {
             float[] vector = getQueryVector(query);
             String vectorStr = Arrays.toString(vector).replace(" ", "");
@@ -210,6 +233,17 @@ public class PlaceRecommendTools {
                                     .collect(Collectors.joining(","))
                             + ")";
 
+            Set<Long> excludedIds = support.getRecommendedIds(conversationId);
+
+            // 최근 추천 제외
+            String excludeIdClause = excludedIds.isEmpty()
+                    ? ""
+                    : " AND id NOT IN (" +
+                            excludedIds.stream()
+                                    .map(String::valueOf)
+                                    .collect(Collectors.joining(","))
+                            + ")";
+
             // 2. 지역 조건
             String regionClause = region == null
                     ? ""
@@ -223,11 +257,13 @@ public class PlaceRecommendTools {
                     WHERE 1=1
                     %s
                     %s
-                    ORDER BY (embedding <=> ?::vector) + (random() * 0.03)
+                    %s
+                    ORDER BY (embedding <=> ?::vector) + (random() * 0.10)
                     LIMIT 20
                     """.formatted(
                     excludeTitleClause,
-                    regionClause);
+                    regionClause,
+                    excludeIdClause);
 
             List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, vectorStr, vectorStr);
 
@@ -237,6 +273,7 @@ public class PlaceRecommendTools {
 
             // 4. 마지막 추천 목록 저장 (전체 20개)
             support.setLastRecommendations(conversationId, results);
+            support.addRecommendedIds(conversationId, results);
 
             // 5. 사용자에게는 상위 5개만 보여줌
             List<Map<String, Object>> top5 = results.stream()
