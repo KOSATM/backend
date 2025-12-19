@@ -19,12 +19,14 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.common.chat.intent.dto.SeoulRegion;
 import com.example.demo.planner.plan.agent.common.PlanToolSupport;
 import com.example.demo.planner.plan.dao.PlanSnapshotDao;
 import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
 import com.example.demo.planner.plan.dto.response.PlanSnapshotContent;
+import com.example.demo.planner.plan.service.action.PlanAddAction;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,8 @@ import lombok.extern.slf4j.Slf4j;
 public class PlaceRecommendTools {
 
     private final EmbeddingModel embeddingModel;
+    private final PlanAddAction addAction;
+
     private final JdbcTemplate jdbcTemplate;
     private final PlanSnapshotDao planSnapshotDao;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -94,10 +98,88 @@ public class PlaceRecommendTools {
         }
 
         return formatRecommendationList(
-        recs.stream()
-            .limit(5)
-            .toList()
-        );
+                recs.stream()
+                        .limit(5)
+                        .toList());
+    }
+
+    @Transactional
+    @Tool(description = """
+            추천된 장소 목록에서 사용자가 선택한 번호의 장소를
+            지정한 위치에 추가합니다.
+
+            사용 예:
+            - "5번을 3일차 1번째에 추가해줘"
+            - "추천 2번을 2일차 맨 앞에 넣어줘"
+
+            중요 규칙:
+            - 추천이 반드시 선행되어야 합니다.
+            - 날짜(dayIndex)와 위치(position)가 명확하지 않으면 절대 추측하지 말고 반드시 사용자에게 다시 물어보세요.
+            - 숫자는 추천 목록 번호(index)에만 사용하세요.
+            """)
+    public String addRecommendedPlace(
+            @ToolParam(description = "몇 일차인지 (1부터). 없으면 null", required = false) Integer dayIndex,
+
+            @ToolParam(description = "몇 번째 위치인지 (1부터). 없으면 null", required = false) Integer position,
+
+            @ToolParam(description = "추천 목록에서 선택한 번호 (1부터 시작)", required = true) Integer index,
+
+            // @ToolParam(description = "머무는 시간(분). 없으면 기본값 사용", required = false) Integer
+            // duration,
+
+            ToolContext toolContext) {
+
+        log.info("🧩 addRecommendedPlace 호출: dayIndex={}, position={}, index={}, duration={}",
+                dayIndex, position, index);
+
+        String conversationId = getConversationId(toolContext);
+        Long planId = support.getPlanId(conversationId);
+
+        // 1. 추천 목록 확인
+        List<Map<String, Object>> recs = support.getLastRecommendations(conversationId);
+        if (recs == null || recs.isEmpty()) {
+            return "먼저 여행지 추천을 받아주세요.";
+        }
+
+        // 2. index 검증
+        if (index == null || index < 1 || index > recs.size()) {
+            return String.format("추천 목록은 1번부터 %d번까지 있습니다.", recs.size());
+        }
+
+        // 3. 날짜 / 위치 없으면 무조건 되묻기
+        if (dayIndex == null || position == null) {
+            return """
+                    어느 날짜에, 몇 번째로 추가할까요?
+
+                    예시:
+                    - "5번을 3일차 1번째에 추가해줘"
+                    - "추천 2번을 2일차 맨 뒤에 넣어줘"
+                    """;
+        }
+
+        Map<String, Object> selected = recs.get(index - 1);
+        Long placeId = ((Long) selected.get("id")).longValue();
+
+        try {
+            String newPlaceTitle = addAction.addPlaceFromRecommendation(
+                    planId,
+                    dayIndex,
+                    position,
+                    placeId);
+
+            Integer version = support.saveSnapshot(planId);
+
+            return String.format(
+                    "%d일차 %d번째에 '%s'을(를) 추가했습니다. (버전 %d)",
+                    dayIndex,
+                    position,
+                    newPlaceTitle,
+                    version);
+
+        } catch (Exception e) {
+            log.error("❌ 추천 장소 추가 실패", e);
+            return "추천 장소를 추가하는 중 오류가 발생했습니다: " + e.getMessage();
+        }
     }
 
     // ===============================

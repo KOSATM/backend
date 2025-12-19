@@ -38,8 +38,8 @@ import lombok.extern.slf4j.Slf4j;
 public class PlanSnapshotService {
     private final PlanSnapshotDao planSnapshotDao;
     private final PlanPlaceDao planPlaceDao;
-    private final PlanDao planDao;         
-    private final PlanDayDao planDayDao;     
+    private final PlanDao planDao;
+    private final PlanDayDao planDayDao;
     DateTimeFormatter formatter1 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -237,7 +237,105 @@ public class PlanSnapshotService {
             }
         }
         log.info("Places 재생성 완료: {}개", totalPlaces);
-        log.info("✅ 스냅샷 복원 완료");
+        log.info("스냅샷 복원 완료");
+    }
+
+    /**
+     * 스냅샷 버전의 일정을 간략하게 렌더링
+     * 
+     * @param versionNo 조회할 버전 번호
+     * @param userId    사용자 ID
+     * @return 간략한 일정 텍스트
+     */
+    public String renderSnapshotSummary(int versionNo, Long userId) throws Exception {
+        log.info("스냅샷 버전 {} 요약 조회", versionNo);
+
+        // 1. 스냅샷 조회
+        PlanSnapshot snapshot = planSnapshotDao.selectPlanSnapshotByVersionNo(versionNo, userId);
+        if (snapshot == null) {
+            return String.format("버전 %d를 찾을 수 없습니다.", versionNo);
+        }
+
+        // 2. JSON 파싱
+        PlanSnapshotContent content = new PlanSnapshotUtility().parseSnapshot(snapshot.getSnapshotJson());
+
+        // 3. 렌더링
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(String.format("📸 버전 %d 일정 (%s ~ %s)\n",
+                versionNo,
+                content.getStartDate(),
+                content.getEndDate()));
+        sb.append("━━━━━━━━━━━━━━━━━━━━━━━\n");
+
+        for (PlanSnapshotContent.PlanDay day : content.getDays()) {
+            int placeCount = day.getSchedules().size();
+            sb.append(String.format("Day %d (%d개 장소)\n",
+                    content.getDays().indexOf(day) + 1,
+                    placeCount));
+
+            // 처음 3개만 표시
+            int displayCount = Math.min(3, placeCount);
+            for (int i = 0; i < displayCount; i++) {
+                PlanSnapshotContent.PlanDayItem item = day.getSchedules().get(i);
+                sb.append(String.format("  • %s\n", item.getTitle()));
+            }
+
+            // 나머지가 있으면 표시
+            if (placeCount > 3) {
+                sb.append(String.format("  ... 외 %d개\n", placeCount - 3));
+            }
+
+            sb.append("\n");
+        }
+
+        sb.append("━━━━━━━━━━━━━━━━━━━━━━━");
+
+        return sb.toString();
+    }
+
+    /**
+     * 사용자의 모든 버전 목록 간략 표시
+     * 
+     * @param userId 사용자 ID
+     * @return 버전 목록 텍스트
+     */
+    public String listAllVersionsSummary(Long userId) throws Exception {
+        log.info("사용자 {} 전체 버전 목록 조회", userId);
+
+        List<PlanSnapshot> snapshots = planSnapshotDao.selectPlanSnapshotsByUserId(userId);
+
+        if (snapshots.isEmpty()) {
+            return "저장된 버전이 없습니다.";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("📋 저장된 버전 목록\n");
+        sb.append("━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+
+        for (PlanSnapshot snapshot : snapshots) {
+            PlanSnapshotContent content = new PlanSnapshotUtility().parseSnapshot(snapshot.getSnapshotJson());
+
+            sb.append(String.format("버전 %d - %s ~ %s (%d일)\n",
+                    snapshot.getVersionNo(),
+                    content.getStartDate(),
+                    content.getEndDate(),
+                    content.getDays().size()));
+
+            // 각 날짜의 장소 개수
+            for (int i = 0; i < content.getDays().size(); i++) {
+                PlanSnapshotContent.PlanDay day = content.getDays().get(i);
+                sb.append(String.format("  Day %d: %d개 장소\n",
+                        i + 1,
+                        day.getSchedules().size()));
+            }
+
+            sb.append("\n");
+        }
+
+        sb.append("━━━━━━━━━━━━━━━━━━━━━━━");
+
+        return sb.toString();
     }
 
     // 특정 스냅샷 삭제
