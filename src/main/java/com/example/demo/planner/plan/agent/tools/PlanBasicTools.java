@@ -1,6 +1,8 @@
 package com.example.demo.planner.plan.agent.tools;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
@@ -10,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.common.util.UserInputParser;
 import com.example.demo.planner.plan.agent.common.PlanToolSupport;
+import com.example.demo.planner.plan.dto.entity.PlanDay;
+import com.example.demo.planner.plan.dto.entity.PlanPlace;
 import com.example.demo.planner.plan.dto.entity.TravelPlaces;
 import com.example.demo.planner.plan.service.action.PlanAddAction;
 import com.example.demo.planner.plan.service.action.PlanDeleteAction;
@@ -33,46 +37,147 @@ public class PlanBasicTools {
     // ===============================
     @Transactional
     @Tool(description = """
-            이 Tool은 사용자의 여행 일정(plan)에서 특정 장소를 삭제할 때 사용합니다.
-
-            사용 조건:
-            - 사용자가 '삭제', '지워', '빼줘', '제거' 등의 표현으로
-                특정 장소를 일정에서 없애달라고 요청했을 때만 사용하세요.
-            - 장소명이 명확하지 않거나 여러 후보가 있을 경우,
-                이 Tool을 호출하지 말고 먼저 사용자에게 확인 질문을 하세요.
-            - 사용자가 삭제 의사를 명확히 확인한 경우에만 실행하세요.
-
-            입력:
-            - placeName: 일정에 등록된 장소의 이름 (사용자 발화에서 그대로 추출)
-
-            주의:
-            - 이 Tool은 실제로 데이터를 삭제합니다.
-            - 실행 후에는 되돌릴 수 없으므로 반드시 사용자 확인이 필요합니다.
+            일정에서 특정 장소를 삭제합니다.
+            ...
             """)
     public String deletePlace(
-            String placeName,
+            @ToolParam(description = "삭제할 장소 이름") String placeName,
+
+            @ToolParam(description = "몇 일차인지 (1부터). 없으면 null", required = false) Integer dayIndex,
+
+            @ToolParam(description = "몇 번째인지 (1부터). 없으면 null", required = false) Integer position,
+
             ToolContext toolContext) {
 
         String conversationId = getConversationId(toolContext);
         Long planId = support.getPlanId(conversationId);
-        log.info("🔧 [Tool] deletePlace: planId={}, placeName={}", planId, placeName);
 
         support.clearPendingSelection(conversationId);
         log.info("🧹 [deletePlace] 모든 선택 상태 클리어");
 
+        // ✅ 사용자 발화 파싱
+        String userMessage = (String) toolContext.getContext().get("userMessage");
+
+        Integer dayFromText = UserInputParser.parseDayIndex(userMessage);
+        Integer posFromText = UserInputParser.parsePosition(userMessage);
+
+        // ✅ final 변수로 복사 (람다식용)
+        final Integer finalDayIndex = (dayFromText != null) ? dayFromText : dayIndex;
+        final Integer finalPosition = (posFromText != null) ? posFromText : position;
+
+        log.info("🔧 [Tool] deletePlace: placeName={}, dayIndex={}, position={}",
+                placeName, finalDayIndex, finalPosition);
+
         try {
-            deleteAction.deletePlaceByName(planId, placeName);
+            // ✅ Case 1: dayIndex + position 둘 다 있음
+            if (finalDayIndex != null && finalPosition != null) {
+                deleteAction.deletePlace(planId, finalDayIndex, finalPosition);
+                Integer version = support.saveSnapshot(planId);
+
+                return String.format(
+                        "%d일차 %d번째 장소를 삭제했습니다. (버전 %d)",
+                        finalDayIndex, finalPosition, version);
+            }
+
+            // ✅ Case 2: dayIndex + placeName
+            if (finalDayIndex != null) {
+                List<PlanDay> days = support.loadDays(planId);
+                PlanDay targetDay = days.stream()
+                        .filter(d -> d.getDayIndex() == finalDayIndex) // ✅ final 변수 사용
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException(finalDayIndex + "일차를 찾을 수 없습니다."));
+
+                List<PlanPlace> places = support.loadPlacesByDayId(targetDay.getId());
+
+                // placeName으로 찾기
+                int foundIndex = -1;
+                for (int i = 0; i < places.size(); i++) {
+                    if (places.get(i).getTitle().equals(placeName) ||
+                            places.get(i).getPlaceName().equals(placeName)) {
+                        foundIndex = i + 1;
+                        break;
+                    }
+                }
+
+                if (foundIndex == -1) {
+                    return String.format("%d일차에 '%s' 장소를 찾을 수 없습니다.",
+                            finalDayIndex, placeName);
+                }
+
+                deleteAction.deletePlace(planId, finalDayIndex, foundIndex);
+                Integer version = support.saveSnapshot(planId);
+
+                return String.format(
+                        "'%s'을(를) %d일차에서 삭제했습니다. (버전 %d)",
+                        placeName, finalDayIndex, version);
+            }
+
+            // ✅ Case 3: placeName만 있음
+            List<PlanDay> days = support.loadDays(planId);
+            Map<Long, List<PlanPlace>> placesByDayId = support.loadPlacesByDayId(days);
+
+            List<PlaceLocation> found = new ArrayList<>();
+            for (PlanDay day : days) {
+                List<PlanPlace> places = placesByDayId.get(day.getId());
+                if (places == null)
+                    continue;
+
+                for (int i = 0; i < places.size(); i++) {
+                    PlanPlace p = places.get(i);
+                    if (p.getTitle().equals(placeName) ||
+                            p.getPlaceName().equals(placeName)) {
+                        found.add(new PlaceLocation(day.getDayIndex(), i + 1, p.getTitle()));
+                    }
+                }
+            }
+
+            if (found.isEmpty()) {
+                return String.format("'%s' 장소를 찾을 수 없습니다.", placeName);
+            }
+
+            if (found.size() > 1) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(String.format("'%s' 장소가 여러 개 있습니다:\n\n", placeName));
+
+                for (int i = 0; i < found.size(); i++) {
+                    PlaceLocation loc = found.get(i);
+                    sb.append(String.format("%d. %d일차 %d번째 - %s\n",
+                            i + 1, loc.dayIndex, loc.position, loc.name));
+                }
+
+                sb.append("\n몇 일차의 장소를 삭제할까요?");
+                return sb.toString();
+            }
+
+            PlaceLocation loc = found.get(0);
+            deleteAction.deletePlace(planId, loc.dayIndex, loc.position);
             Integer version = support.saveSnapshot(planId);
 
             return String.format(
-                    " '%s' 장소를 일정에서 삭제했습니다. 버전: %d",
-                    placeName, version);
+                    "'%s' 장소를 일정에서 삭제했습니다. (버전 %d)",
+                    loc.name, version);
 
         } catch (IllegalArgumentException e) {
-            return String.format("❌ '%s' 장소를 찾을 수 없습니다.", placeName);
+            return e.getMessage();
         } catch (Exception e) {
-            log.error("장소 삭제 실패", e);
-            return String.format("❌ 장소 삭제 중 오류 발생: %s", e.getMessage());
+            log.error("❌ 장소 삭제 실패", e);
+            return String.format("장소 삭제 중 오류 발생: %s", e.getMessage());
+        }
+    }
+
+    // ===============================
+    // Helper 클래스
+    // ===============================
+
+    private static class PlaceLocation {
+        final int dayIndex;
+        final int position;
+        final String name;
+
+        PlaceLocation(int dayIndex, int position, String name) {
+            this.dayIndex = dayIndex;
+            this.position = position;
+            this.name = name;
         }
     }
 

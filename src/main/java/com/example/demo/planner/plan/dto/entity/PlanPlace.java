@@ -5,13 +5,17 @@ import java.time.OffsetDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-@Builder
 @Getter
 @ToString
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class PlanPlace {
     private Long id;
     private Long dayId;
