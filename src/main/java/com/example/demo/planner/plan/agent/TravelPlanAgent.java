@@ -135,6 +135,72 @@ public class TravelPlanAgent {
         }
     }
 
+    /**
+     * 특정 일차만 재생성
+     * 
+     * @param dayIndex       재생성할 일차 (1부터 시작)
+     * @param existingPlan   기존 Plan 정보
+     * @param usedContentIds 이미 사용된 장소들 (중복 방지)
+     * @param style          새로운 스타일 (null이면 기존 유지)
+     * @param pace           새로운 강도 (null이면 기존 유지)
+     */
+    public List<GeneratedTravelPlan.GeneratedPlace> regenerateSingleDay(
+            int dayIndex,
+            GeneratedTravelPlan existingPlan,
+            Set<Long> usedContentIds,
+            String style,
+            String pace,
+            String location) {
+
+        log.info("🔄 일차 재생성: dayIndex={}, style={}, pace={}", dayIndex, style, pace);
+
+        // 1. 검색 쿼리 생성
+        List<String> queries = generateSearchQueries(style);
+
+        // 2. 벡터 검색
+        List<TravelPlaces> places = multiQueryVectorSearch(
+                queries,
+                location,
+                existingPlan.days().size());
+
+        if (places.isEmpty()) {
+            log.warn("검색 결과 없음");
+            return List.of();
+        }
+
+        // 3. Zone별 그룹핑
+        Map<String, List<TravelPlaces>> clusters = groupByZone(places);
+        List<String> zoneKeys = new ArrayList<>(clusters.keySet());
+
+        // 4. 해당 일차의 Zone 선택 (기존과 동일한 패턴 유지)
+        String zone = zoneKeys.get((dayIndex - 1) % zoneKeys.size());
+        List<TravelPlaces> zonePlaces = clusters.get(zone);
+
+        // 5. Pace 설정
+        Pace paceEnum = Pace.fromString(pace);
+        int maxFoodPerDay = getMaxFoodPerDay(paceEnum);
+
+        // 6. 첫날/마지막날 판단
+        int totalDays = existingPlan.days().size();
+        boolean isFirstDay = totalDays > 1 && dayIndex == 1;
+        boolean isLastDay = totalDays > 1 && dayIndex == totalDays;
+
+        // 7. 해당 날짜의 startDate 계산
+        LocalDate startDate = existingPlan.startDate().plusDays(dayIndex - 1);
+
+        // 8. 하루 일정 생성
+        return buildDayPlanStructured(
+                dayIndex,
+                zonePlaces,
+                usedContentIds,
+                paceEnum.getPlacesPerDay(),
+                maxFoodPerDay,
+                isFirstDay,
+                isLastDay,
+                existingPlan.startDate());
+    }
+
+
     // =========================================================
     // ✅ 검색 쿼리 생성 (rule 기반)
     // =========================================================
