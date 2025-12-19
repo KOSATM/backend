@@ -1,11 +1,6 @@
 package com.example.demo.planner.plan.agent.tools;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,20 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.example.demo.planner.plan.agent.common.PlanToolSupport;
-import com.example.demo.planner.plan.dao.PlanDao;
-import com.example.demo.planner.plan.dao.PlanDayDao;
-import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dao.PlanSnapshotDao;
-import com.example.demo.planner.plan.dto.entity.Plan;
-import com.example.demo.planner.plan.dto.entity.PlanDay;
-import com.example.demo.planner.plan.dto.entity.PlanPlace;
 import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
 import com.example.demo.planner.plan.dto.response.PlanSnapshotContent;
 import com.example.demo.planner.plan.service.PlanSnapshotService;
 import com.example.demo.planner.plan.service.PlanSnapshotUtility;
 import com.example.demo.planner.plan.service.action.PlanAddAction;
 import com.example.demo.planner.plan.service.action.PlanDeleteAction;
-import com.example.demo.planner.plan.service.action.PlanModifyAction;
 import com.example.demo.planner.plan.service.action.PlanSwapAction;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,13 +36,10 @@ public class PlanAdvancedTools {
     private final PlanSwapAction swapAction;
     private final PlanAddAction addAction;
     private final PlanDeleteAction deleteAction;
-    private final PlanModifyAction modifyAction;
     private final PlanSnapshotDao planSnapshotDao;
     private final PlanSnapshotService planSnapshotService;
     private final PlanSnapshotUtility planSnapshotUtility;
-    private final PlanDao planDao;
-    private final PlanDayDao planDayDao;
-    private final PlanPlaceDao planPlaceDao;
+
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${google.search.endpoint}")
@@ -63,9 +48,6 @@ public class PlanAdvancedTools {
     private String apiKey;
     @Value("${google.search.engineId}")
     private String engineId;
-
-    DateTimeFormatter formatter1 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     // ========== 순서 교환 (3개) ==========
     @Transactional
@@ -176,7 +158,8 @@ public class PlanAdvancedTools {
 
             @ToolParam(description = "추천 목록에서 선택한 번호 (1부터 시작)", required = true) Integer index,
 
-            // @ToolParam(description = "머무는 시간(분). 없으면 기본값 사용", required = false) Integer duration,
+            // @ToolParam(description = "머무는 시간(분). 없으면 기본값 사용", required = false) Integer
+            // duration,
 
             ToolContext toolContext) {
 
@@ -210,7 +193,7 @@ public class PlanAdvancedTools {
 
         // 4. duration 기본값 처리 (안전)
         // if (duration == null || duration <= 0) {
-        //     duration = 90;
+        // duration = 90;
         // }
 
         Map<String, Object> selected = recs.get(index - 1);
@@ -225,7 +208,6 @@ public class PlanAdvancedTools {
 
             Integer version = support.saveSnapshot(planId);
 
-            
             return String.format(
                     "%d일차 %d번째에 '%s'을(를) 추가했습니다. (버전 %d)",
                     dayIndex,
@@ -418,82 +400,18 @@ public class PlanAdvancedTools {
             if (1 == versionNo)
                 return "일정 버전이 1이기 때문에 이전 버전으로 돌아갈 수 없습니다.";
 
-            PlanSnapshot planSnapshot = planSnapshotService
-                    .getPlanSnapshotByVersionNo(versionNo - 1, userId);
+            // 1. 이전 버전 스냅샷 조회
+            PlanSnapshot planSnapshot = planSnapshotService.getPlanSnapshotByVersionNo(versionNo - 1, userId);
             PlanSnapshotContent snapshotContent = planSnapshotUtility.parseSnapshot(planSnapshot.getSnapshotJson());
 
+            // 2. 현재 planId
             String conversationId = getConversationId(toolContext);
             Long planId = support.getPlanId(conversationId);
-            Plan plan = planDao.selectPlanById(planId);
 
-            // 기존 데이터 삭제
-            List<PlanPlace> existingPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
-            for (PlanPlace place : existingPlaces) {
-                planPlaceDao.deletePlanPlaceById(place.getId());
-            }
+            // 3. Service 호출
+            planSnapshotService.restorePlanFromSnapshot(planId, snapshotContent, userId);
 
-            List<PlanDay> existingDays = planDayDao.selectPlanDaysByPlanId(planId);
-            // log.info("daySize: {}", existingDays.size());
-            for (PlanDay day : existingDays) {
-                planDayDao.deletePlanDay(day.getId());
-                // log.info("dayid: {}", day.getId());
-            }
-
-            // Plan 업데이트
-            Plan rollbackPlan = Plan.builder()
-                    .userId(userId)
-                    .budget(snapshotContent.getBudget())
-                    .startDate(LocalDate.parse(snapshotContent.getStartDate(), formatter1))
-                    .endDate(LocalDate.parse(snapshotContent.getEndDate(), formatter1))
-                    .createdAt(plan.getCreatedAt())
-                    .updatedAt(OffsetDateTime.now())
-                    .build();
-            planDao.updatePlan(rollbackPlan);
-
-            // Days 재생성
-            Map<String, Long> dateToDayId = new HashMap<>();
-            for (int i = 0; i < snapshotContent.getDays().size(); i++) {
-                PlanSnapshotContent.PlanDay pscDay = snapshotContent.getDays().get(i);
-
-                PlanDay newDay = PlanDay.builder()
-                        .planId(planId)
-                        .dayIndex(i + 1)
-                        .title(pscDay.getTitle())
-                        .planDate(LocalDate.parse(pscDay.getDate(), formatter1))
-                        .build();
-
-                planDayDao.insertPlanDay(newDay);
-                dateToDayId.put(pscDay.getDate(), newDay.getId());
-            }
-
-            // Places 재생성
-            for (PlanSnapshotContent.PlanDay pscDay : snapshotContent.getDays()) {
-                Long dayId = dateToDayId.get(pscDay.getDate());
-
-                for (PlanSnapshotContent.PlanDayItem pscItem : pscDay.getSchedules()) {
-                    PlanPlace newPlace = PlanPlace.builder()
-                            .dayId(dayId)
-                            .title(pscItem.getTitle())
-                            .startAt(LocalDateTime.parse(pscItem.getStartAt(), formatter2)
-                                    .atOffset(ZoneOffset.of("+00:00")))
-                            .endAt(LocalDateTime.parse(pscItem.getEndAt(), formatter2)
-                                    .atOffset(ZoneOffset.of("+00:00")))
-                            .placeName(pscItem.getPlaceName())
-                            .address(pscItem.getAddress())
-                            .lat(pscItem.getLat())
-                            .lng(pscItem.getLng())
-                            .expectedCost(pscItem.getExpectedCost())
-                            .normalizedCategory(pscItem.getNormalizedCategory())
-                            .firstImage(pscItem.getFirstImage())
-                            .firstImage2(pscItem.getFirstImage2())
-                            .isEnded(pscItem.getIsEnded() != null && pscItem.getIsEnded())
-                            .build();
-
-                    planPlaceDao.insertPlanPlace(newPlace);
-                }
-            }
-
-            // 새 스냅샷 저장
+            // 4. 새 스냅샷 저장
             Integer newVersionNo = support.saveSnapshot(planId);
 
             return String.format("이전 버전으로 돌아갔습니다. 버전: %d", newVersionNo);
@@ -525,25 +443,36 @@ public class PlanAdvancedTools {
 
         try {
             Long userId = (Long) toolContext.getContext().get("userId");
-
             int currentVersionNo = planSnapshotService.getLatestVersionNo(userId);
 
             log.info("돌아갈 버전: {}", versionNo);
 
-            if (versionNo == currentVersionNo)
+            // 1. Validation
+            if (versionNo == currentVersionNo) {
                 return "현재 버전과 같은 버전이기 때문에 돌아갈 수 없습니다.";
+            }
 
+            // 2. 스냅샷 조회
             PlanSnapshot toRevert = PlanSnapshot.builder()
                     .userId(userId)
                     .versionNo(versionNo)
                     .build();
 
             PlanSnapshot planSnapshot = planSnapshotDao.selectPlanSnapshotByUserIdAndVersionNo(toRevert);
+            if (planSnapshot == null) {
+                return String.format("버전 %d를 찾을 수 없습니다.", versionNo);
+            }
+
             PlanSnapshotContent snapshotContent = planSnapshotUtility.parseSnapshot(planSnapshot.getSnapshotJson());
 
-            // ... rollBack()와 동일한 로직 ...
+            // 3. 현재 planId
             String conversationId = getConversationId(toolContext);
             Long planId = support.getPlanId(conversationId);
+
+            // 4. Service 호출
+            planSnapshotService.restorePlanFromSnapshot(planId, snapshotContent, userId);
+
+            // 5. 새 스냅샷 저장
             Integer newVersionNo = support.saveSnapshot(planId);
 
             return String.format("버전 %d로 돌아갔습니다. 새 버전: %d", versionNo, newVersionNo);

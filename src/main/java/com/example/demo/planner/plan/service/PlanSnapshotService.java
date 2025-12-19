@@ -1,12 +1,20 @@
 package com.example.demo.planner.plan.service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.demo.planner.plan.dao.PlanDao;
+import com.example.demo.planner.plan.dao.PlanDayDao;
 import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dao.PlanSnapshotDao;
 import com.example.demo.planner.plan.dto.entity.Plan;
@@ -30,6 +38,10 @@ import lombok.extern.slf4j.Slf4j;
 public class PlanSnapshotService {
     private final PlanSnapshotDao planSnapshotDao;
     private final PlanPlaceDao planPlaceDao;
+    private final PlanDao planDao;         
+    private final PlanDayDao planDayDao;     
+    DateTimeFormatter formatter1 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     // ### 단순 CRUD ###
     // ID로 개별 스냅샷 조회
@@ -70,7 +82,8 @@ public class PlanSnapshotService {
 
     // 스냅샷 저장(기본 테이블 사용)
     @Transactional
-    public PlanSnapshot savePlanSnapshot(Plan plan, List<PlanDay> planDays, List<PlanPlace> planPlaces) throws Exception {
+    public PlanSnapshot savePlanSnapshot(Plan plan, List<PlanDay> planDays, List<PlanPlace> planPlaces)
+            throws Exception {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         ObjectMapper objectMapper = new ObjectMapper();
 
@@ -84,16 +97,17 @@ public class PlanSnapshotService {
         planSnapshotContent.setBudget(plan.getBudget());
         planSnapshotContent.setStartDate(plan.getStartDate().toString());
         planSnapshotContent.setEndDate(plan.getEndDate().toString());
-        
+
         List<PlanSnapshotContent.PlanDay> pscDays = new ArrayList<>();
         for (PlanDay planDay : planDays) {
             PlanSnapshotContent.PlanDay pscDay = new PlanSnapshotContent.PlanDay();
             pscDay.setDate(planDay.getPlanDate().toString());
             pscDay.setTitle(planDay.getTitle());
-            
+
             List<PlanSnapshotContent.PlanDayItem> pscItems = new ArrayList<>();
             log.info("planDay: {}", planDay.toString());
-            log.info("planPlaceDao.selectPlanPlacesByPlanDayId(planDay.getId()): {}", planPlaceDao.selectPlanPlacesByPlanDayId(planDay.getId()).toString());
+            log.info("planPlaceDao.selectPlanPlacesByPlanDayId(planDay.getId()): {}",
+                    planPlaceDao.selectPlanPlacesByPlanDayId(planDay.getId()).toString());
             for (PlanPlace planPlace : planPlaceDao.selectPlanPlacesByPlanDayId(planDay.getId())) {
                 PlanSnapshotContent.PlanDayItem pscItem = new PlanSnapshotContent.PlanDayItem();
                 pscItem.setTitle(planPlace.getTitle());
@@ -119,15 +133,111 @@ public class PlanSnapshotService {
         String snapshotJson = objectMapper.writeValueAsString(planSnapshotContent);
 
         PlanSnapshot planSnapshot = PlanSnapshot.builder()
-            .userId(plan.getUserId())
-            .versionNo(versionNo)
-            .snapshotJson(snapshotJson)
-            .build();
-            
+                .userId(plan.getUserId())
+                .versionNo(versionNo)
+                .snapshotJson(snapshotJson)
+                .build();
+
         planSnapshotDao.insertPlanSnapshot(planSnapshot);
 
         planSnapshot = planSnapshotDao.selectLatestPlanSnapshotByUserId(plan.getUserId());
         return planSnapshot;
+    }
+
+    /**
+     * 스냅샷으로부터 Plan 복원
+     * 
+     * @param planId          복원할 Plan ID
+     * @param snapshotContent 스냅샷 내용
+     * @param userId          사용자 ID
+     * @throws Exception 복원 실패 시
+     */
+    @Transactional
+    public void restorePlanFromSnapshot(Long planId, PlanSnapshotContent snapshotContent, Long userId)
+            throws Exception {
+
+        log.info("🔄 스냅샷으로부터 Plan 복원 시작: planId={}", planId);
+
+        // 1. 기존 Plan 조회
+        Plan existingPlan = planDao.selectPlanById(planId);
+        if (existingPlan == null) {
+            throw new IllegalArgumentException("Plan not found: " + planId);
+        }
+
+        // 2. 기존 Places 삭제
+        List<PlanPlace> existingPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
+        for (PlanPlace place : existingPlaces) {
+            planPlaceDao.deletePlanPlaceById(place.getId());
+        }
+        log.info("기존 Places 삭제 완료: {}개", existingPlaces.size());
+
+        // 3. 기존 Days 삭제
+        List<PlanDay> existingDays = planDayDao.selectPlanDaysByPlanId(planId);
+        for (PlanDay day : existingDays) {
+            planDayDao.deletePlanDay(day.getId());
+        }
+        log.info("기존 Days 삭제 완료: {}개", existingDays.size());
+
+        // 4. Plan 업데이트
+        Plan rollbackPlan = Plan.builder()
+                .id(planId) // ← 중요!
+                .userId(userId)
+                .budget(snapshotContent.getBudget())
+                .startDate(LocalDate.parse(snapshotContent.getStartDate(), formatter1))
+                .endDate(LocalDate.parse(snapshotContent.getEndDate(), formatter1))
+                .createdAt(existingPlan.getCreatedAt())
+                .updatedAt(OffsetDateTime.now())
+                .build();
+        planDao.updatePlan(rollbackPlan);
+        log.info("Plan 업데이트 완료");
+
+        // 5. Days 재생성
+        Map<String, Long> dateToDayId = new HashMap<>();
+        for (int i = 0; i < snapshotContent.getDays().size(); i++) {
+            PlanSnapshotContent.PlanDay pscDay = snapshotContent.getDays().get(i);
+
+            PlanDay newDay = PlanDay.builder()
+                    .planId(planId)
+                    .dayIndex(i + 1)
+                    .title(pscDay.getTitle())
+                    .planDate(LocalDate.parse(pscDay.getDate(), formatter1))
+                    .build();
+
+            planDayDao.insertPlanDay(newDay);
+            dateToDayId.put(pscDay.getDate(), newDay.getId());
+        }
+        log.info("Days 재생성 완료: {}개", snapshotContent.getDays().size());
+
+        // 6. Places 재생성
+        int totalPlaces = 0;
+        for (PlanSnapshotContent.PlanDay pscDay : snapshotContent.getDays()) {
+            Long dayId = dateToDayId.get(pscDay.getDate());
+
+            for (PlanSnapshotContent.PlanDayItem pscItem : pscDay.getSchedules()) {
+                PlanPlace newPlace = PlanPlace.builder()
+                        .dayId(dayId)
+                        .title(pscItem.getTitle())
+                        .startAt(LocalDateTime.parse(pscItem.getStartAt(), formatter2)
+                                .atOffset(ZoneOffset.of("+00:00")))
+                        .endAt(LocalDateTime.parse(pscItem.getEndAt(), formatter2)
+                                .atOffset(ZoneOffset.of("+00:00")))
+                        .placeName(pscItem.getPlaceName())
+                        .address(pscItem.getAddress())
+                        .lat(pscItem.getLat())
+                        .lng(pscItem.getLng())
+                        .expectedCost(pscItem.getExpectedCost())
+                        .normalizedCategory(pscItem.getNormalizedCategory())
+                        .firstImage(pscItem.getFirstImage())
+                        .firstImage2(pscItem.getFirstImage2())
+                        .isEnded(pscItem.getIsEnded() != null && pscItem.getIsEnded())
+                        .build();
+
+                planPlaceDao.insertPlanPlace(newPlace);
+                totalPlaces++;
+            }
+        }
+        log.info("Places 재생성 완료: {}개", totalPlaces);
+        log.info("✅ 스냅샷 복원 완료");
     }
 
     // 특정 스냅샷 삭제
