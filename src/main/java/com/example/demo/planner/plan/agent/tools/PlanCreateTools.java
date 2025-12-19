@@ -152,6 +152,8 @@ public class PlanCreateTools {
 
         log.info("🔄 [Tool] regenerateDay: planId={}, dayIndex={}", planId, dayIndex);
 
+        support.clearAddCandidateState(conversationId);
+
         try {
             // 1. 기존 Plan 조회
             Plan plan = planDao.selectPlanById(planId);

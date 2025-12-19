@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.common.chat.intent.dto.SeoulRegion;
+import com.example.demo.common.util.UserInputParser;
 import com.example.demo.planner.plan.agent.common.PlanToolSupport;
 import com.example.demo.planner.plan.dao.PlanSnapshotDao;
 import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
@@ -52,38 +53,38 @@ public class PlaceRecommendTools {
     // 메인 추천 Tool
     // ===============================
     @Tool(name = "recommendPlace", description = """
-        ⚠️ 이 Tool은 오직 추천 후 "번호 선택" 시에만 사용합니다!
-        
-        ⚠️ 이 Tool은 오직 추천 후 "번호 선택" 시에만 사용합니다!
-        
-        ✅ 반드시 이 Tool을 사용해야 하는 경우:
-        - "5번 추가해줘" (추천 후)
-        - "추천 2번 넣어줘"
-        - "3번을 1일차에 추가"
-        → 사용자가 명확한 숫자를 언급한 경우
-        
-        ❌ 절대 사용하지 않는 경우:
-        - "설 추가해줘" → addPlace 사용!
-        - "경복궁 넣어줘" → addPlace 사용!
-        - "명동 추가" → addPlace 사용!
-        → 장소 이름을 언급한 경우 (숫자 아님)
-        
-        핵심 규칙:
-        - 사용자가 숫자만 언급 ("5번", "2번") → 이 Tool
-        - 사용자가 장소명 언급 ("설", "경복궁") → addPlace
-        - 추천이 선행되지 않았으면 사용 불가
-        - dayIndex, position 없으면 반드시 질문
-        
-        파라미터:
-        - index: 추천 목록 번호 (필수, 1부터)
-        - dayIndex: 몇 일차 (선택)
-        - position: 몇 번째 (선택)
-    """)
+            사용자가 장소를 탐색하거나 추천을 요청할 때 사용합니다.
+
+             이럴 때 사용:
+            - "강남 근처 추천해줘"
+            - "카페 좀 알려줘"
+            - "맛집 어디가 좋아?"
+            - "2일차에 갈 만한 곳 알려줘"
+            - "뭐가 좋아?"
+
+            ❌ 이럴 때 사용 금지:
+            - "경복궁 추가해줘" → addPlace 사용
+            - "롯데월드 넣어줘" → addPlace 사용
+            - "5번 추가해줘" → addRecommendedPlace 사용
+
+            핵심 구분:
+            - 탐색/추천 요청 ("~추천", "~알려줘", "뭐가 좋아?") → 이 Tool
+            - 장소 추가 ("~추가", "~넣어줘") → addPlace ❌
+            - 추천 번호 선택 ("5번 추가") → addRecommendedPlace ❌
+
+            중요:
+            - 이 Tool은 추천 후보만 제공합니다.
+            - 일정을 직접 수정하지 않습니다.
+            - 사용자가 번호를 선택하면 addRecommendedPlace를 사용하세요.
+            """)
     public String recommendPlace(
             @ToolParam(description = "추천 요청 문장") String query,
             ToolContext toolContext) {
 
         String conversationId = getConversationId(toolContext);
+
+        support.clearAddCandidateState(conversationId);
+        log.info("🧹 [recommendPlace] 장소 후보 상태 클리어");
 
         // 1. 현재 일정 로드
         loadCurrentPlan(toolContext);
@@ -138,14 +139,7 @@ public class PlaceRecommendTools {
             추천된 장소 목록에서 사용자가 선택한 번호의 장소를
             지정한 위치에 추가합니다.
 
-            사용 예:
-            - "5번을 3일차 1번째에 추가해줘"
-            - "추천 2번을 2일차 맨 앞에 넣어줘"
-
-            중요 규칙:
-            - 추천이 반드시 선행되어야 합니다.
-            - 날짜(dayIndex)와 위치(position)가 명확하지 않으면 절대 추측하지 말고 반드시 사용자에게 다시 물어보세요.
-            - 숫자는 추천 목록 번호(index)에만 사용하세요.
+            ⚠️ 중요: [STATE: RECOMMENDATION]일 때만 사용!
             """)
     public String addRecommendedPlace(
             @ToolParam(description = "몇 일차인지 (1부터). 없으면 null", required = false) Integer dayIndex,
@@ -156,36 +150,87 @@ public class PlaceRecommendTools {
 
             ToolContext toolContext) {
 
-        log.info("🧩 addRecommendedPlace 호출: dayIndex={}, position={}, index={}, duration={}",
+        log.info("🧩 addRecommendedPlace 호출: dayIndex={}, position={}, index={}",
                 dayIndex, position, index);
 
         String conversationId = getConversationId(toolContext);
         Long planId = support.getPlanId(conversationId);
 
-        // 1. 추천 목록 확인
+        // 1. 상태 확인
+        PlanToolSupport.PendingSelectionType selectionType = support.getPendingSelectionType(conversationId);
+
+        if (selectionType != PlanToolSupport.PendingSelectionType.RECOMMENDATION) {
+            log.warn("⚠️ [상태 불일치] 현재 상태={}, 필요 상태=RECOMMENDATION", selectionType);
+            return "추천 목록이 없습니다. 먼저 여행지 추천을 받아주세요.";
+        }
+
+        // 2. 추천 목록 확인
         List<Map<String, Object>> recs = support.getLastRecommendations(conversationId);
         if (recs == null || recs.isEmpty()) {
             return "먼저 여행지 추천을 받아주세요.";
         }
 
-        // 2. index 검증
+        // ✅ ToolParam 무시
+        dayIndex = null;
+        position = null;
+        index = null;
+
+        String userMessage = (String) toolContext.getContext().get("userMessage");
+
+        // ✅ 3. 컨텍스트 복원
+        PlanToolSupport.SelectionContext context = support.getSelectionContext(conversationId);
+        if (context != null) {
+            index = context.getIndex();
+            dayIndex = context.getDayIndex();
+            position = context.getPosition();
+            log.info("📥 [컨텍스트 복원] index={}, dayIndex={}, position={}",
+                    index, dayIndex, position);
+        }
+
+        // ✅ 4. 사용자 발화에서 추출
+        Integer indexFromText = UserInputParser.parseIndex(userMessage);
+        Integer dayFromText = UserInputParser.parseDayIndex(userMessage);
+        Integer posFromText = UserInputParser.parsePosition(userMessage);
+
+        if (indexFromText != null) {
+            support.updateIndex(conversationId, indexFromText);
+            index = indexFromText;
+        }
+        if (dayFromText != null) {
+            support.updateDayIndex(conversationId, dayFromText);
+            dayIndex = dayFromText;
+        }
+        if (posFromText != null) {
+            support.updatePosition(conversationId, posFromText);
+            position = posFromText;
+        }
+
+        // 5. index 검증
         if (index == null || index < 1 || index > recs.size()) {
             return String.format("추천 목록은 1번부터 %d번까지 있습니다.", recs.size());
         }
 
-        // 3. 날짜 / 위치 없으면 무조건 되묻기
-        if (dayIndex == null || position == null) {
-            return """
-                    어느 날짜에, 몇 번째로 추가할까요?
+        Map<String, Object> selected = recs.get(index - 1);
 
-                    예시:
-                    - "5번을 3일차 1번째에 추가해줘"
-                    - "추천 2번을 2일차 맨 뒤에 넣어줘"
-                    """;
+        // ✅ 6. 부족한 값 질문
+        if (dayIndex == null) {
+            return String.format("""
+                    %d번 '%s'을(를) 몇 일차에 추가할까요?
+
+                    예시: "2일차에 추가해줘"
+                    """, index, selected.get("title"));
         }
 
-        Map<String, Object> selected = recs.get(index - 1);
-        Long placeId = ((Long) selected.get("id")).longValue();
+        if (position == null) {
+            return String.format("""
+                    %d번 '%s'을(를) %d일차 몇 번째에 추가할까요?
+
+                    예시: "맨 뒤에", "첫 번째에"
+                    """, index, selected.get("title"), dayIndex);
+        }
+
+        // 7. 실행
+        Long placeId = ((Number) selected.get("id")).longValue();
 
         try {
             String newPlaceTitle = addAction.addPlaceFromRecommendation(
@@ -193,6 +238,9 @@ public class PlaceRecommendTools {
                     dayIndex,
                     position,
                     placeId);
+
+            support.clearPendingSelection(conversationId);
+            log.info("🧹 [추천 선택 완료] 상태 클리어");
 
             Integer versionNo = support.saveSnapshot(planId);
 

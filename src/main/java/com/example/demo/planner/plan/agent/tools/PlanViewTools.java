@@ -34,8 +34,9 @@ public class PlanViewTools {
 
         String conversationId = getConversationId(toolContext);
         Long planId = support.getPlanId(conversationId);
-
         log.info("🧭 [일정 조회] conversationId={}, planId={}", conversationId, planId);
+        support.clearAddCandidateState(conversationId);
+        log.info("🧹 [viewPlan] 장소 후보 상태 클리어 (추천 유지)");
 
         // 일정이 없는 경우
         if (planId == null) {
@@ -64,16 +65,42 @@ public class PlanViewTools {
         }
     }
 
-    @Tool(description = "특정 일차의 일정만 조회합니다. dayIndex는 1부터 시작 (1일차=1)")
+    @Tool(description = """
+                특정 일차(Day)의 일정만 조회합니다.
+
+                이 Tool은 "조회" 전용입니다.
+                일정을 수정하거나 추가하지 않습니다.
+
+                사용 예:
+                - "1일차 일정 보여줘"
+                - "2일차 뭐야?"
+                - "3일차 계획 알려줘"
+
+                사용 조건:
+                - dayIndex는 1부터 시작합니다. (1일차 = 1)
+                - 여행 일정이 이미 존재해야 합니다.
+
+                ❌ 사용하면 안 되는 경우:
+                - "1일차에 장소 추가해줘" → addPlace 사용
+                - "2일차 일정 바꿔줘" → 수정 Tool 사용
+                - "오늘 뭐하지?" → recommendPlace 사용
+
+                반환 내용:
+                - 해당 일차의 날짜
+                - 해당 일차에 등록된 장소 목록
+                - 장소가 없을 경우 안내 메시지 반환
+            """)
     public String viewDay(
             @ToolParam(description = "조회할 일차 번호 (1부터 시작)") int dayIndex,
             ToolContext toolContext) {
 
         String conversationId = getConversationId(toolContext);
         Long planId = support.getPlanId(conversationId);
-
         log.info("🧭 [일차 조회] conversationId={}, planId={}, dayIndex={}",
                 conversationId, planId, dayIndex);
+
+        support.clearAddCandidateState(conversationId);
+        log.info("🧹 [viewPlan] 장소 후보 상태 클리어 (추천 유지)");
 
         // 일정이 없는 경우
         if (planId == null) {
