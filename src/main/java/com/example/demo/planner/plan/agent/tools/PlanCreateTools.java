@@ -150,8 +150,7 @@ public class PlanCreateTools {
         String conversationId = String.valueOf(toolContext.getContext().get("conversationId"));
         Long planId = support.getPlanId(conversationId);
 
-        log.info("🔄 [Tool] regenerateDay: planId={}, dayIndex={}, style={}, pace={}",
-                planId, dayIndex, style, pace);
+        log.info("🔄 [Tool] regenerateDay: planId={}, dayIndex={}", planId, dayIndex);
 
         try {
             // 1. 기존 Plan 조회
@@ -170,30 +169,29 @@ public class PlanCreateTools {
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException(dayIndex + "일차를 찾을 수 없습니다."));
 
-            // 4. 기존 Places 삭제
+            // ✅ 4. 사용 중인 장소 수집 (삭제 전에!)
+            Set<Long> usedContentIds = new HashSet<>();
+
+            for (PlanDay day : allDays) {
+                List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+                for (PlanPlace p : places) {
+                    usedContentIds.add(p.getId()); // ✅ 모든 날짜 (재생성 대상 포함!)
+                }
+            }
+
+            log.info("전체 일정 사용 중인 장소: {}개 (재생성 대상 포함)", usedContentIds.size());
+
+            // ✅ 5. 그 다음 기존 Places 삭제
             List<PlanPlace> oldPlaces = planPlaceDao.selectPlanPlacesByPlanDayId(targetDay.getId());
             for (PlanPlace place : oldPlaces) {
                 planPlaceDao.deletePlanPlaceById(place.getId());
             }
             log.info("기존 {}일차 장소 {}개 삭제 완료", dayIndex, oldPlaces.size());
 
-            // 5. 다른 날짜 사용 중인 장소 수집 (중복 방지)
-            Set<Long> usedContentIds = new HashSet<>();
-            for (PlanDay day : allDays) {
-                if (day.getDayIndex() == dayIndex)
-                    continue; // 재생성 대상 제외
-
-                List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
-                for (PlanPlace p : places) {
-                    usedContentIds.add(p.getId());
-                }
-            }
-            log.info("다른 날짜 사용 중인 장소: {}개", usedContentIds.size());
-
-            // 6. GeneratedTravelPlan 구성 (Agent 호출용)
+            // 6. GeneratedTravelPlan 구성
             GeneratedTravelPlan existingPlan = new GeneratedTravelPlan(
                     allDays.size(),
-                    "보통", // pace는 파라미터로 받으므로 여기선 중요하지 않음
+                    "보통",
                     List.of(),
                     plan.getStartDate(),
                     plan.getEndDate());
@@ -202,7 +200,7 @@ public class PlanCreateTools {
             List<GeneratedTravelPlan.GeneratedPlace> newPlaces = travelPlanAgent.regenerateSingleDay(
                     dayIndex,
                     existingPlan,
-                    usedContentIds,
+                    usedContentIds, // ✅ 기존 장소 포함!
                     style,
                     pace,
                     location);
@@ -213,7 +211,7 @@ public class PlanCreateTools {
 
             log.info("새로운 {}일차 일정 생성: {}개 장소", dayIndex, newPlaces.size());
 
-            // 8. ✅ Service 호출 (깔끔!)
+            // 8. Service 호출
             travelPlanSaveService.saveSingleDay(targetDay.getId(), newPlaces);
 
             // 9. 스냅샷 저장
