@@ -37,9 +37,58 @@ public class PlanBasicTools {
     // ===============================
     @Transactional
     @Tool(description = """
-            일정에서 특정 장소를 삭제합니다.
-            ...
-            """)
+                일정에서 특정 장소를 삭제합니다.
+
+            ⚠️ 이 Tool은 "삭제" 의도가 명확할 때만 사용하세요.
+
+            ━━━━━━━━━━━━━━━━━━━━━━━
+            사용해야 할 때
+            ━━━━━━━━━━━━━━━━━━━━━━━
+            - "경복궁 삭제해줘"
+            - "2일차 첫 번째 장소 지워줘"
+            - "3일차 스타벅스 삭제"
+            - "카페 드롭탑 제거해줘"
+
+            ━━━━━━━━━━━━━━━━━━━━━━━
+            사용하지 말아야 할 때
+            ━━━━━━━━━━━━━━━━━━━━━━━
+            - 장소 추가 흐름 중 사용자의 위치 응답
+              예: "2일차에", "세 번째에"
+            - 추천 장소 선택 중 번호 입력
+              예: "3번", "5번 추가"
+
+            위 경우에는 ❌ deletePlace 사용 금지
+
+            ━━━━━━━━━━━━━━━━━━━━━━━
+            입력 규칙 (중요)
+            ━━━━━━━━━━━━━━━━━━━━━━━
+            - dayIndex / position ToolParam은 신뢰하지 않습니다.
+            - 실제 값은 사용자 발화(userMessage)에서 직접 추출합니다.
+            - 없는 정보는 절대 추측하지 않습니다.
+
+            ━━━━━━━━━━━━━━━━━━━━━━━
+            내부 처리 로직
+            ━━━━━━━━━━━━━━━━━━━━━━━
+            1. dayIndex + position 이 있으면
+               → 해당 위치의 장소를 바로 삭제
+
+            2. dayIndex + placeName 이 있으면
+               → 해당 날짜에서 장소 이름으로 검색 후 삭제
+
+            3. placeName만 있으면
+               → 전체 일정에서 검색
+                 - 하나면 바로 삭제
+                 - 여러 개면 사용자에게 선택 요청
+
+            4. 삭제가 성공하면
+               → 스냅샷을 저장하고 완료 메시지 반환
+
+            ━━━━━━━━━━━━━━━━━━━━━━━
+            주의 사항
+            ━━━━━━━━━━━━━━━━━━━━━━━
+            - 삭제는 되돌릴 수 없는 작업이므로 항상 사용자 의도를 명확히 확인하세요.
+            - 모호한 경우 반드시 사용자에게 다시 질문해야 합니다.
+                """)
     public String deletePlace(
             @ToolParam(description = "삭제할 장소 이름") String placeName,
 
@@ -304,72 +353,57 @@ public class PlanBasicTools {
             장소 추가 Tool
 
             사용 케이스:
-            1. 장소명 + "추가" → 후보 있으면 목록 반환, 없으면 바로 추가
-            2. [STATE: ADD_CANDIDATE] + 번호 선택 → 후보에서 선택
-            3. 부분 정보 입력 → 자동으로 질문하고 컨텍스트 복원
+            1. 장소명 + "추가" → 후보 있으면 목록 반환, 정보 부족하면 질문
+            2. [STATE: ADD_CANDIDATE] + 번호 → 후보에서 선택
+            3. 부분 정보 입력 → 자동으로 컨텍스트 복원 후 이어서 처리
 
             중요:
-            - [STATE: RECOMMENDATION]일 때는 addRecommendedPlace 사용 권장
-            - 부족한 정보는 자동으로 질문
-            - 컨텍스트는 자동으로 복원
+            - RECOMMENDATION 상태에서는 addRecommendedPlace 사용
+            - dayIndex / position 없으면 절대 실제 추가하지 않음
             """)
     public String addPlace(
-            @ToolParam(description = "사용자 발화에서 언급한 장소 이름 또는 번호") String placeName,
-
-            @ToolParam(description = "몇 일차인지 (1부터). 없으면 null", required = false) Integer dayIndex,
-
-            @ToolParam(description = "몇 번째 위치인지 (1부터). 없으면 null", required = false) Integer position,
-
+            @ToolParam(description = "장소 이름 또는 후보 번호") String placeName,
+            @ToolParam(description = "몇 일차인지 (1부터)", required = false) Integer dayIndex,
+            @ToolParam(description = "몇 번째 위치인지 (1부터)", required = false) Integer position,
             ToolContext toolContext) {
 
         String conversationId = getConversationId(toolContext);
         Long planId = support.getPlanId(conversationId);
+        String userMessage = (String) toolContext.getContext().get("userMessage");
 
-        PlanToolSupport.PendingSelectionType selectionType = support.getPendingSelectionType(conversationId);
+        PlanToolSupport.PendingSelectionType state = support.getPendingSelectionType(conversationId);
 
-        log.info("🔧 [Tool] addPlace: placeName={}, state={}", placeName, selectionType);
+        log.info("🔧 [addPlace] placeName={}, dayIndex={}, position={}, state={}",
+                placeName, dayIndex, position, state);
 
         /*
          * =====================================================
-         * 🆕 RECOMMENDATION 상태 처리 (잘못된 Tool 호출)
+         * 0️⃣ 추천 상태 차단
          * =====================================================
          */
-        if (selectionType == PlanToolSupport.PendingSelectionType.RECOMMENDATION) {
-            log.warn("⚠️ [추천 상태에서 addPlace 호출] placeName={}", placeName);
-            support.clearPendingSelection(conversationId);
-
-            return String.format("""
-                    ⚠️ 추천 목록에서 선택하려면 번호를 말씀해주세요.
-
-                    아니면 '%s'을(를) 직접 추가하시겠어요?
-                    그렇다면 몇 일차에 추가할까요?
-                    """, placeName);
+        if (state == PlanToolSupport.PendingSelectionType.RECOMMENDATION) {
+            return "추천 장소를 추가 중입니다. 번호로 선택해주세요. (예: \"3번 추가\")";
         }
 
         /*
          * =====================================================
-         * 1. ADD_CANDIDATE 상태 처리 (후보 번호 선택)
+         * 1️⃣ ADD_CANDIDATE 상태 (후보 번호 선택)
          * =====================================================
          */
-        if (selectionType == PlanToolSupport.PendingSelectionType.ADD_CANDIDATE) {
+        if (state == PlanToolSupport.PendingSelectionType.ADD_CANDIDATE) {
 
             List<TravelPlaces> candidates = support.getAddPlaceCandidates(conversationId);
             TravelPlaces selected = null;
 
-            boolean isNumber = placeName.matches("\\d+");
-
-            // 방법 1: 숫자로 시도
-            if (isNumber) {
-                try {
-                    int index = Integer.parseInt(placeName);
-                    if (index >= 1 && index <= candidates.size()) {
-                        selected = candidates.get(index - 1);
-                    }
-                } catch (NumberFormatException ignore) {
+            // 번호 선택
+            if (placeName.matches("\\d+")) {
+                int idx = Integer.parseInt(placeName);
+                if (idx >= 1 && idx <= candidates.size()) {
+                    selected = candidates.get(idx - 1);
                 }
             }
 
-            // 방법 2: 장소명으로 시도 (LLM이 변환한 경우)
+            // 장소명 직접 선택 (LLM 보정 대비)
             if (selected == null) {
                 selected = candidates.stream()
                         .filter(c -> c.getTitle().equals(placeName))
@@ -377,40 +411,35 @@ public class PlanBasicTools {
                         .orElse(null);
             }
 
-            // 둘 다 실패 → 후보 상태 종료
+            // 후보 선택 실패 → 상태 종료 후 일반 흐름
             if (selected == null) {
-                log.info("🔍 [후보 목록에 없음] placeName={}", placeName);
                 support.clearPendingSelection(conversationId);
-                // 아래 일반 추가로 진행
             } else {
-                // 후보 선택 처리
-                log.info("[후보 선택] {}", selected.getTitle());
-
-                String userMessage = (String) toolContext.getContext().get("userMessage");
 
                 // 컨텍스트 복원
-                PlanToolSupport.SelectionContext context = support.getSelectionContext(conversationId);
-                if (context != null) {
-                    dayIndex = context.getDayIndex();
-                    position = context.getPosition();
+                PlanToolSupport.SelectionContext ctx = support.getSelectionContext(conversationId);
+                if (ctx != null) {
+                    dayIndex = ctx.getDayIndex();
+                    position = ctx.getPosition();
                 }
 
-                // 사용자 발화에서 추출
-                Integer dayFromText = UserInputParser.parseDayIndex(userMessage);
-                Integer posFromText = UserInputParser.parsePosition(userMessage);
+                // 사용자 발화에서 보충
+                Integer d = UserInputParser.parseDayIndex(userMessage);
+                Integer p = UserInputParser.parsePosition(userMessage);
 
-                if (dayFromText != null) {
-                    support.updateDayIndex(conversationId, dayFromText);
-                    dayIndex = dayFromText;
+                if (d != null) {
+                    dayIndex = d;
+                    support.updateDayIndex(conversationId, d);
                 }
-                if (posFromText != null) {
-                    support.updatePosition(conversationId, posFromText);
-                    position = posFromText;
+                if (p != null) {
+                    position = p;
+                    support.updatePosition(conversationId, p);
                 }
 
-                // 부족한 값 질문
+                // 질문
                 if (dayIndex == null) {
-                    return String.format("'%s'을(를) 몇 일차에 추가할까요?", selected.getTitle());
+                    return String.format("'%s'을(를) 몇 일차에 추가할까요?",
+                            selected.getTitle());
                 }
                 if (position == null) {
                     return String.format("%d일차에 '%s'을(를) 몇 번째에 추가할까요?",
@@ -418,92 +447,70 @@ public class PlanBasicTools {
                 }
 
                 // 실행
+                String added = addAction.addPlaceFromCandidate(
+                        planId, dayIndex, position, selected);
+
+                support.clearPendingSelection(conversationId);
+                Integer version;
                 try {
-                    String addedName = addAction.addPlaceFromCandidate(planId, dayIndex, position, selected);
-                    support.clearPendingSelection(conversationId);
-                    Integer version = support.saveSnapshot(planId);
-
-                    return String.format("%d일차 %d번째에 '%s'을(를) 추가했습니다. (버전 %d)",
-                            dayIndex, position, addedName, version);
-
+                    version = support.saveSnapshot(planId);
                 } catch (Exception e) {
-                    log.error("❌ 후보 장소 추가 실패", e);
-                    return "장소 추가 중 오류가 발생했습니다.";
+                    log.error("장소 추가 실패", e);
+                    return String.format("❌ 장소 추가 중 오류 발생: %s", e.getMessage());
                 }
+
+                return String.format(
+                        "%d일차 %d번째에 '%s'을(를) 추가했습니다. (버전 %d)",
+                        dayIndex, position, added, version);
             }
         }
 
         /*
          * =====================================================
-         * 2. 일반 장소 추가
+         * 2️⃣ 일반 장소 추가 (새 작업)
          * =====================================================
          */
-
-        // 상태 클리어 (새 작업 시작)
         support.clearPendingSelection(conversationId);
-        log.info("🧹 [addPlace] 모든 선택 상태 클리어");
 
-        // ToolParam 무시하고 사용자 발화에서 파싱
-        dayIndex = null;
-        position = null;
+        // 사용자 발화에서만 파싱
+        dayIndex = UserInputParser.parseDayIndex(userMessage);
+        position = UserInputParser.parsePosition(userMessage);
 
-        String userMessage = (String) toolContext.getContext().get("userMessage");
+        PlanAddAction.AddPlaceResult result = addAction.addPlace(planId, dayIndex, placeName, position);
 
-        Integer dayFromText = UserInputParser.parseDayIndex(userMessage);
-        Integer posFromText = UserInputParser.parsePosition(userMessage);
+        switch (result.getType()) {
 
-        if (dayFromText != null) {
-            dayIndex = dayFromText;
-        }
-        if (posFromText != null) {
-            position = posFromText;
-        }
-
-        // position 기본값 설정 (검색용)
-        Integer searchPosition = (position != null) ? position : Integer.MAX_VALUE;
-
-        // dayIndex 임시값 설정 (검색용)
-        Integer searchDayIndex = (dayIndex != null) ? dayIndex : 1;
-
-        // 먼저 검색 (후보 찾기)
-        try {
-            PlanAddAction.AddPlaceResult result = addAction.addPlace(
-                    planId,
-                    searchDayIndex,
-                    placeName,
-                    searchPosition);
-
-            // 후보 목록인 경우
-            if (result.hasCandidates()) {
-                log.info("📋 [후보 목록 발견] 개수={}", result.getCandidates().size());
-                support.setAddPlaceCandidates(conversationId,
+            case CANDIDATES:
+                support.setAddPlaceCandidates(
+                        conversationId,
                         result.getCandidates(),
                         dayIndex,
-                        null); // position은 null로 저장 (나중에 다시 물어봄)
+                        position);
                 return result.getMessage();
-            }
 
-            // 에러인 경우
-            if (result.isError()) {
+            case NEED_DAY:
+            case NEED_POSITION:
                 return result.getMessage();
-            }
 
-            // 성공인 경우 - dayIndex 체크
-            if (dayIndex == null) {
-                return String.format("'%s'을(를) 몇 일차에 추가할까요?", placeName);
-            }
+            case ERROR:
+                return result.getMessage();
 
-            Integer versionNo = support.saveSnapshot(planId);
-            log.info("[장소 추가 완료] {}일차에 '{}' 추가, 버전: {}",
-                    searchDayIndex, result.getAddedPlaceName(), versionNo);
-
-            return String.format("%d일차 %d번째에 '%s'을(를) 추가했습니다. (버전 %d)",
-                    searchDayIndex, searchPosition, result.getAddedPlaceName(), versionNo);
-
-        } catch (Exception e) {
-            log.error("❌ [장소 추가 실패]", e);
-            return String.format("장소 추가 중 오류 발생: %s", e.getMessage());
+            case SUCCESS:
+                Integer version;
+                try {
+                    version = support.saveSnapshot(planId);
+                    return String.format(
+                            "%d일차 %d번째에 '%s'을(를) 추가했습니다. (버전 %d)",
+                            dayIndex, position,
+                            result.getAddedPlaceName(),
+                            version);
+                } catch (Exception e) {
+                    log.error("장소 추가 실패", e);
+                    return String.format("❌ 장소 추가 중 오류 발생: %s", e.getMessage());
+                }
         }
+
+        return "알 수 없는 오류가 발생했습니다.";
     }
 
     // ===============================

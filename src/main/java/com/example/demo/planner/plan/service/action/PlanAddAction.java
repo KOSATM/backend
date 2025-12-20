@@ -61,7 +61,9 @@ public class PlanAddAction {
         public enum ResultType {
             SUCCESS, // 추가 성공
             CANDIDATES, // 후보 목록
-            ERROR // 에러
+            ERROR, // 에러
+            NEED_DAY,
+            NEED_POSITION
         }
 
         // ========== Factory Methods ==========
@@ -90,6 +92,23 @@ public class PlanAddAction {
                     null);
         }
 
+        public static AddPlaceResult needDay(String placeName) {
+            return new AddPlaceResult(
+                    ResultType.NEED_DAY,
+                    String.format("'%s'을(를) 몇 일차에 추가할까요?", placeName),
+                    null,
+                    null);
+        }
+
+        public static AddPlaceResult needPosition(String placeName, int dayIndex) {
+            return new AddPlaceResult(
+                    ResultType.NEED_POSITION,
+                    String.format("%d일차에 '%s'을(를) 몇 번째에 추가할까요?",
+                            dayIndex, placeName),
+                    null,
+                    null);
+        }
+
         // ========== Helper Methods ==========
 
         public boolean isSuccess() {
@@ -108,29 +127,28 @@ public class PlanAddAction {
     }
 
     /**
-     * 특정 날짜에 장소 추가 (이름 기반) 메서드 1: 장소 이름으로 검색해서 추가
-    * 
-     * @return AddPlaceResult (성공/후보목록/에러)
+     * 특정 날짜에 장소 추가 (이름 기반)
+     *
+     * 동작 규칙:
+     * - 장소명 명확 + dayIndex 없음 → NEED_DAY
+     * - 장소명 명확 + dayIndex 있음 + position 없음 → NEED_POSITION
+     * - 후보 여러 개 → CANDIDATES
+     * - 모든 정보 있을 때만 실제 추가
      */
-    public AddPlaceResult addPlace(Long planId, Integer dayIndex, String placeName, Integer position) {
+    public AddPlaceResult addPlace(
+            Long planId,
+            Integer dayIndex,
+            String placeName,
+            Integer position) {
 
-        log.info("📍 [장소 추가 시작] planId={}, dayIndex={}, placeName={}", planId, dayIndex, placeName);
+        log.info("📍 [장소 추가 시작] planId={}, dayIndex={}, position={}, placeName={}",
+                planId, dayIndex, position, placeName);
 
-        // 1. Day 조회
-        List<PlanDayWithPlaces> days = queryService.queryAllDaysOptimized(planId);
-
-        PlanDayWithPlaces targetDay = days.stream()
-                .filter(d -> d.getDay().getDayIndex() == dayIndex)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(dayIndex + "일차를 찾을 수 없습니다."));
-
-        List<PlanPlace> existingPlaces = targetDay.getPlaces();
-        Long dayId = targetDay.getDay().getId();
-
-        // 2. 장소 조회
+        // =====================================================
+        // 1. 장소 검색 (추가 여부 판단보다 먼저!)
+        // =====================================================
         TravelPlaces place = planDao.findExactByTitle(placeName);
 
-        // 3-1. exact 실패 → normalized like
         if (place == null) {
             List<TravelPlaces> candidates = planDao.findByTitleLikeNormalized(placeName);
 
@@ -139,12 +157,10 @@ public class PlanAddAction {
                 log.info("🔍 [자동 확정] normalized 검색 1개: {}", place.getTitle());
             } else if (candidates.size() > 1) {
                 log.info("📋 [후보 목록] normalized 검색 {}개", candidates.size());
-                String message = renderPlaceCandidates(candidates);
-                return AddPlaceResult.candidates(candidates, message); // ✅ 후보 목록 반환
+                return AddPlaceResult.candidates(candidates, renderPlaceCandidates(candidates));
             }
         }
 
-        // 3-2. 그래도 없으면 일반 like
         if (place == null) {
             List<TravelPlaces> candidates = planDao.findByTitleLike(placeName);
 
@@ -153,47 +169,75 @@ public class PlanAddAction {
                 log.info("🔍 [자동 확정] like 검색 1개: {}", place.getTitle());
             } else if (candidates.size() > 1) {
                 log.info("📋 [후보 목록] like 검색 {}개", candidates.size());
-                String message = renderPlaceCandidates(candidates);
-                return AddPlaceResult.candidates(candidates, message); // ✅ 후보 목록 반환
+                return AddPlaceResult.candidates(candidates, renderPlaceCandidates(candidates));
             }
         }
 
-        // 3-3. 최종 실패
         if (place == null) {
             log.warn("❌ [장소 없음] placeName={}", placeName);
             return AddPlaceResult.error("❌ '" + placeName + "'에 해당하는 장소를 찾지 못했습니다.");
         }
 
-        // 4. PlanPlace 생성
+        // =====================================================
+        // 2. 정보 부족 체크 (❗ 여기서 절대 DB 수정 X)
+        // =====================================================
+        if (dayIndex == null) {
+            return AddPlaceResult.needDay(place.getTitle());
+        }
+
+        if (position == null) {
+            return AddPlaceResult.needPosition(place.getTitle(), dayIndex);
+        }
+
+        // =====================================================
+        // 3. Day 조회 (이제 안전)
+        // =====================================================
+        List<PlanDayWithPlaces> days = queryService.queryAllDaysOptimized(planId);
+
+        PlanDayWithPlaces targetDay = days.stream()
+                .filter(d -> d.getDay().getDayIndex().equals(dayIndex))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(dayIndex + "일차를 찾을 수 없습니다."));
+
+        List<PlanPlace> existingPlaces = targetDay.getPlaces();
+        Long dayId = targetDay.getDay().getId();
+
+        LocalDate planDate = targetDay.getDay().getPlanDate();
+
+        OffsetDateTime startAt = calculateInsertTime(planDate, existingPlaces, position);
+        OffsetDateTime endAt = startAt.plusMinutes(60);
+
+        // =====================================================
+        // 5. PlanPlace 생성
+        // =====================================================
         PlanPlace newPlace = PlanPlace.builder()
                 .dayId(dayId)
                 .title(place.getTitle())
                 .placeName(place.getTitle())
                 .address(place.getAddress())
+                .startAt(startAt)
+                .endAt(endAt)
                 .lat(place.getLat())
                 .lng(place.getLng())
-                .startAt(OffsetDateTime.now(ZoneId.of("Asia/Seoul")))
-                .endAt(OffsetDateTime.now(ZoneId.of("Asia/Seoul")).plusMinutes(1))
                 .expectedCost(BigDecimal.ZERO)
                 .normalizedCategory(place.getNormalizedCategory())
                 .firstImage(place.getFirstImage())
                 .firstImage2(place.getFirstImage2())
                 .build();
 
-        // 5. position 처리
-        int insertIndex = position == Integer.MAX_VALUE
-                ? existingPlaces.size()
-                : Math.max(0, Math.min(position - 1, existingPlaces.size()));
-
+        int insertIndex = Math.max(0, Math.min(position - 1, existingPlaces.size()));
         existingPlaces.add(insertIndex, newPlace);
 
-        // 6. DB 저장
+        // =====================================================
+        // 5️⃣ DB 저장
+        // =====================================================
         planPlaceDao.deletePlanPlaceByDayId(dayId);
         planPlaceDao.insertPlanPlaceBatch(existingPlaces);
 
-        log.info("✅ [장소 추가 완료] {}일차 {}번째에 '{}' 추가", dayIndex, insertIndex + 1, place.getTitle());
+        log.info("✅ [장소 추가 완료] {}일차 {}번째에 '{}' 추가",
+                dayIndex, insertIndex + 1, place.getTitle());
 
-        return AddPlaceResult.success(place.getTitle()); // ✅ 성공 반환
+        return AddPlaceResult.success(place.getTitle());
     }
 
     /**
@@ -217,9 +261,10 @@ public class PlanAddAction {
 
         Long dayId = targetDay.getDay().getId();
 
-        // OffsetDateTime insertStartTime = calculateInsertTime(planDate,
-        // existingPlaces, position);
-        // OffsetDateTime insertEndTime = insertStartTime.plusMinutes(durationMin);
+        LocalDate planDate = targetDay.getDay().getPlanDate();
+
+        OffsetDateTime startAt = calculateInsertTime(planDate, existingPlaces, position);
+        OffsetDateTime endAt = startAt.plusMinutes(60);
 
         TravelPlaces place = planDao.findByPlaceId(placeId);
 
@@ -234,8 +279,8 @@ public class PlanAddAction {
                 .address(place.getAddress())
                 .lat(place.getLat())
                 .lng(place.getLng())
-                .startAt(OffsetDateTime.now(ZoneId.of("Asia/Seoul")))
-                .endAt(OffsetDateTime.now(ZoneId.of("Asia/Seoul")).plusMinutes(1))
+                .startAt(startAt)
+                .endAt(endAt)
                 .expectedCost(BigDecimal.ZERO)
                 .normalizedCategory(place.getNormalizedCategory())
                 .firstImage(place.getFirstImage())
@@ -302,7 +347,7 @@ public class PlanAddAction {
     }
 
     /*
-    상태에 저장된 장소로 추가, 메서드 2: 이미 선택된 장소 객체로 추가
+     * 상태에 저장된 장소로 추가, 메서드 2: 이미 선택된 장소 객체로 추가
      */
     public String addPlaceFromCandidate(Long planId, int dayIndex, int position, TravelPlaces place) {
 
@@ -319,6 +364,11 @@ public class PlanAddAction {
         Long dayId = targetDay.getDay().getId();
         List<PlanPlace> existingPlaces = targetDay.getPlaces();
 
+        LocalDate planDate = targetDay.getDay().getPlanDate();
+
+        OffsetDateTime startAt = calculateInsertTime(planDate, existingPlaces, position);
+        OffsetDateTime endAt = startAt.plusMinutes(60);
+
         // 2. PlanPlace 생성
         PlanPlace newPlace = PlanPlace.builder()
                 .dayId(dayId)
@@ -327,8 +377,8 @@ public class PlanAddAction {
                 .address(place.getAddress())
                 .lat(place.getLat())
                 .lng(place.getLng())
-                .startAt(OffsetDateTime.now(ZoneId.of("Asia/Seoul")))
-                .endAt(OffsetDateTime.now(ZoneId.of("Asia/Seoul")).plusMinutes(1))
+                .startAt(startAt)
+                .endAt(endAt)
                 .expectedCost(BigDecimal.ZERO)
                 .normalizedCategory(place.getNormalizedCategory())
                 .firstImage(place.getFirstImage())
@@ -342,8 +392,8 @@ public class PlanAddAction {
 
         existingPlaces.add(insertIndex, newPlace);
 
-        for(PlanPlace place2 : existingPlaces){
-            log.info(place2.toString()+"\n");
+        for (PlanPlace place2 : existingPlaces) {
+            log.info(place2.toString() + "\n");
         }
 
         // 4. DB 저장

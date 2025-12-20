@@ -66,40 +66,41 @@ public class PlanViewTools {
     }
 
     @Tool(description = """
-            특정 날짜의 일정을 조회합니다.
+    특정 날짜의 일정을 조회합니다.
 
-            ⚠️ 중요: 이 Tool은 명시적인 조회 요청일 때만 사용하세요!
+    ⚠️ 사용 조건:
+    - 반드시 '보여줘', '확인', '일정' 같은 조회 의도가 포함되어야 합니다.
 
-            사용해야 할 때:
-            - "1일차 보여줘"
-            - "2일차 일정 확인해줘"
-            - "3일차 어떻게 돼?"
-
-            사용하지 말아야 할 때:
-            - 장소 추가 중 "3일차"라고 답한 경우
-              → addPlace를 다시 호출하세요!
-            - 추천 추가 중 "2일차"라고 답한 경우
-              → addRecommendedPlace를 다시 호출하세요!
-
-            판단 기준:
-            - 직전에 Tool이 질문을 했다면?
-              → 그 Tool을 다시 호출 (조회 아님!)
-            - 사용자가 "보여줘", "확인", "뭐 있어?" 등을 말했다면?
-              → 조회 맞음!
-                """)
+    ❌ 사용 금지:
+    - 장소 추가/추천 중 사용자가 '2일차', '3일차'만 답한 경우
+                        """)
     public String viewDay(
             @ToolParam(description = "조회할 일차 번호 (1부터 시작)") int dayIndex,
             ToolContext toolContext) {
 
         String conversationId = getConversationId(toolContext);
         Long planId = support.getPlanId(conversationId);
-        log.info("🧭 [일차 조회] conversationId={}, planId={}, dayIndex={}",
-                conversationId, planId, dayIndex);
 
-        support.clearAddCandidateState(conversationId);
-        log.info("🧹 [viewPlan] 장소 후보 상태 클리어 (추천 유지)");
+        PlanToolSupport.PendingSelectionType state = support.getPendingSelectionType(conversationId);
 
-        // 일정이 없는 경우
+        log.info("🧭 [일차 조회 시도] conversationId={}, planId={}, dayIndex={}, state={}",
+                conversationId, planId, dayIndex, state);
+
+        /*
+         * 추가/선택 흐름 중이면 조회 금지
+         */
+        if (state == PlanToolSupport.PendingSelectionType.ADD_CANDIDATE ||
+                state == PlanToolSupport.PendingSelectionType.RECOMMENDATION) {
+
+            log.info("⛔ viewDay 차단: 선택 흐름 중(state={})", state);
+
+            // ❗️여기서 상태를 날리지 말고 그대로 둔다
+            // → addPlace / addRecommendedPlace가 다시 호출되게 유도
+            return "알겠습니다! 계속 진행할게요.";
+            // 또는 null / 빈 문자열도 가능 (에이전트가 이전 Tool 재호출)
+        }
+
+        // ⬇️ 여기부터는 '진짜 조회'만 도달
         if (planId == null) {
             return """
                     📭 아직 여행 일정이 없습니다.
@@ -116,7 +117,7 @@ public class PlanViewTools {
             return support.renderDay(day, places);
 
         } catch (IllegalArgumentException e) {
-            return e.getMessage(); // "n일차를 찾을 수 없습니다."
+            return e.getMessage();
         } catch (Exception e) {
             log.error("❌ 일차 조회 실패", e);
             return "해당 일차를 불러오는 중 오류가 발생했습니다.";
