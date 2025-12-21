@@ -101,9 +101,9 @@ public class PlanToolSupport {
             return;
         }
 
-        // ✅ 상호 배타적: 장소 후보 클리어
+        // 상호 배타적: 장소 후보 클리어
         lastAddPlaceCandidatesByConversation.remove(conversationId);
-        selectionContextByConversation.remove(conversationId); // ✅ 컨텍스트도 클리어!
+        selectionContextByConversation.remove(conversationId);
 
         lastRecommendationsByConversation.put(conversationId, new ArrayList<>(list));
         pendingSelectionByConversation.put(conversationId, PendingSelectionType.RECOMMENDATION);
@@ -134,12 +134,12 @@ public class PlanToolSupport {
             return;
         }
 
-        // ✅ 상호 배타적: 추천 목록 클리어
+        //상호 배타적: 추천 목록 클리어
         lastRecommendationsByConversation.remove(conversationId);
 
         lastAddPlaceCandidatesByConversation.put(conversationId, new ArrayList<>(candidates));
 
-        // ✅ 컨텍스트 새로 설정
+        //컨텍스트 새로 설정
         SelectionContext context = new SelectionContext(dayIndex, position, null);
         selectionContextByConversation.put(conversationId, context);
         pendingSelectionByConversation.put(conversationId, PendingSelectionType.ADD_CANDIDATE);
@@ -164,8 +164,8 @@ public class PlanToolSupport {
     // =========================
 
     /**
-     * ✅ 추천 선택 컨텍스트 저장
-     * - ❗️덮어쓰기 금지: index만 업데이트하고 day/position은 보존
+     * 추천 선택 컨텍스트 저장
+     * - 덮어쓰기 금지: index만 업데이트하고 day/position은 보존
      */
     public void setRecommendContext(String conversationId,
             Integer index,
@@ -186,7 +186,7 @@ public class PlanToolSupport {
     }
 
     /**
-     * ✅ 선택 컨텍스트 조회 (후보/추천 공통)
+     * 선택 컨텍스트 조회 (후보/추천 공통)
      */
     public SelectionContext getSelectionContext(String conversationId) {
         if (conversationId == null || conversationId.isBlank()) {
@@ -494,55 +494,96 @@ public class PlanToolSupport {
     // 상태 컨텍스트 생성
     // =========================
     public String buildStateContext(String conversationId) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("[STATE]\n");
-
-        // 여행 일정 존재 여부
-        Long planId = getPlanId(conversationId);
-        if (planId != null) {
-            sb.append("- 여행 일정: EXISTS\n");
-        } else {
-            sb.append("- 여행 일정: NONE\n");
-        }
-
-        // 선택 대기 상태
         PendingSelectionType selectionType = getPendingSelectionType(conversationId);
 
-        switch (selectionType) {
-            case RECOMMENDATION:
-                List<Map<String, Object>> recs = getLastRecommendations(conversationId);
-                sb.append("- 대기 중인 선택: 추천 목록\n");
-                sb.append("- 추천 장소 개수: ").append(recs.size()).append("\n");
-                sb.append("⚠️ 사용자가 번호를 선택하면 addRecommendedPlace 재호출\n");
-                sb.append("⚠️ 다른 Tool을 호출하지 마세요!\n");
-                break;
-
-            case ADD_CANDIDATE:
-                List<TravelPlaces> candidates = getAddPlaceCandidates(conversationId);
-                SelectionContext context = getSelectionContext(conversationId);
-                sb.append("- 대기 중인 선택: 장소 후보\n");
-                sb.append("- 후보 개수: ").append(candidates.size()).append("\n");
-
-                if (context != null) {
-                    if (context.getDayIndex() != null) {
-                        sb.append("- 이미 입력된 일차: ").append(context.getDayIndex()).append("일차\n");
-                    }
-                    if (context.getPosition() != null) {
-                        sb.append("- 이미 입력된 위치: ").append(context.getPosition()).append("번째\n");
-                    }
-                }
-
-                sb.append("⚠️ 사용자 답변을 받으면 addPlace 재호출\n");
-                sb.append("⚠️ viewDay, viewPlan 등 다른 Tool을 호출하지 마세요!\n");
-                break;
-
-            case NONE:
-                sb.append("- 대기 중인 선택: NONE\n");
-                break;
+        // 대기 중인 작업이 없는 경우
+        if (selectionType == PendingSelectionType.NONE) {
+            return """
+                    <context>
+                    현재 특별히 대기 중인 작업이 없습니다.
+                    사용자의 요청에 맞는 Tool을 자유롭게 선택하세요.
+                    </context>
+                    """;
         }
 
-        return sb.toString();
+        // 추천 목록 선택 대기
+        if (selectionType == PendingSelectionType.RECOMMENDATION) {
+            List<Map<String, Object>> recs = getLastRecommendations(conversationId);
+            SelectionContext context = getSelectionContext(conversationId);
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("<context>\n");
+            sb.append(String.format("방금 사용자에게 %d개의 여행지를 추천했습니다.\n", recs.size()));
+            sb.append("사용자가 선택을 기다리고 있습니다.\n\n");
+
+            // 이미 입력된 정보 표시
+            if (context != null) {
+                if (context.getIndex() != null) {
+                    String placeName = (String) recs.get(context.getIndex() - 1).get("title");
+                    sb.append(String.format("- 선택한 장소: %d번 (%s)\n", context.getIndex(), placeName));
+                }
+                if (context.getDayIndex() != null) {
+                    sb.append(String.format("- 추가할 일차: %d일차\n", context.getDayIndex()));
+                }
+                if (context.getPosition() != null) {
+                    sb.append(String.format("- 추가할 위치: %d번째\n", context.getPosition()));
+                }
+            }
+
+            sb.append("\n다음 동작:\n");
+            sb.append("- 사용자가 '3번', '5번 추가' 같은 숫자를 말하면 → addRecommendedPlace 사용\n");
+            sb.append("- 사용자가 '2일차에', '맨 뒤에' 같은 위치를 말하면 → 정보를 저장하고 부족한 부분 물어보기\n");
+            sb.append("- 사용자가 완전히 새로운 요청을 하면 → 해당 요청에 맞는 Tool 사용\n");
+            sb.append("</context>");
+
+            return sb.toString();
+        }
+
+        // 장소 후보 선택 대기
+        if (selectionType == PendingSelectionType.ADD_CANDIDATE) {
+            List<TravelPlaces> candidates = getAddPlaceCandidates(conversationId);
+            SelectionContext context = getSelectionContext(conversationId);
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("<context>\n");
+            sb.append(String.format("사용자가 입력한 장소명으로 %d개의 후보를 찾았습니다.\n", candidates.size()));
+            sb.append("사용자가 어느 것을 추가할지 선택을 기다리고 있습니다.\n\n");
+
+            // 후보 목록 표시
+            sb.append("후보 목록:\n");
+            for (int i = 0; i < Math.min(3, candidates.size()); i++) {
+                TravelPlaces place = candidates.get(i);
+                sb.append(String.format("%d. %s\n", i + 1, place.getTitle()));
+            }
+            if (candidates.size() > 3) {
+                sb.append(String.format("... 외 %d개\n", candidates.size() - 3));
+            }
+            sb.append("\n");
+
+            // 이미 입력된 정보 표시
+            if (context != null) {
+                if (context.getIndex() != null) {
+                    String placeName = candidates.get(context.getIndex() - 1).getTitle();
+                    sb.append(String.format("- 선택한 장소: %d번 (%s)\n", context.getIndex(), placeName));
+                }
+                if (context.getDayIndex() != null) {
+                    sb.append(String.format("- 추가할 일차: %d일차\n", context.getDayIndex()));
+                }
+                if (context.getPosition() != null) {
+                    sb.append(String.format("- 추가할 위치: %d번째\n", context.getPosition()));
+                }
+            }
+
+            sb.append("\n다음 동작:\n");
+            sb.append("- 사용자가 '1번', '2번' 같은 숫자를 말하면 → addPlace 사용\n");
+            sb.append("- 사용자가 '3일차에', '첫 번째에' 같은 정보를 말하면 → 정보 저장 후 부족한 부분 물어보기\n");
+            sb.append("- 사용자가 완전히 새로운 요청을 하면 → 해당 요청에 맞는 Tool 사용 (기존 후보는 무시)\n");
+            sb.append("</context>");
+
+            return sb.toString();
+        }
+
+        return "<context>현재 상태를 확인할 수 없습니다.</context>";
     }
 
     // =========================

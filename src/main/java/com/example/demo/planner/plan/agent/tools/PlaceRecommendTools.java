@@ -33,6 +33,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 개선된 PlaceRecommendTools
+ * 
+ * 주요 개선사항:
+ * 1. Tool Description에 응답 가공 지침 추가
+ * 2. 자연스러운 응답 예시 제공
+ * 3. Agent가 자유롭게 표현하도록 유도
+ */
 @Component("placeRecommendTools")
 @RequiredArgsConstructor
 @Slf4j
@@ -46,7 +54,6 @@ public class PlaceRecommendTools {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final PlanToolSupport support;
 
-    // 요청 단위 상태 (스레드 세이프 필요 없음: Tool 호출 단위)
     private PlanSnapshotContent currentPlanSnapshot;
 
     // ===============================
@@ -54,28 +61,43 @@ public class PlaceRecommendTools {
     // ===============================
     @Tool(name = "recommendPlace", description = """
             사용자가 장소를 탐색하거나 추천을 요청할 때 사용합니다.
-
-             이럴 때 사용:
+            
+            사용 예시:
             - "강남 근처 추천해줘"
             - "카페 좀 알려줘"
             - "맛집 어디가 좋아?"
             - "2일차에 갈 만한 곳 알려줘"
-            - "뭐가 좋아?"
-
-            ❌ 이럴 때 사용 금지:
-            - "경복궁 추가해줘" → addPlace 사용
-            - "롯데월드 넣어줘" → addPlace 사용
-            - "5번 추가해줘" → addRecommendedPlace 사용
-
-            핵심 구분:
-            - 탐색/추천 요청 ("~추천", "~알려줘", "뭐가 좋아?") → 이 Tool
-            - 장소 추가 ("~추가", "~넣어줘") → addPlace ❌
-            - 추천 번호 선택 ("5번 추가") → addRecommendedPlace ❌
-
-            중요:
-            - 이 Tool은 추천 후보만 제공합니다.
-            - 일정을 직접 수정하지 않습니다.
-            - 사용자가 번호를 선택하면 addRecommendedPlace를 사용하세요.
+            
+            ⚠️ 응답 처리 방법:
+            이 Tool은 장소 정보를 기본 포맷으로 반환합니다.
+            사용자에게 전달할 때는 다음처럼 자연스럽게 가공하세요:
+            
+            Tool 반환 예시:
+            "추천 장소 목록입니다:
+            
+            1. 스타벅스 강남점
+             - 주소: 서울 강남구...
+             - 설명: 대형 카페
+            
+            2. 카페베네 역삼점
+             - 주소: 서울 강남구...
+             - 설명: 조용한 분위기"
+            
+            좋은 응답 (자연스럽게 가공):
+            "강남 카페 찾아봤어요! ☕
+            
+            1. 스타벅스 강남점 - 넓고 쾌적해요
+            2. 카페베네 역삼점 - 조용한 분위기
+            
+            어떤 곳이 마음에 드세요?"
+            
+            나쁜 응답 (그대로 복붙):
+            "추천 장소 목록입니다: 1. 스타벅스..."
+            
+            핵심 규칙:
+            - 장소 번호와 이름은 정확히 유지
+            - 나머지는 친근하게 표현
+            - 이모지는 적절히 사용 (1-2개)
             """)
     public String recommendPlace(
             @ToolParam(description = "추천 요청 문장") String query,
@@ -91,7 +113,7 @@ public class PlaceRecommendTools {
 
         boolean hasPlanContext = currentPlanSnapshot != null;
 
-        // 2. 날짜 검증 (일정이 있을 때만 의미 있음)
+        // 2. 날짜 검증
         if (hasPlanContext && !validateDate(query)) {
             return "요청하신 날짜는 현재 여행 일정 범위를 벗어납니다.";
         }
@@ -99,7 +121,6 @@ public class PlaceRecommendTools {
         // 3. 지역 추출
         SeoulRegion region = SeoulRegion.fromUserInput(query);
 
-        // 4. 의도 로그 (분기용)
         if (hasPlanContext) {
             log.info("📍 일정 기반 추천 요청 (query={})", query);
         } else if (region != null) {
@@ -108,7 +129,6 @@ public class PlaceRecommendTools {
             log.info("📍 일반 추천 요청 (query={})", query);
         }
 
-        // 5. 실제 추천
         return dbSearch(query, region, conversationId);
     }
 
@@ -117,6 +137,10 @@ public class PlaceRecommendTools {
     // ===============================
     @Tool(name = "showLastRecommendations", description = """
             가장 최근에 추천된 장소 목록을 다시 보여줍니다.
+            
+            사용 시점:
+            - "아까 추천해준 거 다시 보여줘"
+            - "추천 목록 다시 확인할게"
             """)
     public String showLastRecommendations(ToolContext toolContext) {
 
@@ -134,12 +158,34 @@ public class PlaceRecommendTools {
                         .toList());
     }
 
+    // ===============================
+    // 추천 장소 추가
+    // ===============================
     @Transactional
     @Tool(description = """
-            추천된 장소 목록에서 사용자가 선택한 번호의 장소를
-            지정한 위치에 추가합니다.
-
-            ⚠️ 중요: [STATE: RECOMMENDATION]일 때만 사용!
+            추천된 장소 목록에서 사용자가 선택한 번호의 장소를 일정에 추가합니다.
+            
+            사용 시점:
+            - 추천 후 사용자가 "3번 추가해줘" 같은 숫자를 말할 때
+            
+            ⚠️ 응답 처리 방법:
+            
+            Tool 반환 예시:
+            "1일차 3번째에 '설눈'을(를) 추가했습니다. (버전 5)"
+            
+            좋은 응답 (자연스럽게 가공):
+            "설눈을 1일차 점심 시간에 추가했어요! ✨
+            파스타가 유명하다던데, 맛있게 드세요!"
+            
+            또는:
+            "1일차에 설눈 추가 완료! 🍝
+            다른 곳도 더 추가할까요?"
+            
+            핵심 규칙:
+            - 일차 번호 (1일차) 정확히 유지
+            - 장소명 ('설눈') 절대 변경 금지
+            - 위치(3번째) → "점심 시간", "맨 뒤" 등으로 자연스럽게 표현 가능
+            - 버전 번호 → 굳이 언급 안 해도 됨 (기술적 정보)
             """)
     public String addRecommendedPlace(
             @ToolParam(description = "몇 일차인지 (1부터). 없으면 null", required = false) Integer dayIndex,
@@ -170,14 +216,14 @@ public class PlaceRecommendTools {
             return "먼저 여행지 추천을 받아주세요.";
         }
 
-        // ✅ ToolParam 무시
+        // ✅ ToolParam 무시하고 사용자 발화에서 추출
         dayIndex = null;
         position = null;
         index = null;
 
         String userMessage = (String) toolContext.getContext().get("userMessage");
 
-        // ✅ 3. 컨텍스트 복원
+        // 3. 컨텍스트 복원
         PlanToolSupport.SelectionContext context = support.getSelectionContext(conversationId);
         if (context != null) {
             index = context.getIndex();
@@ -187,7 +233,7 @@ public class PlaceRecommendTools {
                     index, dayIndex, position);
         }
 
-        // ✅ 4. 사용자 발화에서 추출
+        // 4. 사용자 발화에서 추출
         Integer indexFromText = UserInputParser.parseIndex(userMessage);
         Integer dayFromText = UserInputParser.parseDayIndex(userMessage);
         Integer posFromText = UserInputParser.parsePosition(userMessage);
@@ -212,11 +258,11 @@ public class PlaceRecommendTools {
 
         Map<String, Object> selected = recs.get(index - 1);
 
-        // ✅ 6. 부족한 값 질문
+        // 6. 부족한 값 질문
         if (dayIndex == null) {
             return String.format("""
                     %d번 '%s'을(를) 몇 일차에 추가할까요?
-
+                    
                     예시: "2일차에 추가해줘"
                     """, index, selected.get("title"));
         }
@@ -224,7 +270,7 @@ public class PlaceRecommendTools {
         if (position == null) {
             return String.format("""
                     %d번 '%s'을(를) %d일차 몇 번째에 추가할까요?
-
+                    
                     예시: "맨 뒤에", "첫 번째에"
                     """, index, selected.get("title"), dayIndex);
         }
@@ -244,6 +290,7 @@ public class PlaceRecommendTools {
 
             Integer versionNo = support.saveSnapshot(planId);
 
+            // ✅ 기본 정보만 반환 (Agent가 자연스럽게 가공)
             return String.format(
                     "%d일차 %d번째에 '%s'을(를) 추가했습니다. (버전 %d)",
                     dayIndex,
@@ -265,7 +312,7 @@ public class PlaceRecommendTools {
             float[] vector = getQueryVector(query);
             String vectorStr = Arrays.toString(vector).replace(" ", "");
 
-            // 1. 일정에 이미 포함된 장소 title 제외
+            // 1. 일정에 이미 포함된 장소 제외
             Set<String> existingTitles = new HashSet<>();
             if (currentPlanSnapshot != null) {
                 currentPlanSnapshot.getDays()
@@ -283,7 +330,6 @@ public class PlaceRecommendTools {
 
             Set<Long> excludedIds = support.getRecommendedIds(conversationId);
 
-            // 최근 추천 제외
             String excludeIdClause = excludedIds.isEmpty()
                     ? ""
                     : " AND id NOT IN (" +
@@ -297,7 +343,7 @@ public class PlaceRecommendTools {
                     ? ""
                     : " AND zone_id = '" + region.getZoneId() + "'";
 
-            // 3. SQL (이전 추천 결과는 제외 ❌)
+            // 3. SQL
             String sql = """
                     SELECT id, title, address, tel, first_image2, description,
                            (embedding <=> ?::vector) AS distance
@@ -319,11 +365,11 @@ public class PlaceRecommendTools {
                 return "조건에 맞는 새로운 추천 장소를 찾지 못했습니다.";
             }
 
-            // 4. 마지막 추천 목록 저장 (전체 20개)
+            // 4. 마지막 추천 목록 저장
             support.setLastRecommendations(conversationId, results);
             support.addRecommendedIds(conversationId, results);
 
-            // 5. 사용자에게는 상위 5개만 보여줌
+            // 5. 상위 5개만 표시
             List<Map<String, Object>> top5 = results.stream()
                     .limit(5)
                     .toList();
@@ -408,7 +454,7 @@ public class PlaceRecommendTools {
     }
 
     // ===============================
-    // 렌더링
+    // 렌더링 (기본 포맷)
     // ===============================
     private String formatRecommendationList(List<Map<String, Object>> recs) {
         StringBuilder sb = new StringBuilder("추천 장소 목록입니다:\n\n");

@@ -350,21 +350,23 @@ public class PlanBasicTools {
 
     @Transactional
     @Tool(description = """
-            장소 추가 Tool
+                 장소 추가 Tool
 
             사용 케이스:
             1. 장소명 + "추가" → 후보 있으면 목록 반환, 정보 부족하면 질문
             2. [STATE: ADD_CANDIDATE] + 번호 → 후보에서 선택
             3. 부분 정보 입력 → 자동으로 컨텍스트 복원 후 이어서 처리
 
-            중요:
+            ⚠️ 중요:
             - RECOMMENDATION 상태에서는 addRecommendedPlace 사용
             - dayIndex / position 없으면 절대 실제 추가하지 않음
-            """)
+            - 사용자가 명시하지 않은 정보는 추론하지 말고 물어보세요
+            - Tool 실행 결과가 질문이면 그대로 전달하고 재시도하지 마세요
+                """)
     public String addPlace(
             @ToolParam(description = "장소 이름 또는 후보 번호") String placeName,
-            @ToolParam(description = "몇 일차인지 (1부터)", required = false) Integer dayIndex,
-            @ToolParam(description = "몇 번째 위치인지 (1부터)", required = false) Integer position,
+            @ToolParam(description = "몇 일차인지 (1부터). 현재 일정에서 추론 가능", required = false) Integer dayIndex,
+            @ToolParam(description = "몇 번째 위치인지 (1부터). 현재 일정에서 추론 가능", required = false) Integer position,
             ToolContext toolContext) {
 
         String conversationId = getConversationId(toolContext);
@@ -472,11 +474,28 @@ public class PlanBasicTools {
          */
         support.clearPendingSelection(conversationId);
 
-        // 사용자 발화에서만 파싱
-        dayIndex = UserInputParser.parseDayIndex(userMessage);
-        position = UserInputParser.parsePosition(userMessage);
+        // ✅ 사용자 발화 파싱
+        Integer dayFromText = UserInputParser.parseDayIndex(userMessage);
+        Integer posFromText = UserInputParser.parsePosition(userMessage);
 
-        PlanAddAction.AddPlaceResult result = addAction.addPlace(planId, dayIndex, placeName, position);
+        // ✅ 최종값 결정 (우선순위: 사용자 발화 > ToolParam)
+        Integer finalDayIndex = (dayFromText != null) ? dayFromText : dayIndex;
+        Integer finalPosition = (posFromText != null) ? posFromText : position;
+
+        // ✅ 일차 정보가 아예 없으면 물어보기
+        if (finalDayIndex == null) {
+            return "몇 일차에 추가할까요? 😊";
+        }
+
+        // ✅ position만 없으면 마지막에 추가
+        if (finalPosition == null) {
+            finalPosition = calculateLastPosition(planId, finalDayIndex);
+        }
+
+        log.info("📍 [최종 파라미터] dayIndex={}, position={}", finalDayIndex, finalPosition);
+
+        PlanAddAction.AddPlaceResult result = addAction.addPlace(
+                planId, finalDayIndex, placeName, finalPosition);
 
         switch (result.getType()) {
 
@@ -484,8 +503,8 @@ public class PlanBasicTools {
                 support.setAddPlaceCandidates(
                         conversationId,
                         result.getCandidates(),
-                        dayIndex,
-                        position);
+                        finalDayIndex,
+                        finalPosition);
                 return result.getMessage();
 
             case NEED_DAY:
@@ -501,7 +520,7 @@ public class PlanBasicTools {
                     version = support.saveSnapshot(planId);
                     return String.format(
                             "%d일차 %d번째에 '%s'을(를) 추가했습니다. (버전 %d)",
-                            dayIndex, position,
+                            finalDayIndex, finalPosition,
                             result.getAddedPlaceName(),
                             version);
                 } catch (Exception e) {
@@ -511,6 +530,30 @@ public class PlanBasicTools {
         }
 
         return "알 수 없는 오류가 발생했습니다.";
+    }
+
+    // ===============================
+    // Helper 메서드
+    // ===============================
+    private Integer calculateLastPosition(Long planId, Integer dayIndex) {
+        try {
+            List<PlanDay> days = support.loadDays(planId);
+            final Integer dayIndexFinal = dayIndex;
+
+            PlanDay targetDay = days.stream()
+                    .filter(d -> d.getDayIndex().equals(dayIndexFinal))
+                    .findFirst()
+                    .orElse(null);
+
+            if (targetDay != null) {
+                List<PlanPlace> places = support.loadPlacesByDayId(targetDay.getId());
+                return places.size() + 1;
+            }
+            return 1;
+        } catch (Exception e) {
+            log.warn("위치 계산 실패, 기본값 사용: {}", e.getMessage());
+            return 1;
+        }
     }
 
     // ===============================
