@@ -42,7 +42,7 @@ public class TravelPlanAgent {
         this.embeddingModel = embeddingModel;
         this.planDao = planDao;
 
-        log.info("✅ TravelPlanAgent 초기화 완료 (GeneratedTravelPlan 전용)");
+        log.info(" TravelPlanAgent 초기화 완료 (GeneratedTravelPlan 전용)");
     }
 
     /**
@@ -83,7 +83,7 @@ public class TravelPlanAgent {
     }
 
     // =========================================================
-    // ✅ 유일한 일정 생성 Tool (STRUCTURED)
+    //  유일한 일정 생성 Tool (STRUCTURED)
     // =========================================================
     @Tool(name = "createSeoulTravelPlanStructured")
     public GeneratedTravelPlan createSeoulTravelPlanStructured(
@@ -202,7 +202,7 @@ public class TravelPlanAgent {
 
 
     // =========================================================
-    // ✅ 검색 쿼리 생성 (rule 기반)
+    //  검색 쿼리 생성 (rule 기반)
     // =========================================================
     private List<String> generateSearchQueries(String style) {
         if (style == null || style.isBlank()) {
@@ -222,7 +222,7 @@ public class TravelPlanAgent {
     }
 
     // =========================================================
-    // ✅ 벡터 검색
+    // 벡터 검색
     // =========================================================
     private List<TravelPlaces> multiQueryVectorSearch(
             List<String> queries, String location, int duration) {
@@ -245,7 +245,7 @@ public class TravelPlanAgent {
     }
 
     // =========================================================
-    // ✅ contentId 기준 중복 제거
+    //  contentId 기준 중복 제거
     // =========================================================
     private List<TravelPlaces> deduplicatePlaces(List<TravelPlaces> places) {
         Map<Long, TravelPlaces> map = new HashMap<>();
@@ -264,7 +264,7 @@ public class TravelPlanAgent {
     }
 
     // =========================================================
-    // ✅ 구조화 일정 빌더 (여행 전체 기준 중복 방지)
+    //  구조화 일정 빌더 (여행 전체 기준 중복 방지)
     // =========================================================
     private GeneratedTravelPlan buildPlanStructured(
             int duration,
@@ -555,7 +555,7 @@ public class TravelPlanAgent {
     }
 
     // =========================================================
-    // ✅ 선택 / 규칙 로직
+    //  선택 / 규칙 로직
     // =========================================================
     private TravelPlaces selectPlaceStrict(
             List<TravelPlaces> places,
@@ -619,7 +619,7 @@ public class TravelPlanAgent {
     }
 
     // =========================================================
-    // ✅ 지역 처리
+    //  지역 처리
     // =========================================================
     private List<String> extractZoneIds(String location, int duration) {
         if (location == null || location.isBlank()) {

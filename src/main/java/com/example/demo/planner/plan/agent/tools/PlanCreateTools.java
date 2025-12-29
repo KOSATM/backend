@@ -171,19 +171,19 @@ public class PlanCreateTools {
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException(dayIndex + "일차를 찾을 수 없습니다."));
 
-            // ✅ 4. 사용 중인 장소 수집 (삭제 전에!)
+            // 4. 사용 중인 장소 수집 (삭제 전에!)
             Set<Long> usedContentIds = new HashSet<>();
 
             for (PlanDay day : allDays) {
                 List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
                 for (PlanPlace p : places) {
-                    usedContentIds.add(p.getId()); // ✅ 모든 날짜 (재생성 대상 포함!)
+                    usedContentIds.add(p.getId()); // 모든 날짜 (재생성 대상 포함!)
                 }
             }
 
             log.info("전체 일정 사용 중인 장소: {}개 (재생성 대상 포함)", usedContentIds.size());
 
-            // ✅ 5. 그 다음 기존 Places 삭제
+            // 5. 그 다음 기존 Places 삭제
             List<PlanPlace> oldPlaces = planPlaceDao.selectPlanPlacesByPlanDayId(targetDay.getId());
             for (PlanPlace place : oldPlaces) {
                 planPlaceDao.deletePlanPlaceById(place.getId());
@@ -202,7 +202,7 @@ public class PlanCreateTools {
             List<GeneratedTravelPlan.GeneratedPlace> newPlaces = travelPlanAgent.regenerateSingleDay(
                     dayIndex,
                     existingPlan,
-                    usedContentIds, // ✅ 기존 장소 포함!
+                    usedContentIds, // 기존 장소 포함!
                     style,
                     pace,
                     location);

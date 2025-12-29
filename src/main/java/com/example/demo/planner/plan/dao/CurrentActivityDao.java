@@ -11,6 +11,8 @@ public interface CurrentActivityDao {
 
     void updateCurrentActivity(CurrentActivity currentActivity);
 
+    void updatePlanplaceIsEnded(Long planPlaceId);
+
     CurrentActivity selectCurrentActivityById(Long id);
     CurrentActivity selectCurrentActivityByPlanPlaceId(Long placeId);
 
