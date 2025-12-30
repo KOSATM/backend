@@ -1,0 +1,342 @@
+package com.example.demo.planner.plan.agent.tools;
+
+import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import com.example.demo.planner.plan.agent.common.PlanToolSupport;
+import com.example.demo.planner.plan.dao.PlanSnapshotDao;
+import com.example.demo.planner.plan.service.PlanSnapshotService;
+import com.example.demo.planner.plan.service.PlanSnapshotUtility;
+import com.example.demo.planner.plan.service.action.PlanAddAction;
+import com.example.demo.planner.plan.service.action.PlanDeleteAction;
+import com.example.demo.planner.plan.service.action.PlanSwapAction;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Component("planAdvancedTools")
+@RequiredArgsConstructor
+@Slf4j
+public class PlanAdvancedTools {
+
+    private final PlanToolSupport support;
+    private final PlanSwapAction swapAction;
+    private final PlanAddAction addAction;
+    private final PlanDeleteAction deleteAction;
+    private final PlanSnapshotDao planSnapshotDao;
+    private final PlanSnapshotService planSnapshotService;
+    private final PlanSnapshotUtility planSnapshotUtility;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
+
+    @Value("${google.search.endpoint}")
+    private String endpoint;
+    @Value("${google.search.apiKey}")
+    private String apiKey;
+    @Value("${google.search.engineId}")
+    private String engineId;
+
+    // ========== 순서 교환 (3개) ==========
+    @Transactional
+    @Tool(description = "같은 날짜 내에서 두 장소의 순서를 교환합니다 (dayIndex는 1부터 시작)")
+    public String swapPlaces(int dayIndex, int index1, int index2, ToolContext toolContext) {
+        String conversationId = getConversationId(toolContext);
+        Long planId = support.getPlanId(conversationId);
+        log.info("🔧 [Tool] swapPlaces: planId={}, dayIndex={}, index1={}, index2={}",
+                planId, dayIndex, index1, index2);
+
+        try {
+            swapAction.swapPlacesInSameDay(planId, dayIndex, index1, index2);
+            Integer version = support.saveSnapshot(planId);
+
+            return String.format("%d일차의 %d번째와 %d번째 장소 순서를 교환했습니다. 버전: %d",
+                    dayIndex, index1, index2, version);
+        } catch (Exception e) {
+            log.error("장소 순서 교환 실패", e);
+            return String.format("장소 순서 교환 중 오류 발생: %s", e.getMessage());
+        }
+    }
+
+    @Transactional
+    @Tool(description = """
+                서로 다른 날짜 간 장소를 교환합니다 (dayIndex는 1부터 시작)
+            """)
+    public String swapPlacesBetweenDays(int day1, int index1, int day2, int index2, ToolContext toolContext) {
+        String conversationId = getConversationId(toolContext);
+        Long planId = support.getPlanId(conversationId);
+        log.info("🔧 [Tool] swapPlacesBetweenDays: planId={}, day1={}, index1={}, day2={}, index2={}",
+                planId, day1, index1, day2, index2);
+
+        try {
+            swapAction.swapPlacesBetweenDays(planId, day1, index1, day2, index2);
+            Integer version = support.saveSnapshot(planId);
+
+            return String.format("✅ %d일차의 %d번째 장소와 %d일차의 %d번째 장소를 교환했습니다. 버전: %d",
+                    day1, index1, day2, index2, version);
+        } catch (Exception e) {
+            log.error("날짜 간 장소 교환 실패", e);
+            return String.format("❌ 장소 교환 중 오류 발생: %s", e.getMessage());
+        }
+    }
+
+    @Transactional
+    @Tool(description = """
+            두 날짜의 일정 전체를 교환합니다 (dayIndex는 1부터 시작)
+            - 교환하기 전 반드시 사용자에게 한번 더 물어봐주세요.
+                        """)
+    public String swapDays(int day1, int day2, ToolContext toolContext) {
+        String conversationId = getConversationId(toolContext);
+        Long planId = support.getPlanId(conversationId);
+
+        log.info("🔧 [Tool] swapDays: planId={}, day1={}, day2={}", planId, day1, day2);
+
+        try {
+            swapAction.swapDays(planId, day1, day2);
+            Integer version = support.saveSnapshot(planId);
+
+            return String.format("✅ %d일차와 %d일차 일정을 교환했습니다. 버전: %d", day1, day2, version);
+        } catch (Exception e) {
+            log.error("날짜 교환 실패", e);
+            return String.format("❌ 날짜 교환 중 오류 발생: %s", e.getMessage());
+        }
+    }
+
+    // ========== 고급 추가 (2개) ==========
+    // @Transactional
+    // @Tool(description = "특정 위치에 장소를 삽입하고 이후 일정을 자동으로 조정합니다. dayIndex는 1부터 시작")
+    // public String addPlaceAtPosition(int dayIndex, int position, String
+    // placeName, Integer duration) {
+    // Long planId = support.getPlanId();
+    // log.info("🔧 [Tool] addPlaceAtPosition: planId={}, dayIndex={}, position={},
+    // placeName={}, duration={}",
+    // planId, dayIndex, position, placeName, duration);
+
+    // try {
+    // String result = addAction.addPlaceAtPosition(planId, dayIndex, position,
+    // placeName, duration);
+    // Integer version = support.saveSnapshot(planId);
+
+    // return String.format("%d일차 %d번째에 '%s'을(를) 추가했습니다. 버전: %d",
+    // dayIndex, position, result, version);
+    // } catch (Exception e) {
+    // log.error("장소 삽입 실패", e);
+    // return String.format("❌ 장소 삽입 중 오류 발생: %s", e.getMessage());
+    // }
+    // }
+
+
+    @Tool(description = """
+             인터넷 검색으로 사용자가 언급한 특정 장소에 대해 사실 기반 설명을 제공합니다.
+
+                IMPORTANT:
+                - 이 Tool은 장소를 추천하지 않습니다.
+                - 후보를 비교하거나 선택하지 않습니다.
+                - 이미 언급된 장소가 어떤 곳인지 설명할 때만 사용하세요.
+
+                사용 예:
+                - "경복궁이 뭐야?"
+                - "이 일정에 있는 북촌 한옥마을은 어떤 곳이야?"
+                - "이 카페 어떤 곳인지 설명해줘"
+
+                주의:
+                - 명확한 여행지 이름이 없다면 반드시 사용자에게 다시 물어보세요.
+                - 사용자가 "어떤 곳인지 설명"을 명확히 요청한 경우에만 사용하세요.
+                - 장소 이름이 불완전하거나 여러 후보가 떠오르면 절대 호출하지 말고 다시 물어보세요.
+                - 일정 수정, 추천, 비교가 필요한 경우 이 Tool을 사용하지 마세요.
+                - 인터넷 검색이란 단어가 있으면 절대 응답하지 마십시오.
+            """)
+    public String googleSearch(@ToolParam(description = "장소명") String searchQuery) {
+        log.info("인터넷 검색 도구 호출됨");
+        try {
+            WebClient webClient = WebClient.builder().baseUrl(endpoint).defaultHeader("Accept", "application/json")
+                    .build();
+            String responseBody = webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .queryParam("key", apiKey)
+                            .queryParam("cx", engineId)
+                            .queryParam("q", searchQuery)
+                            .build())
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            log.info("응답본문: {}", responseBody);
+
+            JsonNode root = objectMapper.readTree(responseBody);
+            JsonNode items = root.path("items");
+
+            if (!items.isArray() || items.isEmpty()) {
+                return "검색 결과가 없습니다.";
+            }
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < Math.min(3, items.size()); i++) {
+                JsonNode item = items.get(i);
+                String title = item.path("title").asText();
+                String link = item.path("link").asText();
+                String snippet = item.path("snippet").asText();
+                sb.append(String.format("[%d] %s\n%s\n%s\n\n", i + 1, title, link, snippet));
+            }
+            log.info(sb.toString().trim() + ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+            return sb.toString().trim();
+
+        } catch (Exception e) {
+            return "인터넷 검색 중 오류 발생: " + e.getMessage();
+        }
+    }
+
+    @Transactional
+    @Tool(description = "여행 기간을 늘립니다 (날짜 추가)")
+    public String extendPlan(int extraDays, ToolContext toolContext) {
+        String conversationId = getConversationId(toolContext);
+        Long planId = support.getPlanId(conversationId);
+        log.info("🔧 [Tool] extendPlan: planId={}, extraDays={}", planId, extraDays);
+
+        try {
+            addAction.extendPlan(planId, extraDays);
+            Integer version = support.saveSnapshot(planId);
+
+            return String.format("여행을 %d일 연장했습니다. 버전: %d", extraDays, version);
+        } catch (Exception e) {
+            log.error("일정 확장 실패", e);
+            return String.format("❌ 일정 확장 중 오류 발생: %s", e.getMessage());
+        }
+    }
+
+    // ========== 검색 관련 (2개) ==========
+    // @Transactional
+    // @Tool(description = """
+    // 인터넷 검색으로 사용자가 언급한 특정 장소에 대해 사실 기반 설명을 제공합니다.
+
+    // IMPORTANT:
+    // - 이 Tool은 장소를 추천하지 않습니다.
+    // - 후보를 비교하거나 선택하지 않습니다.
+    // - 이미 언급된 장소가 어떤 곳인지 설명할 때만 사용하세요.
+
+    // 제공 정보:
+    // - 장소 이름
+    // - 주소
+    // - 카테고리(관광지, 음식점, 카페 등)
+    // - 장소의 성격을 이해하는 데 필요한 기본 정보
+
+    // 사용 예:
+    // - "경복궁이 뭐야?"
+    // - "이 일정에 있는 북촌 한옥마을은 어떤 곳이야?"
+    // - "이 카페 어떤 곳인지 설명해줘"
+
+    // 주의:
+    // - 명확한 여행지 이름이 없다면 반드시 사용자에게 다시 물어보세요.""")
+    // public String searchPlace(@ToolParam(description = "장소명") String searchQuery)
+    // {
+    // log.info("🔧 [Tool] searchPlace: query={}", searchQuery);
+
+    // try {
+    // List<LocalItem> searchResults = addAction.searchNaverLocal(searchQuery);
+    // if (searchResults.isEmpty()) {
+    // return String.format("❌ '%s' 검색 결과가 없습니다.", searchQuery);
+    // }
+
+    // int count = Math.min(searchResults.size(), 5);
+    // StringBuilder result = new StringBuilder();
+    // result.append(String.format("🔍 '%s' 검색 결과 %d개:\n\n", searchQuery, count));
+
+    // for (int i = 0; i < count; i++) {
+    // LocalItem item = searchResults.get(i);
+    // result.append(String.format("%d. **%s**\n", i + 1,
+    // cleanHtmlTags(item.getTitle())));
+    // result.append(String.format(" - 카테고리: %s\n", item.getCategory()));
+    // result.append(String.format(" - 주소: %s\n", item.getRoadAddress()));
+    // result.append(String.format(" - 설명: %s\n", item.getDescription()));
+    // log.info(item.getDescription()+"");
+    // if (i < count - 1)
+    // result.append("\n");
+    // }
+
+    // // result.append("\n어떤 장소로 하시겠어요? (번호로 선택해주세요)");
+    // // result.append("\n 해당 장소");
+    // return result.toString();
+
+    // } catch (Exception e) {
+    // log.error("장소 검색 실패", e);
+    // return String.format("❌ 장소 검색 중 오류: %s", e.getMessage());
+    // }
+    // }
+
+    // @Transactional
+    // @Tool(description = "검색 결과에서 사용자가 선택한 장소로 교체합니다")
+    // public String replacePlaceWithSelection(String oldPlaceName, String
+    // newPlaceName, int selectedIndex) {
+    // Long planId = support.getPlanId();
+    // log.info("🔧 [Tool] replacePlaceWithSelection: planId={}, old={}, new={},
+    // index={}",
+    // planId, oldPlaceName, newPlaceName, selectedIndex);
+
+    // try {
+    // String newName = modifyAction.replacePlaceWithSelection(planId, oldPlaceName,
+    // newPlaceName, selectedIndex);
+    // Integer version = support.saveSnapshot(planId);
+
+    // return String.format("✅ '%s'를 '%s'(으)로 변경했습니다. 버전: %d",
+    // oldPlaceName, newName, version);
+    // } catch (Exception e) {
+    // log.error("장소 교체 실패", e);
+    // return String.format("❌ 장소 교체 중 오류 발생: %s", e.getMessage());
+    // }
+    // }
+
+
+    // ========== 전체 삭제 (1개) ==========
+    @Transactional
+    @Tool(description = "전체 일정을 완전히 삭제합니다. 중요: 사용자가 명확히 확인한 경우에만 호출하세요!")
+    public String deletePlan(ToolContext toolContext) {
+        String conversationId = getConversationId(toolContext);
+        Long planId;
+        try {
+            planId = support.getPlanId(conversationId);
+        } catch (Exception e) {
+            log.warn("삭제 요청했으나 삭제할 일정이 없음 (conversationId={})", conversationId);
+            return "삭제할 여행 일정이 없습니다.";
+        }
+
+        log.info("🔧 [Tool] deletePlan: planId={}", planId);
+
+        try {
+            deleteAction.deleteAllDaysAndPlaces(planId);
+
+            Long userId = (Long) toolContext.getContext().get("userId");
+            planSnapshotDao.deletePlanSnapshotsByUserId(userId);
+
+            support.clear(conversationId);
+            log.info("🧹 전체 일정 삭제로 conversation 상태 초기화");
+            return "전체 일정이 완전히 삭제되었습니다. 새로운 여행 계획을 만들고 싶으시면 말씀해주세요!";
+
+        } catch (Exception e) {
+            log.error("전체 일정 삭제 실패", e);
+            return String.format("전체 일정 삭제 중 오류 발생: %s", e.getMessage());
+        }
+    }
+
+    // ===============================
+    // Helper
+    // ===============================
+
+    private String cleanHtmlTags(String text) {
+        if (text == null)
+            return null;
+        return text.replaceAll("<[^>]*>", "");
+    }
+
+    private String getConversationId(ToolContext toolContext) {
+        Object v = toolContext.getContext().get("conversationId");
+        if (v == null) {
+            throw new IllegalStateException("conversationId가 ToolContext에 없습니다.");
+        }
+        return String.valueOf(v);
+    }
+}

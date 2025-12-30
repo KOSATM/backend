@@ -22,9 +22,9 @@ import com.example.demo.common.chat.intent.dto.SeoulRegion;
 import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dto.entity.GeneratedTravelPlan;
 import com.example.demo.planner.plan.dto.entity.TravelPlaces;
-import com.example.demo.planner.plan.utils.CategoryNames;
-import com.example.demo.planner.plan.utils.date.DateParser;
-import com.example.demo.planner.plan.utils.date.DurationParser;
+import com.example.demo.planner.plan.util.CategoryNames;
+import com.example.demo.planner.plan.util.date.DateParser;
+import com.example.demo.planner.plan.util.date.DurationParser;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,7 +42,7 @@ public class TravelPlanAgent {
         this.embeddingModel = embeddingModel;
         this.planDao = planDao;
 
-        log.info("✅ TravelPlanAgent 초기화 완료 (GeneratedTravelPlan 전용)");
+        log.info(" TravelPlanAgent 초기화 완료 (GeneratedTravelPlan 전용)");
     }
 
     /**
@@ -83,7 +83,7 @@ public class TravelPlanAgent {
     }
 
     // =========================================================
-    // ✅ 유일한 일정 생성 Tool (STRUCTURED)
+    //  유일한 일정 생성 Tool (STRUCTURED)
     // =========================================================
     @Tool(name = "createSeoulTravelPlanStructured")
     public GeneratedTravelPlan createSeoulTravelPlanStructured(
@@ -135,8 +135,74 @@ public class TravelPlanAgent {
         }
     }
 
+    /**
+     * 특정 일차만 재생성
+     * 
+     * @param dayIndex       재생성할 일차 (1부터 시작)
+     * @param existingPlan   기존 Plan 정보
+     * @param usedContentIds 이미 사용된 장소들 (중복 방지)
+     * @param style          새로운 스타일 (null이면 기존 유지)
+     * @param pace           새로운 강도 (null이면 기존 유지)
+     */
+    public List<GeneratedTravelPlan.GeneratedPlace> regenerateSingleDay(
+            int dayIndex,
+            GeneratedTravelPlan existingPlan,
+            Set<Long> usedContentIds,
+            String style,
+            String pace,
+            String location) {
+
+        log.info("🔄 일차 재생성: dayIndex={}, style={}, pace={}", dayIndex, style, pace);
+
+        // 1. 검색 쿼리 생성
+        List<String> queries = generateSearchQueries(style);
+
+        // 2. 벡터 검색
+        List<TravelPlaces> places = multiQueryVectorSearch(
+                queries,
+                location,
+                existingPlan.days().size());
+
+        if (places.isEmpty()) {
+            log.warn("검색 결과 없음");
+            return List.of();
+        }
+
+        // 3. Zone별 그룹핑
+        Map<String, List<TravelPlaces>> clusters = groupByZone(places);
+        List<String> zoneKeys = new ArrayList<>(clusters.keySet());
+
+        // 4. 해당 일차의 Zone 선택 (기존과 동일한 패턴 유지)
+        String zone = zoneKeys.get((dayIndex - 1) % zoneKeys.size());
+        List<TravelPlaces> zonePlaces = clusters.get(zone);
+
+        // 5. Pace 설정
+        Pace paceEnum = Pace.fromString(pace);
+        int maxFoodPerDay = getMaxFoodPerDay(paceEnum);
+
+        // 6. 첫날/마지막날 판단
+        int totalDays = existingPlan.days().size();
+        boolean isFirstDay = totalDays > 1 && dayIndex == 1;
+        boolean isLastDay = totalDays > 1 && dayIndex == totalDays;
+
+        // 7. 해당 날짜의 startDate 계산
+        LocalDate startDate = existingPlan.startDate().plusDays(dayIndex - 1);
+
+        // 8. 하루 일정 생성
+        return buildDayPlanStructured(
+                dayIndex,
+                zonePlaces,
+                usedContentIds,
+                paceEnum.getPlacesPerDay(),
+                maxFoodPerDay,
+                isFirstDay,
+                isLastDay,
+                existingPlan.startDate());
+    }
+
+
     // =========================================================
-    // ✅ 검색 쿼리 생성 (rule 기반)
+    //  검색 쿼리 생성 (rule 기반)
     // =========================================================
     private List<String> generateSearchQueries(String style) {
         if (style == null || style.isBlank()) {
@@ -156,7 +222,7 @@ public class TravelPlanAgent {
     }
 
     // =========================================================
-    // ✅ 벡터 검색
+    // 벡터 검색
     // =========================================================
     private List<TravelPlaces> multiQueryVectorSearch(
             List<String> queries, String location, int duration) {
@@ -179,7 +245,7 @@ public class TravelPlanAgent {
     }
 
     // =========================================================
-    // ✅ contentId 기준 중복 제거
+    //  contentId 기준 중복 제거
     // =========================================================
     private List<TravelPlaces> deduplicatePlaces(List<TravelPlaces> places) {
         Map<Long, TravelPlaces> map = new HashMap<>();
@@ -198,7 +264,7 @@ public class TravelPlanAgent {
     }
 
     // =========================================================
-    // ✅ 구조화 일정 빌더 (여행 전체 기준 중복 방지)
+    //  구조화 일정 빌더 (여행 전체 기준 중복 방지)
     // =========================================================
     private GeneratedTravelPlan buildPlanStructured(
             int duration,
@@ -489,7 +555,7 @@ public class TravelPlanAgent {
     }
 
     // =========================================================
-    // ✅ 선택 / 규칙 로직
+    //  선택 / 규칙 로직
     // =========================================================
     private TravelPlaces selectPlaceStrict(
             List<TravelPlaces> places,
@@ -553,7 +619,7 @@ public class TravelPlanAgent {
     }
 
     // =========================================================
-    // ✅ 지역 처리
+    //  지역 처리
     // =========================================================
     private List<String> extractZoneIds(String location, int duration) {
         if (location == null || location.isBlank()) {

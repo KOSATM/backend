@@ -37,5 +37,6 @@ public class CurrentActivityService {
         dao.updateCurrentActivity(currentActivity);
         log.info("활동 업데이트: placeId={}", currentActivity.getPlanPlaceId());
     }
+    dao.updatePlanplaceIsEnded(currentActivity.getPlanPlaceId());
 }
 }

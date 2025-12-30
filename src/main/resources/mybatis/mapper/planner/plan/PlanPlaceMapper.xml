@@ -14,7 +14,7 @@
     SELECT id, day_id, title, start_at, end_at, place_name, address, lat, lng, expected_cost, normalized_category, first_image, first_image2, is_Ended
     FROM plan_places
     WHERE day_id = #{dayId}
-    ORDER BY start_at ASC
+    ORDER BY id ASC
   </select>
 
   <select id="selectPlanPlacesByPlanId" parameterType="long" resultType="PlanPlace">
@@ -65,6 +65,7 @@
         )
     </foreach>
   </insert>
+  
 
   <update id="updatePlanPlace" parameterType="PlanPlace">
     UPDATE plan_places
@@ -82,7 +83,7 @@
     WHERE id = #{id}
   </update>
 
-  <delete id="deletePlacesByDayId" parameterType="long">
+  <delete id="deletePlanPlaceByDayId" parameterType="long">
     DELETE FROM plan_places
     WHERE day_id = #{dayId}
   </delete>

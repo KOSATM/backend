@@ -2,197 +2,523 @@ package com.example.demo.planner.plan.service.action;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.common.naver.dto.LocalItem;
 import com.example.demo.common.tools.NaverInternetSearchTool;
+import com.example.demo.planner.plan.dao.PlanDao;
+import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
+import com.example.demo.planner.plan.dto.entity.TravelPlaces;
+import com.example.demo.planner.plan.dto.response.PlanDayWithPlaces;
 import com.example.demo.planner.plan.service.PlanDayService;
 import com.example.demo.planner.plan.service.PlanPlaceService;
 import com.example.demo.planner.plan.service.PlanQueryService;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * AI 전용 - 장소/날짜 추가 액션
+ * - 일정에 실제로 장소를 삽입하는 순수 비즈니스 로직
+ * - 추천 판단 / 사용자 의도 해석은 여기서 하지 않는다
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class PlanAddAction {
 
+    private final PlanDao planDao;
+    private final PlanPlaceDao planPlaceDao;
     private final PlanQueryService queryService;
     private final PlanPlaceService placeService;
     private final PlanDayService dayService;
     private final NaverInternetSearchTool naverSearchTool;
 
     /**
-     * 특정 날짜에 장소 추가
+     * addPlace 결과를 담는 Wrapper 클래스
      */
-    public String addPlace(Long planId, int dayIndex, String placeName, String startTime) {
-        List<LocalItem> searchResults = searchNaverLocal(placeName);
-        if (searchResults.isEmpty()) {
-            throw new IllegalArgumentException("검색 결과가 없습니다: " + placeName);
+    @Getter
+    @AllArgsConstructor
+    public static class AddPlaceResult {
+
+        private final ResultType type;
+        private final String message;
+        private final String addedPlaceName; // 성공 시
+        private final List<TravelPlaces> candidates; // 후보 목록 시
+
+        public enum ResultType {
+            SUCCESS, // 추가 성공
+            CANDIDATES, // 후보 목록
+            ERROR, // 에러
+            NEED_DAY,
+            NEED_POSITION
         }
 
-        LocalItem place = searchResults.get(0);
-        var days = queryService.queryAllDaysOptimized(planId);
-        var targetDay = days.stream()
-            .filter(d -> d.getDay().getDayIndex() == dayIndex)
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException(dayIndex + "일차를 찾을 수 없습니다."));
+        // ========== Factory Methods ==========
 
-        OffsetDateTime startAtDt;
-        if (startTime != null && !startTime.isEmpty()) {
-            // ISO 8601 형식(2025-12-19T10:00:00Z) 또는 시간만(10:00) 지원
-            LocalTime time;
-            if (startTime.contains("T")) {
-                // ISO 8601 형식: 날짜+시간
-                OffsetDateTime parsedDt = OffsetDateTime.parse(startTime);
-                time = parsedDt.toLocalTime();
-            } else {
-                // 시간만: HH:mm 또는 HH:mm:ss
-                time = LocalTime.parse(startTime);
-            }
-            startAtDt = targetDay.getDay().getPlanDate()
-                .atTime(time)
-                .atZone(ZoneId.of("Asia/Seoul"))
-                .toOffsetDateTime();
-        } else {
-            var places = targetDay.getPlaces();
-            if (places.isEmpty()) {
-                startAtDt = targetDay.getDay().getPlanDate()
-                    .atTime(9, 0)
-                    .atZone(ZoneId.of("Asia/Seoul"))
-                    .toOffsetDateTime();
-            } else {
-                startAtDt = places.get(places.size() - 1).getEndAt().plusMinutes(30);
-            }
+        public static AddPlaceResult success(String placeName) {
+            return new AddPlaceResult(
+                    ResultType.SUCCESS,
+                    null,
+                    placeName,
+                    null);
         }
 
-        PlanPlace newPlace = PlanPlace.builder()
-            .dayId(targetDay.getDay().getId())
-            .title(cleanHtmlTags(place.getTitle()))
-            .startAt(startAtDt)
-            .endAt(startAtDt.plusHours(2))
-            .placeName(cleanHtmlTags(place.getTitle()))
-            .address(place.getRoadAddress())
-            .lat(convertNaverY(place.getMapy()))
-            .lng(convertNaverX(place.getMapx()))
-            .expectedCost(BigDecimal.ZERO)
-            .build();
+        public static AddPlaceResult candidates(List<TravelPlaces> candidates, String message) {
+            return new AddPlaceResult(
+                    ResultType.CANDIDATES,
+                    message,
+                    null,
+                    candidates);
+        }
 
-        placeService.createPlace(newPlace);
+        public static AddPlaceResult error(String message) {
+            return new AddPlaceResult(
+                    ResultType.ERROR,
+                    message,
+                    null,
+                    null);
+        }
 
-        return String.format("%s (%s~)", cleanHtmlTags(place.getTitle()), startAtDt.toLocalTime());
+        public static AddPlaceResult needDay(String placeName) {
+            return new AddPlaceResult(
+                    ResultType.NEED_DAY,
+                    String.format("'%s'을(를) 몇 일차에 추가할까요?", placeName),
+                    null,
+                    null);
+        }
+
+        public static AddPlaceResult needPosition(String placeName, int dayIndex) {
+            return new AddPlaceResult(
+                    ResultType.NEED_POSITION,
+                    String.format("%d일차에 '%s'을(를) 몇 번째에 추가할까요?",
+                            dayIndex, placeName),
+                    null,
+                    null);
+        }
+
+        // ========== Helper Methods ==========
+
+        public boolean isSuccess() {
+            return type == ResultType.SUCCESS;
+        }
+
+        public boolean hasCandidates() {
+            return type == ResultType.CANDIDATES &&
+                    candidates != null &&
+                    !candidates.isEmpty();
+        }
+
+        public boolean isError() {
+            return type == ResultType.ERROR;
+        }
     }
 
     /**
-     * 특정 위치에 장소 삽입 (이후 일정 자동 조정)
+     * 특정 날짜에 장소 추가 (이름 기반)
+     *
+     * 동작 규칙:
+     * - 장소명 명확 + dayIndex 없음 → NEED_DAY
+     * - 장소명 명확 + dayIndex 있음 + position 없음 → NEED_POSITION
+     * - 후보 여러 개 → CANDIDATES
+     * - 모든 정보 있을 때만 실제 추가
+     */
+    public AddPlaceResult addPlace(
+            Long planId,
+            Integer dayIndex,
+            String placeName,
+            Integer position) {
+
+        log.info("📍 [장소 추가 시작] planId={}, dayIndex={}, position={}, placeName={}",
+                planId, dayIndex, position, placeName);
+
+        // =====================================================
+        // 1. 장소 검색 (추가 여부 판단보다 먼저!)
+        // =====================================================
+        TravelPlaces place = planDao.findExactByTitle(placeName);
+
+        if (place == null) {
+            List<TravelPlaces> candidates = planDao.findByTitleLikeNormalized(placeName);
+
+            if (candidates.size() == 1) {
+                place = candidates.get(0);
+                log.info("🔍 [자동 확정] normalized 검색 1개: {}", place.getTitle());
+            } else if (candidates.size() > 1) {
+                log.info("📋 [후보 목록] normalized 검색 {}개", candidates.size());
+                return AddPlaceResult.candidates(candidates, renderPlaceCandidates(candidates));
+            }
+        }
+
+        if (place == null) {
+            List<TravelPlaces> candidates = planDao.findByTitleLike(placeName);
+
+            if (candidates.size() == 1) {
+                place = candidates.get(0);
+                log.info("🔍 [자동 확정] like 검색 1개: {}", place.getTitle());
+            } else if (candidates.size() > 1) {
+                log.info("📋 [후보 목록] like 검색 {}개", candidates.size());
+                return AddPlaceResult.candidates(candidates, renderPlaceCandidates(candidates));
+            }
+        }
+
+        if (place == null) {
+            log.warn("❌ [장소 없음] placeName={}", placeName);
+            return AddPlaceResult.error("❌ '" + placeName + "'에 해당하는 장소를 찾지 못했습니다.");
+        }
+
+        // =====================================================
+        // 2. 정보 부족 체크 (❗ 여기서 절대 DB 수정 X)
+        // =====================================================
+        if (dayIndex == null) {
+            return AddPlaceResult.needDay(place.getTitle());
+        }
+
+        if (position == null) {
+            return AddPlaceResult.needPosition(place.getTitle(), dayIndex);
+        }
+
+        // =====================================================
+        // 3. Day 조회 (이제 안전)
+        // =====================================================
+        List<PlanDayWithPlaces> days = queryService.queryAllDaysOptimized(planId);
+
+        PlanDayWithPlaces targetDay = days.stream()
+                .filter(d -> d.getDay().getDayIndex().equals(dayIndex))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(dayIndex + "일차를 찾을 수 없습니다."));
+
+        List<PlanPlace> existingPlaces = targetDay.getPlaces();
+        Long dayId = targetDay.getDay().getId();
+
+        LocalDate planDate = targetDay.getDay().getPlanDate();
+
+        OffsetDateTime startAt = calculateInsertTime(planDate, existingPlaces, position);
+        OffsetDateTime endAt = startAt.plusMinutes(60);
+
+        // =====================================================
+        // 5. PlanPlace 생성
+        // =====================================================
+        PlanPlace newPlace = PlanPlace.builder()
+                .dayId(dayId)
+                .title(place.getTitle())
+                .placeName(place.getTitle())
+                .address(place.getAddress())
+                .startAt(startAt)
+                .endAt(endAt)
+                .lat(place.getLat())
+                .lng(place.getLng())
+                .expectedCost(BigDecimal.ZERO)
+                .normalizedCategory(place.getNormalizedCategory())
+                .firstImage(place.getFirstImage())
+                .firstImage2(place.getFirstImage2())
+                .build();
+
+        int insertIndex = Math.max(0, Math.min(position - 1, existingPlaces.size()));
+        existingPlaces.add(insertIndex, newPlace);
+
+        // =====================================================
+        // 5️⃣ DB 저장
+        // =====================================================
+        planPlaceDao.deletePlanPlaceByDayId(dayId);
+        planPlaceDao.insertPlanPlaceBatch(existingPlaces);
+
+        log.info("✅ [장소 추가 완료] {}일차 {}번째에 '{}' 추가",
+                dayIndex, insertIndex + 1, place.getTitle());
+
+        return AddPlaceResult.success(place.getTitle());
+    }
+
+    /**
+     * 추천 결과(Map)를 해당 day에 삽입
+     */
+    @Transactional
+    public String addPlaceFromRecommendation(Long planId, int dayIndex, int position, Long placeId) {
+
+        List<?> days = queryService.queryAllDaysOptimized(planId);
+
+        Object targetDayObj = days.stream()
+                .filter(d -> ((PlanDayWithPlaces) d)
+                        .getDay().getDayIndex() == dayIndex)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(dayIndex + "일차를 찾을 수 없습니다."));
+
+        PlanDayWithPlaces targetDay = (PlanDayWithPlaces) targetDayObj;
+
+        // 해당 일자의 여행지
+        List<PlanPlace> existingPlaces = targetDay.getPlaces();
+
+        Long dayId = targetDay.getDay().getId();
+
+        LocalDate planDate = targetDay.getDay().getPlanDate();
+
+        OffsetDateTime startAt = calculateInsertTime(planDate, existingPlaces, position);
+        OffsetDateTime endAt = startAt.plusMinutes(60);
+
+        TravelPlaces place = planDao.findByPlaceId(placeId);
+
+        if (place == null) {
+            throw new IllegalArgumentException("추천 장소를 찾을 수 없습니다.");
+        }
+
+        PlanPlace newPlace = PlanPlace.builder()
+                .dayId(targetDay.getDay().getId())
+                .title(place.getTitle())
+                .placeName(place.getTitle())
+                .address(place.getAddress())
+                .lat(place.getLat())
+                .lng(place.getLng())
+                .startAt(startAt)
+                .endAt(endAt)
+                .expectedCost(BigDecimal.ZERO)
+                .normalizedCategory(place.getNormalizedCategory())
+                .firstImage(place.getFirstImage())
+                .firstImage2(place.getFirstImage2())
+                .build();
+
+        existingPlaces.add(position - 1, newPlace);
+
+        // 해당 일자 여행지 삭제
+        planPlaceDao.deletePlanPlaceByDayId(dayId);
+        planPlaceDao.insertPlanPlaceBatch(existingPlaces);
+
+        return place.getTitle();
+    }
+
+    /**
+     * 웹 검색 결과를 특정 위치에 장소 삽입 (이후 일정 자동 조정)
      */
     public String addPlaceAtPosition(Long planId, int dayIndex, int position, String placeName, Integer duration) {
+
         List<LocalItem> searchResults = searchNaverLocal(placeName);
         if (searchResults.isEmpty()) {
             throw new IllegalArgumentException("검색 결과가 없습니다: " + placeName);
         }
 
         LocalItem place = searchResults.get(0);
-        var days = queryService.queryAllDaysOptimized(planId);
-        var targetDay = days.stream()
-            .filter(d -> d.getDay().getDayIndex() == dayIndex)
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException(dayIndex + "일차를 찾을 수 없습니다."));
 
+        List<?> days = queryService.queryAllDaysOptimized(planId);
+
+        Object targetDayObj = days.stream()
+                .filter(d -> ((PlanDayWithPlaces) d)
+                        .getDay().getDayIndex() == dayIndex)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(dayIndex + "일차를 찾을 수 없습니다."));
+
+        PlanDayWithPlaces targetDay = (PlanDayWithPlaces) targetDayObj;
+
+        LocalDate planDate = targetDay.getDay().getPlanDate();
         List<PlanPlace> existingPlaces = targetDay.getPlaces();
         int durationMin = duration != null ? duration : 120;
 
-        if (position < 1 || position > existingPlaces.size() + 1) {
-            throw new IllegalArgumentException(
-                String.format("잘못된 위치입니다. 1~%d 사이의 값을 입력해주세요.", existingPlaces.size() + 1)
-            );
-        }
+        validatePosition(position, existingPlaces.size());
 
-        OffsetDateTime insertStartTime;
-        if (position == 1) {
-            if (existingPlaces.isEmpty()) {
-                insertStartTime = targetDay.getDay().getPlanDate()
-                    .atTime(9, 0)
-                    .atZone(ZoneId.of("Asia/Seoul"))
-                    .toOffsetDateTime();
-            } else {
-                insertStartTime = existingPlaces.get(0).getStartAt();
-            }
-        } else if (position > existingPlaces.size()) {
-            insertStartTime = existingPlaces.get(existingPlaces.size() - 1).getEndAt().plusMinutes(30);
-        } else {
-            insertStartTime = existingPlaces.get(position - 2).getEndAt().plusMinutes(30);
-        }
-
+        OffsetDateTime insertStartTime = calculateInsertTime(planDate, existingPlaces, position);
         OffsetDateTime insertEndTime = insertStartTime.plusMinutes(durationMin);
 
         PlanPlace newPlace = PlanPlace.builder()
-            .dayId(targetDay.getDay().getId())
-            .title(cleanHtmlTags(place.getTitle()))
-            .startAt(insertStartTime)
-            .endAt(insertEndTime)
-            .placeName(cleanHtmlTags(place.getTitle()))
-            .address(place.getRoadAddress())
-            .lat(convertNaverY(place.getMapy()))
-            .lng(convertNaverX(place.getMapx()))
-            .expectedCost(BigDecimal.ZERO)
-            .build();
+                .dayId(targetDay.getDay().getId())
+                .title(cleanHtmlTags(place.getTitle()))
+                .placeName(cleanHtmlTags(place.getTitle()))
+                .address(place.getRoadAddress())
+                .lat(convertNaverY(place.getMapy()))
+                .lng(convertNaverX(place.getMapx()))
+                .startAt(insertStartTime)
+                .endAt(insertEndTime)
+                .expectedCost(BigDecimal.ZERO)
+                .build();
 
         placeService.createPlace(newPlace);
 
-        // 이후 일정 조정
-        int adjustedCount = 0;
-        for (int i = position - 1; i < existingPlaces.size(); i++) {
-            PlanPlace placeToAdjust = existingPlaces.get(i);
-            OffsetDateTime newStart = placeToAdjust.getStartAt().plusMinutes(durationMin);
-            OffsetDateTime newEnd = placeToAdjust.getEndAt().plusMinutes(durationMin);
-            placeService.updatePlaceTimeRange(placeToAdjust.getId(), newStart, newEnd);
-            adjustedCount++;
+        shiftLaterPlaces(existingPlaces, position, durationMin);
+
+        return String.format("%s (소요시간: %d분)", cleanHtmlTags(place.getTitle()), durationMin);
+    }
+
+    /*
+     * 상태에 저장된 장소로 추가, 메서드 2: 이미 선택된 장소 객체로 추가
+     */
+    public String addPlaceFromCandidate(Long planId, int dayIndex, int position, TravelPlaces place) {
+
+        log.info("📍 [후보에서 추가] planId={}, dayIndex={}, place={}", planId, dayIndex, place.getTitle());
+
+        // 1. Day 조회
+        List<PlanDayWithPlaces> days = queryService.queryAllDaysOptimized(planId);
+
+        PlanDayWithPlaces targetDay = days.stream()
+                .filter(d -> d.getDay().getDayIndex() == dayIndex)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(dayIndex + "일차를 찾을 수 없습니다."));
+
+        Long dayId = targetDay.getDay().getId();
+        List<PlanPlace> existingPlaces = targetDay.getPlaces();
+
+        LocalDate planDate = targetDay.getDay().getPlanDate();
+
+        OffsetDateTime startAt = calculateInsertTime(planDate, existingPlaces, position);
+        OffsetDateTime endAt = startAt.plusMinutes(60);
+
+        // 2. PlanPlace 생성
+        PlanPlace newPlace = PlanPlace.builder()
+                .dayId(dayId)
+                .title(place.getTitle())
+                .placeName(place.getTitle())
+                .address(place.getAddress())
+                .lat(place.getLat())
+                .lng(place.getLng())
+                .startAt(startAt)
+                .endAt(endAt)
+                .expectedCost(BigDecimal.ZERO)
+                .normalizedCategory(place.getNormalizedCategory())
+                .firstImage(place.getFirstImage())
+                .firstImage2(place.getFirstImage2())
+                .build();
+
+        // 3. position 처리
+        int insertIndex = position == Integer.MAX_VALUE
+                ? existingPlaces.size()
+                : Math.max(0, Math.min(position - 1, existingPlaces.size()));
+
+        existingPlaces.add(insertIndex, newPlace);
+
+        for (PlanPlace place2 : existingPlaces) {
+            log.info(place2.toString() + "\n");
         }
 
-        return String.format("%s (소요시간: %d분, %d개 일정 조정됨)",
-            cleanHtmlTags(place.getTitle()), durationMin, adjustedCount);
+        // 4. DB 저장
+        planPlaceDao.deletePlanPlaceByDayId(dayId);
+        planPlaceDao.insertPlanPlaceBatch(existingPlaces);
+
+        log.info("[후보 추가 완료] {}일차 {}번째에 '{}' 추가", dayIndex, insertIndex + 1, place.getTitle());
+
+        return place.getTitle();
     }
 
     /**
      * 여행 기간 연장 (날짜 추가)
      */
     public void extendPlan(Long planId, int extraDays) {
-        var days = queryService.queryAllDaysOptimized(planId);
+        List<?> days = queryService.queryAllDaysOptimized(planId);
         if (days.isEmpty()) {
             throw new IllegalArgumentException("여행 계획을 찾을 수 없습니다.");
         }
 
         int currentMaxDay = days.stream()
-            .mapToInt(d -> d.getDay().getDayIndex())
-            .max()
-            .orElse(0);
+                .mapToInt(d -> ((PlanDayWithPlaces) d)
+                        .getDay().getDayIndex())
+                .max()
+                .orElse(0);
 
-        LocalDate lastDate = days.get(days.size() - 1).getDay().getPlanDate();
+        PlanDayWithPlaces last = (PlanDayWithPlaces) days.get(days.size() - 1);
+
+        LocalDate lastDate = last.getDay().getPlanDate();
 
         for (int i = 1; i <= extraDays; i++) {
             LocalDate newDate = lastDate.plusDays(i);
             PlanDay newDay = PlanDay.builder()
-                .planId(planId)
-                .dayIndex(currentMaxDay + i)
-                .planDate(newDate)
-                .build();
+                    .planId(planId)
+                    .dayIndex(currentMaxDay + i)
+                    .planDate(newDate)
+                    .build();
             dayService.createDay(newDay, true);
         }
     }
 
-    // ========== Helper Methods ==========
+    /*
+     * =========================
+     * Helper: 시간/위치 계산
+     * =========================
+     */
+
+    // resolveStartTime 에러 해결: targetDay 타입을 받지 않고 "필요한 값"만 받도록 변경
+    private OffsetDateTime resolveStartTime(LocalDate planDate, List<PlanPlace> existingPlaces, String startTime) {
+
+        if (startTime == null || startTime.isEmpty()) {
+            if (existingPlaces == null || existingPlaces.isEmpty()) {
+                return planDate.atTime(9, 0)
+                        .atZone(ZoneId.of("Asia/Seoul"))
+                        .toOffsetDateTime();
+            }
+            return existingPlaces.get(existingPlaces.size() - 1).getEndAt().plusMinutes(30);
+        }
+
+        LocalTime time;
+        if (startTime.contains("T")) {
+            // ISO 8601 (예: 2025-12-19T10:00:00Z)
+            OffsetDateTime parsed = OffsetDateTime.parse(startTime);
+            time = parsed.toLocalTime();
+        } else {
+            // HH:mm or HH:mm:ss
+            time = LocalTime.parse(startTime);
+        }
+
+        return planDate.atTime(time)
+                .atZone(ZoneId.of("Asia/Seoul"))
+                .toOffsetDateTime();
+    }
+
+    private OffsetDateTime calculateInsertTime(LocalDate planDate, List<PlanPlace> existingPlaces, int position) {
+
+        if (position == 1) {
+            if (existingPlaces == null || existingPlaces.isEmpty()) {
+                return planDate.atTime(9, 0)
+                        .atZone(ZoneId.of("Asia/Seoul"))
+                        .toOffsetDateTime();
+            }
+            return existingPlaces.get(0).getStartAt();
+        }
+
+        if (existingPlaces == null || existingPlaces.isEmpty()) {
+            // position이 2 이상인데 기존 일정이 비었으면 그냥 9시로 처리
+            return planDate.atTime(9, 0)
+                    .atZone(ZoneId.of("Asia/Seoul"))
+                    .toOffsetDateTime();
+        }
+
+        if (position > existingPlaces.size()) {
+            return existingPlaces.get(existingPlaces.size() - 1).getEndAt().plusMinutes(30);
+        }
+
+        return existingPlaces.get(position - 2).getEndAt().plusMinutes(30);
+    }
+
+    private void shiftLaterPlaces(List<PlanPlace> existingPlaces, int position, int durationMin) {
+        if (existingPlaces == null || existingPlaces.isEmpty())
+            return;
+
+        for (int i = position - 1; i < existingPlaces.size(); i++) {
+            PlanPlace p = existingPlaces.get(i);
+
+            OffsetDateTime newStart = p.getStartAt().plusMinutes(durationMin);
+            OffsetDateTime newEnd = p.getEndAt().plusMinutes(durationMin);
+
+            placeService.updatePlaceTimeRange(p.getId(), newStart, newEnd);
+        }
+    }
+
+    private void validatePosition(int position, int existingSize) {
+        if (position < 1 || position > existingSize + 1) {
+            throw new IllegalArgumentException(
+                    String.format("잘못된 위치입니다. 1~%d 사이의 값을 입력해주세요.", existingSize + 1));
+        }
+    }
+
+    /*
+     * =========================
+     * Search & Utils
+     * =========================
+     */
 
     public List<LocalItem> searchNaverLocal(String query) {
         String enhancedQuery = isLikelyTouristSpot(query) ? query + " 관광지" : query;
@@ -206,22 +532,43 @@ public class PlanAddAction {
     }
 
     private Double convertNaverX(String mapx) {
-        if (mapx == null || mapx.isEmpty()) return null;
+        if (mapx == null || mapx.isEmpty())
+            return null;
         return Double.parseDouble(mapx) / 10000000.0;
     }
 
     private Double convertNaverY(String mapy) {
-        if (mapy == null || mapy.isEmpty()) return null;
+        if (mapy == null || mapy.isEmpty())
+            return null;
         return Double.parseDouble(mapy) / 10000000.0;
     }
 
     private String cleanHtmlTags(String text) {
-        if (text == null) return null;
+        if (text == null)
+            return null;
         return text.replaceAll("<[^>]*>", "");
     }
 
     private boolean isLikelyTouristSpot(String name) {
         return name.matches(".*(궁|성|산|타워|공원|박물관|미술관|전망대|기념관|사찰|절|대|문|루)$") ||
-               name.contains("N서울") || name.contains("롯데월드") || name.contains("에버랜드");
+                name.contains("N서울") || name.contains("롯데월드") || name.contains("에버랜드");
     }
+
+    private String renderPlaceCandidates(List<TravelPlaces> candidates) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("여러 장소가 검색되었습니다. 어떤 장소를 추가할까요?\n\n");
+
+        for (int i = 0; i < Math.min(5, candidates.size()); i++) {
+            TravelPlaces p = candidates.get(i);
+            sb.append(String.format(
+                    "%d. %s (%s)\n",
+                    i + 1,
+                    p.getTitle(),
+                    p.getAddress()));
+        }
+
+        sb.append("\n번호로 선택해주세요. 예: \"2번 추가해줘\"");
+        return sb.toString();
+    }
+
 }

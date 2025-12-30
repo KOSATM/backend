@@ -71,7 +71,7 @@
 </resultMap>
 
   <!-- id로 조회 -->
-  <select id="findById" resultMap="TravelPlacesMap">
+  <select id="findByPlaceId" resultMap="TravelPlacesMap">
         SELECT *
         FROM travel_places
         WHERE id = #{id}
@@ -84,6 +84,8 @@
         ORDER BY id
         LIMIT #{limit} OFFSET #{offset}
   </select>
+
+  
 
   <!-- 백터 검색 -->
   <select id="searchByVector" resultMap="TravelPlaceSearchResultMap">
@@ -177,5 +179,31 @@
         LIMIT #{limit}
     </select>
 
+
+    <!-- 1. 여행지 추가/ 정확 일치 -->
+    <select id="findExactByTitle" resultMap="TravelPlacesResultMap">
+        SELECT *
+        FROM travel_places
+        WHERE title = #{placeName}
+        LIMIT 1
+    </select>
+
+    <!-- 2. 여행지 추가/ 공백 제거 LIKE -->
+    <select id="findByTitleLikeNormalized" resultMap="TravelPlacesResultMap">
+        SELECT *
+        FROM travel_places
+        WHERE replace(title, ' ', '') ILIKE
+              CONCAT('%', replace(#{placeName}, ' ', ''), '%')
+        ORDER BY length(title)
+        LIMIT 5
+    </select>
+
+    <!-- 3. 여행지 추가/ 일반 LIKE (백업) -->
+    <select id="findByTitleLike" resultMap="TravelPlacesResultMap">
+        SELECT *
+        FROM travel_places
+        WHERE title ILIKE CONCAT('%', #{placeName}, '%')
+        LIMIT 5
+    </select>
   
 </mapper>

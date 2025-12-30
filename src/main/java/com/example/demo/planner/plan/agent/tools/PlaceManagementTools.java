@@ -9,17 +9,17 @@ import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dao.PlanDayDao;
 import com.example.demo.planner.plan.dao.PlanPlaceDao;
 import com.example.demo.planner.plan.dto.context.PlanContextHolder;
+import com.example.demo.planner.plan.dto.entity.PendingAction;
 import com.example.demo.planner.plan.dto.entity.Plan;
 import com.example.demo.planner.plan.dto.entity.PlanDay;
 import com.example.demo.planner.plan.dto.entity.PlanPlace;
-import com.example.demo.planner.plan.dto.entity.PendingAction;
 import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
-import com.example.demo.planner.plan.service.PlanSnapshotService;
+import com.example.demo.planner.plan.guard.WriteToolGuard;
 import com.example.demo.planner.plan.service.PendingActionService;
+import com.example.demo.planner.plan.service.PlanSnapshotService;
 import com.example.demo.planner.plan.service.action.PlanAddAction;
 import com.example.demo.planner.plan.service.action.PlanDeleteAction;
 import com.example.demo.planner.plan.service.action.PlanModifyAction;
-import com.example.demo.planner.plan.guard.WriteToolGuard;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,41 +47,41 @@ public class PlaceManagementTools {
     private final PendingActionService pendingActionService;
     private final WriteToolGuard writeToolGuard;
 
-    @Tool(description = "네이버에서 장소를 검색하고 첫 번째 결과를 일정에 자동으로 추가합니다")
-    public String searchAndAddPlace(Long planId, String placeName, Integer dayIndex, String startTime) {
-        log.info("🔧 [Tool] searchAndAddPlace: planId={}, place={}, day={}, time={}",
-                planId, placeName, dayIndex, startTime);
-        try {
-            // PlanAddAction.addPlace는 이미 네이버 검색 + 첫 번째 결과 추가를 수행함
-            String actualName = addAction.addPlace(planId, dayIndex, placeName, startTime);
+    // @Tool(description = "네이버에서 장소를 검색하고 첫 번째 결과를 일정에 자동으로 추가합니다")
+    // public String searchAndAddPlace(Long planId, String placeName, Integer dayIndex, String startTime) {
+    //     log.info("🔧 [Tool] searchAndAddPlace: planId={}, place={}, day={}, time={}",
+    //             planId, placeName, dayIndex, startTime);
+    //     try {
+    //         // PlanAddAction.addPlace는 이미 네이버 검색 + 첫 번째 결과 추가를 수행함
+    //         String actualName = addAction.addPlace(planId, dayIndex, placeName, startTime);
 
-            // 스냅샷 저장
-            saveSnapshot(planId);
+    //         // 스냅샷 저장
+    //         saveSnapshot(planId);
 
-            return String.format("✅ '%s'을(를) %d일차 일정에 추가했습니다.", actualName, dayIndex);
-        } catch (Exception e) {
-            log.error("❌ 장소 추가 실패", e);
-            return String.format("❌ 장소 추가 실패: %s", e.getMessage());
-        }
-    }
+    //         return String.format("✅ '%s'을(를) %d일차 일정에 추가했습니다.", actualName, dayIndex);
+    //     } catch (Exception e) {
+    //         log.error("❌ 장소 추가 실패", e);
+    //         return String.format("❌ 장소 추가 실패: %s", e.getMessage());
+    //     }
+    // }
 
-    @Tool(description = "이미 선택된 장소를 일정에 추가합니다 (검색 없이 바로 추가)")
-    public String confirmAddPlace(Long planId, String placeName, Integer dayIndex, String startTime) {
-        log.info("🔧 [Tool] confirmAddPlace: planId={}, place={}, day={}, time={}",
-                planId, placeName, dayIndex, startTime);
-        try {
-            // 검색 없이 바로 추가 (이미 사용자가 선택한 장소)
-            addAction.addPlace(planId, dayIndex, placeName, startTime);
+    // @Tool(description = "이미 선택된 장소를 일정에 추가합니다 (검색 없이 바로 추가)")
+    // public String confirmAddPlace(Long planId, String placeName, Integer dayIndex, String startTime) {
+    //     log.info("🔧 [Tool] confirmAddPlace: planId={}, place={}, day={}, time={}",
+    //             planId, placeName, dayIndex, startTime);
+    //     try {
+    //         // 검색 없이 바로 추가 (이미 사용자가 선택한 장소)
+    //         addAction.addPlace(planId, dayIndex, placeName, startTime);
 
-            // 스냅샷 저장
-            saveSnapshot(planId);
+    //         // 스냅샷 저장
+    //         saveSnapshot(planId);
 
-            return String.format("✅ '%s'을(를) %d일차 일정에 추가했습니다.", placeName, dayIndex);
-        } catch (Exception e) {
-            log.error("❌ 장소 추가 실패", e);
-            return String.format("❌ 장소 추가 실패: %s", e.getMessage());
-        }
-    }
+    //         return String.format("✅ '%s'을(를) %d일차 일정에 추가했습니다.", placeName, dayIndex);
+    //     } catch (Exception e) {
+    //         log.error("❌ 장소 추가 실패", e);
+    //         return String.format("❌ 장소 추가 실패: %s", e.getMessage());
+    //     }
+    // }
         // 🚨 Guard 체크 (실행 관문)
         // TODO: chatMemory에서 isConfirmed 조회하여 Guard에 전달
         // 현재는 개념 증명을 위해 주석 처리

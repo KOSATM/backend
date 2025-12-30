@@ -33,4 +33,8 @@ public class Plan {
     @JsonPOJOBuilder(withPrefix = "")
     public static class PlanBuilder {
     }
+
+    public Boolean getIsEnded() {
+        return isEnded != null ? isEnded : false;
+    }
 }

@@ -1,6 +1,5 @@
 package com.example.demo.planner.plan.agent;
 
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.stereotype.Component;
 

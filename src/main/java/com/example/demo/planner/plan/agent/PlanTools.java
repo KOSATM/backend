@@ -33,15 +33,16 @@ import com.example.demo.planner.plan.service.action.PlanAddAction;
 import com.example.demo.planner.plan.service.action.PlanDeleteAction;
 import com.example.demo.planner.plan.service.action.PlanModifyAction;
 import com.example.demo.planner.plan.service.action.PlanSwapAction;
+import com.example.demo.planner.plan.util.CategoryNames;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * SmartPlanAgent Tool Functions (멀티에이전트 오케스트레이션 레이어)
+ * SmartPlanAgent Tool Functions
  * - Spring AI Function Calling 진입점
- * - 하위 에이전트로 작업 위임 (SearchPlaceAgent, PlaceManagementAgent, ScheduleOptimizationAgent)
+ * - Action 기반 서비스로 위임
  * - ThreadLocal로 planId 관리 (LLM이 planId를 알 필요 없음)
  */
 @Component("planTools")
@@ -49,12 +50,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PlanTools {
 
-    // 멀티에이전트 (하위 Tool-Calling 에이전트)
-    private final SearchPlaceAgent searchPlaceAgent;
-    private final PlaceManagementAgent placeManagementAgent;
-    private final ScheduleOptimizationAgent scheduleOptimizationAgent;
-
-    // 기존 서비스 (직접 호출용)
     private final PlanAddAction addAction;
     private final PlanModifyAction modifyAction;
     private final PlanSwapAction swapAction;
@@ -86,61 +81,179 @@ public class PlanTools {
         return currentPlanId.get();
     }
 
-    @Tool(description = "장소를 검색하여 여행 일정에 추가합니다 (네이버 검색 후 첫 번째 결과 자동 추가)")
-    public String addPlace(int dayIndex, String placeName, String startTime) {
+    @Tool(description = "현재 여행 일정 전체를 조회합니다")
+    public String viewPlan() {
         Long planId = getPlanId();
-        log.info("🔧 [Tool] addPlace -> PlaceManagementAgent 위임: planId={}, day={}, place={}, time={}",
-                planId, dayIndex, placeName, startTime);
+        log.info("🔧 [Tool] viewPlan: planId={}", planId);
 
-        // PlaceManagementAgent로 작업 위임 (하위 Tool-Calling 수행)
-        return placeManagementAgent.addPlace(planId, placeName, dayIndex, startTime);
+        try {
+            // 1) plan 조회
+            Plan plan = planDao.selectPlanById(planId);
+
+            if (plan == null) {
+                return "일정을 찾을 수 없습니다.";
+            }
+
+            // 2) days 조회
+            List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
+
+            // 3) places 조회
+            Map<Long, List<PlanPlace>> placesByDayId = new HashMap<>();
+            for (PlanDay day : planDays) {
+                List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+                placesByDayId.put(day.getId(), places);
+            }
+
+            // 4) 렌더링
+            return renderPlan(plan, planDays, placesByDayId);
+
+        } catch (Exception e) {
+            log.error("일정 조회 실패", e);
+            return "일정 조회 중 오류 발생: " + e.getMessage();
+        }
+    }
+
+    @Tool(description = "특정 일차의 일정만 조회합니다. dayIndex는 1부터 시작 (1일차=1), 해당 툴의 응답은 최대한 가공하지 않고 제공해주세요.")
+    public String viewDay(
+            @ToolParam(description = "조회할 일차 번호 (1부터 시작)") int dayIndex) {
+        Long planId = getPlanId();
+        log.info("🔧 [Tool] viewDay: planId={}, dayIndex={}", planId, dayIndex);
+
+        try {
+            // Day 조회
+            PlanDay day = planDayDao.selectPlanDayByPlanIdAndDayIndex(planId, dayIndex);
+
+            if (day == null) {
+                return dayIndex + "일차가 없습니다.";
+            }
+
+            // Places 조회
+            List<PlanPlace> places = planPlaceDao.selectPlanPlacesByPlanDayId(day.getId());
+            return renderDay(day, places);
+
+        } catch (Exception e) {
+            log.error("일차 조회 실패", e);
+            return "일차 조회 중 오류 발생: " + e.getMessage();
+        }
     }
 
     @Tool(description = "특정 장소를 일정에서 삭제합니다")
     public String deletePlace(String placeName) {
         Long planId = getPlanId();
-        log.info("🔧 [Tool] deletePlace -> PlaceManagementAgent 위임: planId={}, placeName={}", planId, placeName);
+        log.info("🔧 [Tool] deletePlace: planId={}, placeName={}", planId, placeName);
+        try {
+            deleteAction.deletePlaceByName(planId, placeName);
 
-        // PlaceManagementAgent로 작업 위임 (하위 Tool-Calling 수행)
-        return placeManagementAgent.deletePlace(planId, placeName);
+            // 스냅샷 저장
+            Plan plan = planDao.selectPlanById(planId);
+            List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
+            List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
+
+            return String.format("✅ '%s' 장소를 일정에서 삭제했습니다. 버전: %d", placeName, versionNo);
+        } catch (IllegalArgumentException e) {
+            return String.format("❌ '%s' 장소를 찾을 수 없습니다.", placeName);
+        } catch (Exception e) {
+            log.error("장소 삭제 실패", e);
+            return String.format("❌ 장소 삭제 중 오류 발생: %s", e.getMessage());
+        }
     }
 
     @Tool(description = "같은 날짜 내에서 두 장소의 순서를 교환합니다 (dayIndex는 1부터 시작)")
     public String swapPlaces(int dayIndex, int index1, int index2) {
         Long planId = getPlanId();
-        log.info("🔧 [Tool] swapPlaces -> ScheduleOptimizationAgent 위임: planId={}, dayIndex={}, index1={}, index2={}",
-                planId, dayIndex, index1, index2);
+        log.info("🔧 [Tool] swapPlaces: planId={}, dayIndex={}, index1={}, index2={}", planId, dayIndex, index1,
+                index2);
+        try {
+            swapAction.swapPlacesInSameDay(planId, dayIndex, index1, index2);
 
-        // ScheduleOptimizationAgent로 작업 위임 (하위 Tool-Calling 수행)
-        return scheduleOptimizationAgent.swapPlaces(planId, dayIndex, index1, index2);
+            // 스냅샷 저장
+            Plan plan = planDao.selectPlanById(planId);
+            List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
+            List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
+
+            return String.format("✅ %d일차의 %d번째와 %d번째 장소 순서를 교환했습니다. 버전: %d", dayIndex, index1, index2, versionNo);
+        } catch (Exception e) {
+            log.error("장소 순서 교환 실패", e);
+            return String.format("❌ 장소 순서 교환 중 오류 발생: %s", e.getMessage());
+        }
     }
 
     @Tool(description = "서로 다른 날짜 간 장소를 교환합니다 (dayIndex는 1부터 시작)")
     public String swapPlacesBetweenDays(int day1, int index1, int day2, int index2) {
         Long planId = getPlanId();
-        log.info("🔧 [Tool] swapPlacesBetweenDays -> ScheduleOptimizationAgent 위임: planId={}, day1={}, index1={}, day2={}, index2={}",
-                planId, day1, index1, day2, index2);
+        log.info("🔧 [Tool] swapPlacesBetweenDays: planId={}, day1={}, index1={}, day2={}, index2={}", planId, day1,
+                index1, day2, index2);
+        try {
+            swapAction.swapPlacesBetweenDays(planId, day1, index1, day2, index2);
 
-        // ScheduleOptimizationAgent로 작업 위임 (하위 Tool-Calling 수행)
-        return scheduleOptimizationAgent.swapPlacesBetweenDays(planId, day1, index1, day2, index2);
+            // 스냅샷 저장
+            Plan plan = planDao.selectPlanById(planId);
+            List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
+            List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
+
+            return String.format("✅ %d일차의 %d번째 장소와 %d일차의 %d번째 장소를 교환했습니다. 버전: %d", day1, index1, day2, index2,
+                    versionNo);
+        } catch (Exception e) {
+            log.error("날짜 간 장소 교환 실패", e);
+            return String.format("❌ 장소 교환 중 오류 발생: %s", e.getMessage());
+        }
     }
 
     @Tool(description = "기존 장소를 다른 장소로 교체합니다 (첫 번째 검색 결과 자동 선택)")
     public String replacePlace(String oldPlaceName, String newPlaceName) {
         Long planId = getPlanId();
-        log.info("🔧 [Tool] replacePlace -> PlaceManagementAgent 위임: planId={}, old={}, new={}",
-                planId, oldPlaceName, newPlaceName);
+        log.info("🔧 [Tool] replacePlace: planId={}, old={}, new={}", planId, oldPlaceName, newPlaceName);
+        try {
+            String newName = modifyAction.replacePlaceWithSearch(planId, oldPlaceName, newPlaceName);
 
-        // PlaceManagementAgent로 작업 위임 (하위 Tool-Calling 수행)
-        return placeManagementAgent.replacePlace(planId, oldPlaceName, newPlaceName);
+            // 스냅샷 저장
+            Plan plan = planDao.selectPlanById(planId);
+            List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
+            List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
+
+            return String.format("✅ '%s'를 '%s'(으)로 변경했습니다. 버전: %d", oldPlaceName, newName, versionNo);
+        } catch (Exception e) {
+            log.error("장소 교체 실패", e);
+            return String.format("❌ 장소 교체 중 오류 발생: %s", e.getMessage());
+        }
     }
 
     @Tool(description = "네이버에서 장소를 검색하여 여러 후보를 보여줍니다")
     public String searchPlace(String searchQuery) {
-        log.info("🔧 [Tool] searchPlace -> SearchPlaceAgent 위임: query={}", searchQuery);
+        log.info("🔧 [Tool] searchPlace: query={}", searchQuery);
+        try {
+            var searchResults = addAction.searchNaverLocal(searchQuery);
+            if (searchResults.isEmpty()) {
+                return String.format("❌ '%s' 검색 결과가 없습니다.", searchQuery);
+            }
 
-        // SearchPlaceAgent로 작업 위임 (하위 Tool-Calling 수행)
-        return searchPlaceAgent.searchPlaces(searchQuery);
+            int count = Math.min(searchResults.size(), 5);
+            StringBuilder result = new StringBuilder();
+            result.append(String.format("🔍 '%s' 검색 결과 %d개:\n\n", searchQuery, count));
+
+            for (int i = 0; i < count; i++) {
+                LocalItem item = searchResults.get(i);
+                result.append(String.format("%d. **%s**\n", i + 1, cleanHtmlTags(item.getTitle())));
+                result.append(String.format("   - 카테고리: %s\n", item.getCategory()));
+                result.append(String.format("   - 주소: %s\n", item.getRoadAddress()));
+                if (i < count - 1)
+                    result.append("\n");
+            }
+
+            result.append("\n어떤 장소로 하시겠어요? (번호로 선택해주세요)");
+            return result.toString();
+        } catch (Exception e) {
+            log.error("장소 검색 실패", e);
+            return String.format("❌ 장소 검색 중 오류: %s", e.getMessage());
+        }
     }
 
     @Tool(description = "검색 결과에서 사용자가 선택한 장소로 교체합니다")
@@ -164,6 +277,28 @@ public class PlanTools {
             return String.format("❌ 장소 교체 중 오류 발생: %s", e.getMessage());
         }
     }
+
+    // @Tool(description = "특정 날짜에 새로운 장소를 추가합니다. dayIndex는 1부터 시작 (1일차=1, 2일차=2). 장소명으로 자동 검색하여 추가합니다.")
+    // public String addPlace(Integer dayIndex, String placeName, String startTime) {
+    //     Long planId = getPlanId();
+    //     log.info("🔧 [Tool] addPlace: planId={}, dayIndex={}, placeName={}, startTime={}", planId, dayIndex, placeName,
+    //             startTime);
+    //     try {
+    //         // String result = addAction.addPlace(planId, dayIndex, placeName, startTime);
+
+    //         // 스냅샷 저장
+    //         Plan plan = planDao.selectPlanById(planId);
+    //         List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
+    //         List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
+    //         PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+    //         Integer versionNo = newSnapshot.getVersionNo();
+
+    //         // return String.format("✅ %d일차에 '%s'을(를) 추가했습니다. 버전: %d", dayIndex, result, versionNo);
+    //     } catch (Exception e) {
+    //         log.error("장소 추가 실패", e);
+    //         return String.format("❌ 장소 추가 중 오류 발생: %s", e.getMessage());
+    //     }
+    // }
 
     @Tool(description = "특정 위치에 장소를 삽입하고 이후 일정을 자동으로 조정합니다. dayIndex는 1부터 시작.")
     public String addPlaceAtPosition(int dayIndex, int position, String placeName, Integer duration) {
@@ -253,10 +388,22 @@ public class PlanTools {
     @Tool(description = "여행 기간을 늘립니다 (날짜 추가)")
     public String extendPlan(int extraDays) {
         Long planId = getPlanId();
-        log.info("🔧 [Tool] extendPlan -> ScheduleOptimizationAgent 위임: planId={}, extraDays={}", planId, extraDays);
+        log.info("🔧 [Tool] extendPlan: planId={}, extraDays={}", planId, extraDays);
+        try {
+            addAction.extendPlan(planId, extraDays);
 
-        // ScheduleOptimizationAgent로 작업 위임 (하위 Tool-Calling 수행)
-        return scheduleOptimizationAgent.extendPlan(planId, extraDays);
+            // 스냅샷 저장
+            Plan plan = planDao.selectPlanById(planId);
+            List<PlanDay> planDays = planDayDao.selectPlanDaysByPlanId(planId);
+            List<PlanPlace> planPlaces = planPlaceDao.selectPlanPlacesByPlanId(planId);
+            PlanSnapshot newSnapshot = planSnapshotService.savePlanSnapshot(plan, planDays, planPlaces);
+            Integer versionNo = newSnapshot.getVersionNo();
+
+            return String.format("✅ 여행을 %d일 연장했습니다. 버전: %d", extraDays, versionNo);
+        } catch (Exception e) {
+            log.error("일정 확장 실패", e);
+            return String.format("❌ 일정 확장 중 오류 발생: %s", e.getMessage());
+        }
     }
 
     @Tool(description = "전체 일정을 완전히 삭제합니다 (Plan + 모든 날짜와 장소 삭제). 중요: 사용자가 명확히 확인한 경우에만 호출하세요!")
@@ -534,7 +681,11 @@ public class PlanTools {
 
             log.info("   일정 생성 완료 - 길이: {} 자", plan.toString().length());
 
-            travelPlanSaveService.save(userId, plan, new ObjectMapper());
+            // String planSummary = PlanState.buildSummary(plan, location, style);
+
+            Long planId = travelPlanSaveService.save(userId, plan, new ObjectMapper());
+
+            // savePlanToState(sessionId, planId, planSummary);
 
             success = true;
             // sendAgentEvent("Seoul Planner", "complete", "서울 여행 일정 생성 완료");
@@ -574,6 +725,104 @@ public class PlanTools {
                         .append(p.title())
                         .append("\n");
             }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
+    // Helper method
+    private String cleanHtmlTags(String text) {
+        if (text == null)
+            return null;
+        return text.replaceAll("<[^>]*>", "");
+    }
+
+    private String renderPlan(
+            Plan plan,
+            List<PlanDay> planDays,
+            Map<Long, List<PlanPlace>> placesByDayId) {
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("📅 ").append(plan.getTitle() != null ? plan.getTitle() : "여행 일정").append("\n");
+        sb.append("기간: ").append(plan.getStartDate())
+                .append(" ~ ").append(plan.getEndDate()).append("\n");
+
+        if (plan.getBudget() != null) {
+            sb.append("예산: ").append(plan.getBudget()).append("원\n");
+        }
+        sb.append("\n");
+
+        for (PlanDay day : planDays) {
+            sb.append("=== Day ").append(day.getDayIndex()).append(" ===\n");
+
+            if (day.getTitle() != null) {
+                sb.append(day.getTitle()).append("\n");
+            }
+            sb.append(day.getPlanDate()).append("\n\n");
+
+            List<PlanPlace> places = placesByDayId.get(day.getId());
+
+            if (places == null || places.isEmpty()) {
+                sb.append("등록된 장소가 없습니다.\n\n");
+                continue;
+            }
+
+            for (PlanPlace place : places) {
+                sb.append("• ");
+
+                // if (place.getStartAt() != null) {
+                // sb.append(place.getStartAt().toLocalTime()).append(" ");
+                // }
+
+                sb.append(place.getTitle()).append("\n");
+
+                if (place.getAddress() != null) {
+                    sb.append("  📍 ").append(place.getAddress()).append("\n");
+                }
+
+                sb.append("\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private String renderDay(PlanDay day, List<PlanPlace> places) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("📅 Day ").append(day.getDayIndex()).append("\n");
+        sb.append("🗓 날짜: ").append(day.getPlanDate()).append("\n");
+        sb.append("────────────────────\n");
+
+        if (places == null || places.isEmpty()) {
+            sb.append("⚠️ 일정에 등록된 장소가 없습니다.\n");
+            return sb.toString();
+        }
+
+        for (PlanPlace place : places) {
+            // 시간
+            sb.append("• ");
+            
+
+            // 장소명
+            sb.append(place.getTitle());
+
+            // 카테고리
+            if (place.getNormalizedCategory() != null) {
+                sb.append("  [")
+                        .append(CategoryNames.categoryLabel(place.getNormalizedCategory()))
+                        .append("]");
+            }
+            sb.append("\n");
+
+            // 주소
+            if (place.getAddress() != null) {
+                sb.append("   📍 ")
+                        .append(place.getAddress())
+                        .append("\n");
+            }
+
             sb.append("\n");
         }
         return sb.toString();

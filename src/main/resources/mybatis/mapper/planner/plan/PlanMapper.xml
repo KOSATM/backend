@@ -110,7 +110,7 @@
           ON p.id = d.plan_id
       -- AND d.plan_date = DATE '2025-12-19'   -- 테스트
         AND d.plan_date = CURRENT_DATE
-      WHERE p.user_id = 21
+      WHERE p.user_id = #{userId}
       ORDER BY p.id DESC
       LIMIT 1
   </select>

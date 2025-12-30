@@ -1,6 +1,6 @@
 package com.example.demo.planner.plan.dto;
 
-import com.example.demo.planner.plan.utils.GeoUtils;
+import com.example.demo.planner.plan.util.GeoUtils;
 
 import lombok.Getter;
 

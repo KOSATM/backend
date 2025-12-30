@@ -25,6 +25,12 @@
     WHERE plan_place_id = #{planPlaceId}
   </update>
 
+  <update id="updatePlanplaceIsEnded">
+    UPDATE plan_places
+    set is_ended = TRUE
+    WHERE id = #{planPlaceId}
+  </update>
+
   <delete id="deleteCurrentActivityById" parameterType="long">
     DELETE FROM current_activities WHERE id = #{id}
   </delete>

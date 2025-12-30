@@ -54,9 +54,9 @@ public class PlanContext {
             for (int j = 0; j < places.size(); j++) {
                 PlanPlace place = places.get(j);
                 sb.append(String.format("  %d. %s\n", j + 1, place.getPlaceName()));
-                sb.append(String.format("     ⏰ %s ~ %s\n",
-                    place.getStartAt() != null ? place.getStartAt() : "미정",
-                    place.getEndAt() != null ? place.getEndAt() : "미정"));
+                // sb.append(String.format("     ⏰ %s ~ %s\n",
+                //     place.getStartAt() != null ? place.getStartAt() : "미정",
+                //     place.getEndAt() != null ? place.getEndAt() : "미정"));
             }
             sb.append("\n");
         }
@@ -132,10 +132,10 @@ public class PlanContext {
                         sb.append(String.format("          \"index\": %d,\n", j + 1));
                         sb.append(String.format("          \"name\": \"%s\",\n",
                             place.getPlaceName() != null ? place.getPlaceName() : "미정"));
-                        sb.append(String.format("          \"startTime\": \"%s\",\n",
-                            place.getStartAt() != null ? place.getStartAt() : "미정"));
-                        sb.append(String.format("          \"endTime\": \"%s\"\n",
-                            place.getEndAt() != null ? place.getEndAt() : "미정"));
+                        // sb.append(String.format("          \"startTime\": \"%s\",\n",
+                        //     place.getStartAt() != null ? place.getStartAt() : "미정"));
+                        // sb.append(String.format("          \"endTime\": \"%s\"\n",
+                        //     place.getEndAt() != null ? place.getEndAt() : "미정"));
                         sb.append("        }");
                         if (j < places.size() - 1) sb.append(",");
                         sb.append("\n");

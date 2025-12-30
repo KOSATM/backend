@@ -29,6 +29,13 @@ public class PlanDeleteAction {
     public void deletePlaceByName(Long planId, String placeName) {
         placeService.deletePlaceByName(planId, placeName);
     }
+    
+    /**
+     * 장소 삭제 (특정 날, 장소 삭제)
+     */
+    public void deletePlace(Long planId, int dayIndex, int placeIndex) {
+        placeService.deletePlace(planId, dayIndex, placeIndex);
+    }
 
     /**
      * 특정 위치의 장소 삭제 (day + position)

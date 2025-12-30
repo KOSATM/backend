@@ -105,4 +105,47 @@ public class TravelPlanSaveService {
         log.info("✅ 여행 일정 저장 완료 (planId={})", planId);
         return planId;
     }
+
+    /**
+     * 특정 일차의 장소들만 저장
+     * 
+     * @param dayId 저장할 PlanDay의 ID
+     * @param places 저장할 장소 리스트
+     */
+    @Transactional
+    public void saveSingleDay(Long dayId, List<GeneratedTravelPlan.GeneratedPlace> places) {
+        log.info("💾 단일 일차 장소 저장 시작 (dayId={}, {}개)", dayId, places.size());
+        
+        if (places == null || places.isEmpty()) {
+            log.warn("저장할 장소가 없습니다.");
+            return;
+        }
+        
+        List<PlanPlace> planPlaces = new ArrayList<>();
+        
+        for (GeneratedTravelPlan.GeneratedPlace place : places) {
+            PlanPlace planPlace = PlanPlace.builder()
+                    .dayId(dayId)
+                    .title(place.title())
+                    .placeName(place.placeName())
+                    .address(place.address())
+                    .lat(place.lat())
+                    .lng(place.lng())
+                    .startAt(place.startAt())
+                    .endAt(place.endAt())
+                    .expectedCost(BigDecimal.ZERO)
+                    .normalizedCategory(place.category())
+                    .firstImage(place.firstImage())
+                    .firstImage2(place.firstImage2())
+                    .isEnded(false)
+                    .build();
+            
+            planPlaces.add(planPlace);
+        }
+        
+        // Batch Insert
+        planPlaceDao.insertPlanPlaceBatch(planPlaces);
+        
+        log.info("✅ 단일 일차 장소 저장 완료 ({}개)", planPlaces.size());
+    }
 }

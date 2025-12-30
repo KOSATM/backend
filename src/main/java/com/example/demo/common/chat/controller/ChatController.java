@@ -1,7 +1,6 @@
 package com.example.demo.common.chat.controller;
 
 import java.util.ArrayList;
-import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.common.chat.dto.TravelChatSendRequest;
 import com.example.demo.common.chat.dto.TravelChatSendResponse;
+import com.example.demo.common.chat.intent.dto.request.IntentRequest;
+import com.example.demo.common.chat.pipeline.AiAgentResponse;
 import com.example.demo.planner.plan.agent.SmartPlanAgent;
 
 import lombok.RequiredArgsConstructor;
@@ -63,23 +64,15 @@ public class ChatController {
         }
     }
 
-    /**
-     * 간단 채팅 엔드포인트 (legacy / 디버그용)
-     */
+    
     @PostMapping("/chat")
-    public ResponseEntity<String> analyzeChat(@RequestBody Map<String, Object> request) {
-        try {
-            String message = (String) request.get("message");
-            Long userId = request.get("userId") != null
-                    ? ((Number) request.get("userId")).longValue()
-                    : 1L;
+    public ResponseEntity<TravelChatSendResponse> analyzeChat(@RequestBody IntentRequest intentRequest) {
 
-            var response = smartPlanAgent.execute(message, userId);
-            return ResponseEntity.ok(response.getMessage());
-        } catch (Exception e) {
-            log.error("Error in /chat endpoint", e);
-            return ResponseEntity.status(500).body("오류: " + e.getMessage());
-        }
+        AiAgentResponse response = smartPlanAgent.execute(intentRequest.getMessage(), intentRequest.getUserId());
+        log.info(response.getMessage()+">>>>>>>");
+        
+        TravelChatSendResponse result = TravelChatSendResponse.success(response.getMessage(), response.getData());
+        return ResponseEntity.ok(result);
     }
 
     /**
