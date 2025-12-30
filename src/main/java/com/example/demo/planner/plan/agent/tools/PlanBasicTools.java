@@ -323,7 +323,7 @@ public class PlanBasicTools {
               사용자에게 삭제 결과를 반드시 명확히 안내하세요.
                     """)
     public String deleteDay(
-            int dayIndex,
+            @ToolParam(description = "몇 일차인지 (1부터)", required = false) Integer dayIndex,
             ToolContext toolContext) {
 
         String conversationId = getConversationId(toolContext);

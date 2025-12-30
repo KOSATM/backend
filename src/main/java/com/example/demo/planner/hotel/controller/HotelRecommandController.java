@@ -1,6 +1,5 @@
 package com.example.demo.planner.hotel.controller;
 
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,23 +31,23 @@ public class HotelRecommandController {
     public Map<String, Object> recommendHotel(
             @RequestParam(name = "userId") Long userId,
             @RequestParam(name = "preferences", required = false) String userPreferences) {
-        
+
         log.info("🔍 Hotel recommendation request - userId: {}, preferences: {}", userId, userPreferences);
-        
+
         int adults = 2;
         int children = 0;
         String guestName = "Guest";
         String guestEmail = "guest@example.com";
         String guestPhone = "+82-10-0000-0000";
-        
+
         // userPreferences가 null이면 빈 문자열로 처리
         String preferences = userPreferences != null ? userPreferences : "";
-        
+
         try {
             // TripPlanRequest는 더미 객체 (userId만 필요)
             TripPlanRequest tripPlan = new TripPlanRequest();
             tripPlan.setUserId(userId);
-            
+
             List<HotelBookingRequest> recommendations = hotelBookingAgent.createBookingFromItinerary(
                 userId,
                 tripPlan,
@@ -59,7 +58,7 @@ public class HotelRecommandController {
                 guestPhone,
                 preferences
             );
-            
+
             if (recommendations == null || recommendations.isEmpty()) {
                 log.warn("⚠️ No hotels available for the given dates");
                 Map<String, Object> response = new HashMap<>();
@@ -67,20 +66,20 @@ public class HotelRecommandController {
                 response.put("message", "해당 날짜에 예약 가능한 호텔이 없습니다.");
                 return response;
             }
-            
+
             log.info("✅ Hotel recommendation successful - {} hotels", recommendations.size());
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "추천 숙소입니다. 예약을 진행하시겠습니까?");
             response.put("totalCount", recommendations.size());
-            
+
             // 3개의 호텔 추천 정보
             List<Map<String, Object>> hotelSummaryList = new java.util.ArrayList<>();
             List<Map<String, Object>> bookingDataList = new java.util.ArrayList<>();
-            
+
             for (int i = 0; i < recommendations.size(); i++) {
                 HotelBookingRequest recommendation = recommendations.get(i);
-                
+
                 // 각 호텔의 요약 정보
                 Map<String, Object> hotelSummary = new HashMap<>();
                 hotelSummary.put("rank", i + 1);
@@ -94,7 +93,7 @@ public class HotelRecommandController {
                 if (recommendation.getChildrenCount() > 0) {
                     hotelSummary.put("children", recommendation.getChildrenCount() + "명");
                 }
-                
+
                 // 가격 정보
                 Map<String, Object> priceInfo = new HashMap<>();
                 priceInfo.put("roomPrice", recommendation.getTotalPrice());
@@ -106,7 +105,7 @@ public class HotelRecommandController {
                 priceInfo.put("totalPrice", totalPrice);
                 priceInfo.put("currency", recommendation.getCurrency() != null ? recommendation.getCurrency() : "KRW");
                 hotelSummary.put("pricing", priceInfo);
-                
+
                 // 호텔 편의시설
                 Map<String, Object> facilities = new HashMap<>();
                 if (recommendation.getHasFreeWifi() != null) {
@@ -133,9 +132,9 @@ public class HotelRecommandController {
                 if (!facilities.isEmpty()) {
                     hotelSummary.put("facilities", facilities);
                 }
-                
+
                 hotelSummaryList.add(hotelSummary);
-                
+
                 // 각 호텔의 booking 데이터 (DB 저장용)
                 Map<String, Object> bookingData = new HashMap<>();
                 bookingData.put("userId", recommendation.getUserId());
@@ -160,15 +159,15 @@ public class HotelRecommandController {
                 bookingData.put("providerBookingMeta", recommendation.getProviderBookingMeta());
                 bookingData.put("bookedAt", recommendation.getBookedAt());
                 bookingData.put("cancelledAt", recommendation.getCancelledAt());
-                
+
                 bookingDataList.add(bookingData);
             }
-            
+
             response.put("hotelSummaryList", hotelSummaryList);
             response.put("bookingDataList", bookingDataList);
-            
+
             return response;
-            
+
         } catch (Exception e) {
             log.error("❌ Error during hotel recommendation", e);
             Map<String, Object> response = new HashMap<>();

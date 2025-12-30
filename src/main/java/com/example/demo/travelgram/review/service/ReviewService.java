@@ -5,11 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.common.s3.service.S3Service;
@@ -27,7 +24,6 @@ import com.example.demo.travelgram.review.dto.request.ReviewPhotosAnalysisReques
 import com.example.demo.travelgram.review.dto.response.PhotoAnalysisResult;
 import com.example.demo.travelgram.review.dto.response.ReviewCreateResponse;
 import com.example.demo.travelgram.review.dto.response.ReviewPhotoUploadResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +41,6 @@ public class ReviewService {
 
     private final ReviewImageAnalysisAgent reviewImageAnalysisAgent;
     private final ReviewAnalysisService reviewAnalysisService;
-    private final ObjectMapper objectMapper;
 
     // ======================================
     // 1) 리뷰 포스트 영역
@@ -203,7 +198,7 @@ public class ReviewService {
     @Transactional
     public void selectStyle(Long reviewPostId, Long reviewStyleId) {
         log.info("리뷰 스타일 선택 업데이트 - reviewPostId: {}, reviewStyleId: {}", reviewPostId, reviewStyleId);
-        
+
         // DAO 호출하여 업데이트 수행
         reviewPostDao.updateReviewPostStyleIdById(reviewPostId, reviewStyleId);
     }

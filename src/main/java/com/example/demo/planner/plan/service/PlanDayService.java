@@ -193,7 +193,7 @@ public class PlanDayService {
             if (day.getDayIndex() > dayIndex) {
                 int newIndex = day.getDayIndex() - 1;
                 planDayDao.updateDayIndex(day.getId(), newIndex);
-
+                
                 // planDate도 업데이트 (startDate + newIndex - 1)
                 Plan plan = planDao.selectPlanById(planId);
                 LocalDate newDate = plan.getStartDate().plusDays(newIndex - 1);

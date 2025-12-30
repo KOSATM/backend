@@ -1,4 +1,4 @@
-package com.example.demo.planner.plan.utils.date;
+package com.example.demo.planner.plan.util.date;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;

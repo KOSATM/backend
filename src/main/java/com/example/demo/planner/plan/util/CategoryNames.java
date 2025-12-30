@@ -1,4 +1,4 @@
-package com.example.demo.planner.plan.utils;
+package com.example.demo.planner.plan.util;
 
 import java.util.List;
 

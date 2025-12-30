@@ -22,9 +22,9 @@ import com.example.demo.common.chat.intent.dto.SeoulRegion;
 import com.example.demo.planner.plan.dao.PlanDao;
 import com.example.demo.planner.plan.dto.entity.GeneratedTravelPlan;
 import com.example.demo.planner.plan.dto.entity.TravelPlaces;
-import com.example.demo.planner.plan.utils.CategoryNames;
-import com.example.demo.planner.plan.utils.date.DateParser;
-import com.example.demo.planner.plan.utils.date.DurationParser;
+import com.example.demo.planner.plan.util.CategoryNames;
+import com.example.demo.planner.plan.util.date.DateParser;
+import com.example.demo.planner.plan.util.date.DurationParser;
 
 import lombok.extern.slf4j.Slf4j;
 

@@ -1,9 +1,5 @@
 package com.example.demo.planner.plan.agent.tools;
 
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -14,8 +10,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.example.demo.planner.plan.agent.common.PlanToolSupport;
 import com.example.demo.planner.plan.dao.PlanSnapshotDao;
-import com.example.demo.planner.plan.dto.entity.PlanSnapshot;
-import com.example.demo.planner.plan.dto.response.PlanSnapshotContent;
 import com.example.demo.planner.plan.service.PlanSnapshotService;
 import com.example.demo.planner.plan.service.PlanSnapshotUtility;
 import com.example.demo.planner.plan.service.action.PlanAddAction;

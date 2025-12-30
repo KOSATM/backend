@@ -74,7 +74,7 @@ public interface PlanDayDao {
     /**
      * dayIndex만 변경합니다 (swap용)
      */
-    int updateDayIndex(Long id, Integer dayIndex);
+    int updateDayIndex(@Param("id") Long id, @Param("dayIndex") Integer dayIndex);
 
     /**
      * planDate를 업데이트합니다

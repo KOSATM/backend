@@ -395,4 +395,14 @@ public class PlanPlaceService {
 
         deletePlace(planId, position.getDayIndex(), position.getOrder());
     }
+
+    /**
+     * 위치 기반 삭제 (dayIndex + position)
+     */
+    @Transactional
+    public void deletePlaceByPosition(Long planId, Integer dayIndex, Integer position) {
+        log.info("위치 기반 삭제: planId={}, dayIndex={}, position={}", planId, dayIndex, position);
+
+        deletePlace(planId, dayIndex, position);
+    }
 }

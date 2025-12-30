@@ -68,6 +68,10 @@ public interface PlanDao {
     List<TravelPlaceCandidate> searchMissingCategoryByVector(Map<String, Object> params);
     List<String> getUserLastVisitedPlaces(@Param("userId") Long userId);
 
+    /**
+     * 활성 Plan (isEnded=false) 개수 조회
+     */
+    long countActivePlans();
 
     /*is_ended=true && title = null일시 제목 자동생성위해 조회 */
     List<Plan> selectEndedPlansWithNoTitle();

@@ -11,6 +11,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Component;
 
 import com.example.demo.common.chat.pipeline.AiAgentResponse;
+import com.example.demo.common.chat.prompt.PromptBuilder;
 import com.example.demo.planner.plan.agent.common.PlanToolSupport;
 import com.example.demo.planner.plan.agent.tools.PlaceRecommendTools;
 import com.example.demo.planner.plan.agent.tools.PlanAdvancedTools;
@@ -129,16 +130,23 @@ public class SmartPlanAgent {
                 """.formatted(planJson, userMsg);
     }
 
+    /**
+     * 외부에서 PlanContext 조회용 (테스트/디버깅)
+     */
     public PlanContext loadPlanContext(Long userId) {
         return loadContext(userId);
     }
 
+    /**
+     * 사용자의 활성 Plan Context 로드
+     */
     private PlanContext loadContext(Long userId) {
         try {
             Plan plan = crudService.findActiveByUserId(userId);
             return (plan == null)
                     ? PlanContext.empty()
                     : PlanContext.builder()
+                            .userId(userId)
                             .activePlan(plan)
                             .allDays(queryService.queryAllDaysOptimized(plan.getId()))
                             .build();
